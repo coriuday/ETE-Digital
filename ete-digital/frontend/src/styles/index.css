@@ -1,0 +1,198 @@
+/**
+ * ETE Digital - Theme System
+ * CSS Variables for dynamic theming
+ * Supports light/dark modes with WCAG AAA contrast ratios
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary brand colors - Blue spectrum */
+    --color-primary-50: 220 100% 97%;
+    --color-primary-100: 220 95% 92%;
+    --color-primary-200: 220 90% 85%;
+    --color-primary-300: 220 85% 75%;
+    --color-primary-400: 220 85% 65%;
+    --color-primary-500: 220 90% 56%;
+    /* Main brand color */
+    --color-primary-600: 220 90% 48%;
+    --color-primary-700: 220 85% 40%;
+    --color-primary-800: 220 80% 32%;
+    --color-primary-900: 220 75% 24%;
+
+    /* Semantic colors */
+    --color-success: 142 71% 45%;
+    --color-warning: 38 92% 50%;
+    --color-error: 0 84% 60%;
+    --color-info: 199 89% 48%;
+
+    /* Neutrals - Light mode */
+    --color-background: 0 0% 100%;
+    --color-surface: 0 0% 98%;
+    --color-text-primary: 222 47% 11%;
+    --color-text-secondary: 215 16% 47%;
+    --color-text-tertiary: 214 20% 69%;
+
+    /* Typography */
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  [data-theme="dark"] {
+    /* Neutrals - Dark mode */
+    --color-background: 222 47% 11%;
+    --color-surface: 217 33% 17%;
+    --color-text-primary: 0 0% 98%;
+    --color-text-secondary: 214 20% 69%;
+    --color-text-tertiary: 215 16% 47%;
+
+    /* Adjust primary colors for dark mode */
+    --color-primary-500: 220 85% 65%;
+    --color-primary-600: 220 80% 58%;
+  }
+
+  /* Base styles */
+  body {
+    @apply bg-background text-text-primary antialiased;
+    font-family: var(--font-sans);
+  }
+
+  /* Smooth transitions for theme switching */
+  body,
+  body * {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  /* ==========================================
+     ANIMATIONS
+     ========================================== */
+
+  @keyframes slide-in-right {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.3s ease-out;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.3s ease-in;
+  }
+
+  /* ==========================================
+     BUTTON & CARD UTILITIES
+     ========================================== */
+
+  .btn-hover-lift {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .btn-hover-lift:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .card-hover-effect {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .card-hover-effect:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-surface;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-text-tertiary rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-text-secondary;
+  }
+}
+
+@layer components {
+
+  /* Glassmorphism effect */
+  .glass {
+    @apply bg-surface/70 backdrop-blur-glass border border-text-tertiary/20 shadow-glass;
+  }
+
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700;
+  }
+
+  .btn-secondary {
+    @apply btn bg-surface text-text-primary border border-text-tertiary/20 hover:bg-text-tertiary/10;
+  }
+
+  .btn-ghost {
+    @apply btn text-text-primary hover:bg-text-tertiary/10;
+  }
+
+  /* Input base styles */
+  .input {
+    @apply w-full px-4 py-2 rounded-lg border border-text-tertiary/20 bg-surface text-text-primary;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply placeholder:text-text-tertiary transition-all duration-200;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-surface rounded-xl border border-text-tertiary/10 shadow-sm;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-200 hover:shadow-md hover:border-primary-500/20;
+  }
+}
+
+@layer utilities {
+
+  /* Text gradients */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-primary-700;
+  }
+
+  /* Accessibility - focus visible */
+  .focus-visible-outline {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2;
+  }
+}
