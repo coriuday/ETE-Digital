@@ -88,7 +88,11 @@ async def root():
 
 
 # Register routers
-from app.api import auth, users, jobs, tryouts, vault, notifications, analytics, admin
+from app.api.auth import auth
+from app.api.users import users
+from app.api.jobs import jobs, analytics
+from app.api.talent import tryouts, vault
+from app.api.platform import notifications, admin
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
@@ -98,3 +102,4 @@ app.include_router(vault.router, prefix="/api/vault", tags=["Talent Vault"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+

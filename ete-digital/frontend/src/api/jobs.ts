@@ -115,6 +115,11 @@ export const jobsApi = {
         await api.delete(`/api/jobs/${jobId}`);
     },
 
+    publishJob: async (jobId: string): Promise<Job> => {
+        const response = await api.post(`/api/jobs/${jobId}/publish`);
+        return response.data;
+    },
+
     getJobApplications: async (jobId: string, page: number = 1): Promise<any> => {
         const response = await api.get(`/api/jobs/${jobId}/applications`, {
             params: { page, page_size: 20 },

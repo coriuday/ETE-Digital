@@ -6,56 +6,62 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// ---- Existing Pages ----
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import DashboardPage from './pages/DashboardPage';
-import JobSearchPage from './pages/JobSearchPage';
-import JobDetailsPage from './pages/JobDetailsPage';
-import TryoutDetailsPage from './pages/TryoutDetailsPage';
-import MyTryoutsPage from './pages/MyTryoutsPage';
-import VaultDashboardPage from './pages/VaultDashboardPage';
-import VaultItemFormPage from './pages/VaultItemFormPage';
-import ShareManagementPage from './pages/ShareManagementPage';
-import SharedVaultPage from './pages/SharedVaultPage';
-import EmployerJobsPage from './pages/EmployerJobsPage';
-import CreateJobPage from './pages/CreateJobPage';
-import ApplicationsPage from './pages/ApplicationsPage';
-import ApplicationDetailsPage from './pages/ApplicationDetailsPage';
-import CreateTryoutPage from './pages/CreateTryoutPage';
-import GradeTryoutsPage from './pages/GradeTryoutsPage';
-import GradeSubmissionPage from './pages/GradeSubmissionPage';
-import AnalyticsDashboardPage from './pages/AnalyticsDashboardPage';
+// ---- Auth Pages ----
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import EmailVerificationPage from './pages/auth/EmailVerificationPage';
 
-// ---- New / Redesigned Pages ----
-import EmployerDashboardPage from './pages/EmployerDashboardPage';
+// ---- Misc Pages ----
+import DashboardPage from './pages/candidate/DashboardPage'; // using candidate/DashboardPage as default Dashboard?
+import LandingPage from './pages/public/LandingPage';
+import NotFoundPage from './pages/public/NotFoundPage';
+
+// ---- Jobs Pages ----
+import JobSearchPage from './pages/jobs/JobSearchPage';
+import JobDetailsPage from './pages/jobs/JobDetailsPage';
+
+// ---- Candidate Pages ----
+import TryoutDetailsPage from './pages/candidate/TryoutDetailsPage';
+import MyTryoutsPage from './pages/candidate/MyTryoutsPage';
+import VaultDashboardPage from './pages/candidate/VaultDashboardPage';
+import VaultItemFormPage from './pages/candidate/VaultItemFormPage';
+import ShareManagementPage from './pages/candidate/ShareManagementPage';
+import MyApplicationsPage from './pages/candidate/MyApplicationsPage';
+
+// ---- Public Pages ----
+import SharedVaultPage from './pages/public/SharedVaultPage';
+
+// ---- Employer Pages ----
+import EmployerJobsPage from './pages/employer/EmployerJobsPage';
+import EmployerDashboardPage from './pages/employer/EmployerDashboardPage';
+import CreateJobPage from './pages/employer/CreateJobPage';
+import ApplicationsPage from './pages/employer/ApplicationsPage';
+import ApplicationDetailsPage from './pages/employer/ApplicationDetailsPage';
+import CreateTryoutPage from './pages/employer/CreateTryoutPage';
+import GradeTryoutsPage from './pages/employer/GradeTryoutsPage';
+import GradeSubmissionPage from './pages/employer/GradeSubmissionPage';
+import AnalyticsDashboardPage from './pages/employer/AnalyticsDashboardPage';
+
+// ---- Admin Pages ----
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminJobsPage from './pages/admin/AdminJobsPage';
 import AdminApplicationsPage from './pages/admin/AdminApplicationsPage';
-import MyApplicationsPage from './pages/MyApplicationsPage';
 
-// ---- New Pages ----
-import LandingPage from './pages/LandingPage';
-import NotFoundPage from './pages/NotFoundPage';
+// ---- Marketing Pages ----
+import AboutPage from './pages/marketing/AboutPage';
+import ContactPage from './pages/marketing/ContactPage';
+import FaqPage from './pages/marketing/FaqPage';
+import PricingPage from './pages/marketing/PricingPage';
 
-// Auth flows
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import EmailVerificationPage from './pages/EmailVerificationPage';
+// ---- Legal Pages ----
+import PrivacyPolicyPage from './pages/marketing/PrivacyPolicyPage';
+import TermsPage from './pages/marketing/TermsPage';
+import CookiePolicyPage from './pages/marketing/CookiePolicyPage';
 
-// Marketing
-import AboutPage from './pages/AboutPage';
-import ContactPage from './pages/ContactPage';
-import FaqPage from './pages/FaqPage';
-import PricingPage from './pages/PricingPage';
-
-// Legal
-import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
-import TermsPage from './pages/TermsPage';
-import CookiePolicyPage from './pages/CookiePolicyPage';
-
-// Settings
+// ---- Settings Pages ----
 import AccountSettingsPage from './pages/settings/AccountSettingsPage';
 import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
 
