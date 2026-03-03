@@ -2,14 +2,16 @@
  * AppShell — Shared sidebar + topbar layout
  * Used by Candidate, Employer, and Admin dashboards
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useNotifications } from '../../utils/useNotifications';
 import {
     LayoutDashboard, Search, Briefcase, FileText, Trophy,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X, ShieldCheck,
-    PlusCircle, ClipboardList, Star, UserCheck
+    PlusCircle, ClipboardList, Star, UserCheck, CheckCheck,
+
 } from 'lucide-react';
 
 interface NavItem {
@@ -73,6 +75,10 @@ export default function AppShell({ children }: AppShellProps) {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [notifOpen, setNotifOpen] = useState(false);
+    const notifRef = useRef<HTMLDivElement>(null);
+
+    const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
 
     const nav = getNav(user?.role);
     const roleLabel = getRoleLabel(user?.role);
@@ -87,6 +93,17 @@ export default function AppShell({ children }: AppShellProps) {
         href === '/dashboard'
             ? location.pathname === href
             : location.pathname.startsWith(href);
+
+    // Close notification panel on outside click
+    useEffect(() => {
+        function handleClickOutside(e: MouseEvent) {
+            if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+                setNotifOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const Sidebar = ({ mobile = false }) => (
         <div
@@ -206,10 +223,83 @@ export default function AppShell({ children }: AppShellProps) {
 
                     <div className="flex-1" />
 
-                    <button className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors">
-                        <Bell size={20} />
-                        <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full" />
-                    </button>
+
+
+                    {/* Notification Bell */}
+                    <div className="relative" ref={notifRef}>
+                        <button
+                            id="notification-bell"
+                            onClick={() => setNotifOpen((o) => !o)}
+                            className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                            aria-label="Notifications"
+                        >
+                            <Bell size={20} />
+                            {unreadCount > 0 && (
+                                <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 bg-blue-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                    {unreadCount > 99 ? '99+' : unreadCount}
+                                </span>
+                            )}
+                        </button>
+
+                        {/* Notification Dropdown */}
+                        {notifOpen && (
+                            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                    <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                                    {unreadCount > 0 && (
+                                        <button
+                                            onClick={() => markAllRead()}
+                                            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
+                                        >
+                                            <CheckCheck size={13} />
+                                            Mark all read
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                                    {notifications.length === 0 ? (
+                                        <p className="text-center text-sm text-gray-400 py-8">No notifications yet</p>
+                                    ) : (
+                                        notifications.slice(0, 10).map((n) => (
+                                            <div
+                                                key={n.id}
+                                                className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${!n.is_read ? 'bg-blue-50/50' : ''}`}
+                                                onClick={() => {
+                                                    markRead(n.id);
+                                                    if (n.link) navigate(n.link);
+                                                    setNotifOpen(false);
+                                                }}
+                                            >
+                                                <div className="flex items-start gap-2">
+                                                    {!n.is_read && (
+                                                        <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                                                    )}
+                                                    <div className={!n.is_read ? '' : 'ml-3.5'}>
+                                                        <p className="text-xs font-semibold text-gray-800">{n.title}</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
+                                                        <p className="text-[10px] text-gray-400 mt-1">
+                                                            {new Date(n.created_at).toLocaleString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+
+                                <div className="border-t border-gray-100 px-4 py-2 text-center">
+                                    <Link
+                                        to="/settings/notifications"
+                                        onClick={() => setNotifOpen(false)}
+                                        className="text-xs text-blue-500 hover:text-blue-700"
+                                    >
+                                        Notification Settings
+                                    </Link>
+                                </div>
+                            </div>
+                        )}
+                    </div>
 
                     <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${roleColor} flex items-center justify-center text-white text-sm font-bold`}>
                         {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}

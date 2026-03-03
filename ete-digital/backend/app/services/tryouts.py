@@ -4,7 +4,7 @@ Business logic for trial tasks and candidate submissions
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple, Dict
 import uuid
 
@@ -214,7 +214,7 @@ class SubmissionService:
         # Escrow payment if applicable
         if tryout.payment_amount > 0:
             submission.payment_status = PaymentStatus.ESCROWED
-            submission.payment_escrowed_at = datetime.utcnow()
+            submission.payment_escrowed_at = datetime.now(timezone.utc)
         
         await db.commit()
         await db.refresh(submission)
@@ -330,7 +330,7 @@ class SubmissionService:
         submission.manual_score = manual_score
         submission.feedback = feedback
         submission.reviewed_by = str(employer_id)
-        submission.reviewed_at = datetime.utcnow()
+        submission.reviewed_at = datetime.now(timezone.utc)
         
         # Calculate final score (weighted average if auto-score exists)
         if submission.auto_score:
@@ -345,7 +345,7 @@ class SubmissionService:
             # Release payment if applicable
             if tryout.payment_amount > 0 and submission.payment_status == PaymentStatus.ESCROWED:
                 submission.payment_status = PaymentStatus.RELEASED
-                submission.payment_released_at = datetime.utcnow()
+                submission.payment_released_at = datetime.now(timezone.utc)
         else:
             submission.status = SubmissionStatus.FAILED
             

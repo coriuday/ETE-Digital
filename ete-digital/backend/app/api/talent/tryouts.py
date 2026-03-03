@@ -21,6 +21,7 @@ from app.schemas.tryouts import (
     SubmissionGradeResponse
 )
 from app.services.tryouts import tryout_service, submission_service
+from app.services.notification_service import notification_service
 
 
 router = APIRouter()
@@ -188,6 +189,18 @@ async def review_submission(
         manual_score=review_data.manual_score,
         feedback=review_data.feedback, approved=review_data.approved
     )
+
+    # Push real-time notification to candidate
+    result_label = "passed" if review_data.approved else "reviewed"
+    await notification_service.create_and_push(
+        db=db,
+        user_id=str(submission.candidate_id),
+        notif_type="tryout",
+        title=f"Tryout {result_label.capitalize()}!",
+        message=f"Your tryout submission has been {result_label}. Score: {submission.final_score or submission.manual_score}",
+        link=f"/tryouts/{submission.tryout_id}",
+    )
+
     return submission_to_response(submission)
 
 

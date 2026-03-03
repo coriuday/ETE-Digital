@@ -123,6 +123,24 @@ def decode_token(token: str) -> Dict[str, Any]:
         )
 
 
+def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
+    """
+    Safe JWT decode for use outside of HTTP context (e.g., WebSocket).
+    Returns payload dict on success, None on any failure.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            settings.JWT_SECRET_KEY,
+            algorithms=[settings.JWT_ALGORITHM]
+        )
+        if payload.get("type") != "access":
+            return None
+        return payload
+    except JWTError:
+        return None
+
+
 # ========== Field-Level Encryption ==========
 
 class FieldEncryption:
@@ -159,8 +177,14 @@ def encrypt_field(value: str) -> str:
 
 
 def decrypt_field(value: str) -> str:
-    """Decrypt a field value"""
-    return field_encryptor.decrypt(value)
+    """Decrypt a field value — returns original if decryption fails"""
+    if not value:
+        return value
+    try:
+        return field_encryptor.decrypt(value)
+    except Exception:
+        # Value wasn't encrypted (e.g., old data or test data) — return as-is
+        return value
 
 
 # ========== RBAC Decorators ==========

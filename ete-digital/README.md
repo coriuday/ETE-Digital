@@ -164,7 +164,7 @@ Authorization: Bearer <token>
   "company": "Tech Corp",
   "description": "...",
   "requirements": "...",
-  "job_type": "FULL_TIME",
+  "job_type": "full_time",
   "remote_ok": true,
   "salary_min": 100000,
   "salary_max": 150000,
@@ -339,7 +339,7 @@ ete-digital/
 - ✅ **Token Rotation:** Automatic refresh token rotation
 - ✅ **Field Encryption:** Fernet encryption for PII
 - ✅ **RBAC:** Role-based access control
-- ✅ **Rate Limiting:** Architecture ready (implement with SlowAPI)
+- ✅ **Rate Limiting:** SlowAPI — auth endpoints (5 req/min login/register, 3/min forgot-password)
 - ✅ **CORS:** Configurable origins
 - ✅ **SQL Injection:** Prevented (SQLAlchemy ORM)
 - ✅ **XSS:** React's built-in protection
@@ -427,19 +427,22 @@ This project is licensed under the **MIT License** - see [`LICENSE`](LICENSE) fi
 - [x] Share token system
 - [x] Public access via tokens
 
-### Phase 4: Frontend (In Progress)
+### Phase 4: Frontend ✅ COMPLETE
 
-- [ ] Authentication UI
-- [ ] Job search & listings
-- [ ] Tryout submission interface
-- [ ] Talent vault management
+- [x] Authentication UI (Login, Register, Forgot Password)
+- [x] Job search & listings with filtering
+- [x] Tryout submission interface
+- [x] Talent vault management (CRUD, sharing)
+- [x] Employer & candidate dashboards
+- [x] Application management
 
-### Phase 5: Advanced Features
+### Phase 5: Advanced Features ✅ COMPLETE
 
-- [ ] Notification system
-- [ ] Admin panel
-- [ ] Search & matching engine
-- [ ] WebSocket support
+- [x] **Rate Limiting** — SlowAPI on auth endpoints (429 on abuse)
+- [x] **Real-Time Notifications** — WebSocket push with JWT auth gate
+- [x] **Notification bell** — Live unread badge + dropdown in AppShell
+- [x] **Backend Test Suite** — 21 pytest tests (auth, jobs, vault, rate limiting)
+- [x] **Frontend Test Suite** — 18 Vitest tests (auth, jobs, vault, notifications)
 
 ### Phase 6: Production
 
@@ -447,6 +450,7 @@ This project is licensed under the **MIT License** - see [`LICENSE`](LICENSE) fi
 - [ ] Monitoring (Prometheus, Grafana)
 - [ ] Security audit
 - [ ] Performance optimization
+- [ ] Payment integration
 
 ---
 

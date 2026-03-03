@@ -33,7 +33,7 @@ export default function AdminJobsPage() {
             const params: Record<string, any> = { page, page_size: PAGE_SIZE };
             if (search) params.search = search;
             if (statusFilter) params.status = statusFilter;
-            const res = await api.get('/api/jobs/all', { params });
+            const res = await api.get('/api/admin/jobs', { params });
             setJobs(res.data.jobs ?? []);
             setTotal(res.data.total ?? 0);
         } catch {
@@ -133,8 +133,8 @@ export default function AdminJobsPage() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${job.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' :
-                                                        job.status === 'CLOSED' ? 'bg-red-100 text-red-600' :
-                                                            'bg-gray-100 text-gray-500'
+                                                    job.status === 'CLOSED' ? 'bg-red-100 text-red-600' :
+                                                        'bg-gray-100 text-gray-500'
                                                     }`}>
                                                     {job.status}
                                                 </span>

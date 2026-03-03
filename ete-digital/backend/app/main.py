@@ -5,7 +5,15 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 from app.core.config import settings
+
+
+# ---- Rate Limiter ----
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 
 # ---- Security Headers Middleware ----
@@ -15,26 +23,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         response: Response = await call_next(request)
-        # Prevent MIME type sniffing
         response.headers["X-Content-Type-Options"] = "nosniff"
-        # Prevent clickjacking
         response.headers["X-Frame-Options"] = "DENY"
-        # Enable browser XSS protection
         response.headers["X-XSS-Protection"] = "1; mode=block"
-        # Referrer policy
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        # Permissions policy - disable sensitive APIs
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-        # Content Security Policy
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
             "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             "font-src 'self' https://fonts.gstatic.com; "
             "img-src 'self' data: https:; "
-            "connect-src 'self';"
+            "connect-src 'self' ws: wss:;"
         )
-        # HSTS (only in production)
         if settings.ENVIRONMENT == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
@@ -48,6 +49,11 @@ app = FastAPI(
     docs_url="/api/docs" if settings.DEBUG else None,
     redoc_url="/api/redoc" if settings.DEBUG else None,
 )
+
+# Rate Limiter state + handler
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 # Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
@@ -92,7 +98,7 @@ from app.api.auth import auth
 from app.api.users import users
 from app.api.jobs import jobs, analytics
 from app.api.talent import tryouts, vault
-from app.api.platform import notifications, admin
+from app.api.platform import notifications, admin, websocket
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
@@ -102,4 +108,4 @@ app.include_router(vault.router, prefix="/api/vault", tags=["Talent Vault"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
-
+app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])

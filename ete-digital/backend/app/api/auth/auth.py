@@ -18,6 +18,7 @@ from app.schemas.users import (
     UserResponse
 )
 from app.services.auth import auth_service
+from app.main import limiter
 from pydantic import BaseModel
 
 
@@ -30,7 +31,9 @@ class OptionalRefreshRequest(BaseModel):
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def register(
+    request: Request,
     user_data: UserRegister,
     db: AsyncSession = Depends(get_db)
 ):
@@ -73,14 +76,15 @@ async def verify_email(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("5/minute")
 async def login(
-    login_data: UserLogin,
     request: Request,
+    login_data: UserLogin,
     db: AsyncSession = Depends(get_db)
 ):
     """
     Login with email and password
-    
+
     Returns access token and refresh token
     """
     ip_address = request.client.host if request.client else None
@@ -122,7 +126,9 @@ async def refresh_token(
 
 
 @router.post("/forgot-password", response_model=dict)
+@limiter.limit("3/minute")
 async def forgot_password(
+    request: Request,
     reset_data: PasswordResetRequest,
     db: AsyncSession = Depends(get_db)
 ):

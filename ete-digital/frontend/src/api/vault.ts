@@ -43,7 +43,9 @@ export const vaultApi = {
     // Get all vault items
     getVaultItems: async (): Promise<VaultItem[]> => {
         const response = await api.get('/api/vault/items');
-        return response.data;
+        // Backend returns paginated: { items: VaultItem[], total: number, page: number, page_size: number }
+        const data = response.data;
+        return Array.isArray(data) ? data : (data?.items ?? []);
     },
 
     // Get single vault item

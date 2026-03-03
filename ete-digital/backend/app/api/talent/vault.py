@@ -1,10 +1,11 @@
 """
 Talent Vault API endpoints
 """
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import uuid
+import io
 
 from app.core.database import get_db
 from app.core.security import get_current_user, require_role
@@ -23,6 +24,7 @@ from app.schemas.vault import (
     VaultStatsResponse
 )
 from app.services.vault import vault_service, share_token_service
+from app.services.storage import storage_service
 
 
 router = APIRouter()
@@ -66,6 +68,58 @@ async def create_vault_item(
     item = await vault_service.create_vault_item(
         db=db, candidate_id=uuid.UUID(current_user["user_id"]),
         item_data=item_data.model_dump()
+    )
+    return item_to_response(item)
+
+
+@router.post("/items/upload", response_model=VaultItemResponse, status_code=status.HTTP_201_CREATED)
+async def upload_vault_file(
+    title: str = Form(...),
+    description: str = Form(""),
+    item_type: str = Form("project"),
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_role(UserRole.CANDIDATE)),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Upload a file to MinIO and create a vault item referencing it.
+    Accepts multipart/form-data. When MinIO is not configured, returns 503.
+    """
+    user_id = current_user["user_id"]
+
+    # Read file bytes
+    content = await file.read()
+    file_size = len(content)
+    content_type = file.content_type or "application/octet-stream"
+
+    # Build storage path
+    file_path = storage_service.get_file_path("vault", user_id, file.filename or "upload")
+
+    # Upload to MinIO
+    url = storage_service.upload_file(
+        file_data=io.BytesIO(content),
+        file_path=file_path,
+        content_type=content_type,
+        file_size=file_size,
+    )
+    if url is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is not available. Configure MinIO to enable uploads.",
+        )
+
+    # Create vault item
+    item = await vault_service.create_vault_item(
+        db=db,
+        candidate_id=uuid.UUID(user_id),
+        item_data={
+            "type": item_type,
+            "title": title,
+            "description": description,
+            "file_url": url,
+            "file_type": content_type,
+            "file_size_bytes": file_size,
+        },
     )
     return item_to_response(item)
 

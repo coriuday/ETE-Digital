@@ -4,7 +4,7 @@ Business logic for user registration, login, and token management
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 import secrets
 import uuid
@@ -55,7 +55,7 @@ class AuthService:
             role=role,
             is_verified=is_dev,   # True in dev, False in production
             verification_token=None if is_dev else secrets.token_urlsafe(32),
-            verification_token_expires=None if is_dev else (datetime.utcnow() + timedelta(hours=24))
+            verification_token_expires=None if is_dev else (datetime.now(timezone.utc) + timedelta(hours=24))
         )
         db.add(user)
         await db.flush()
@@ -85,7 +85,7 @@ class AuthService:
         result = await db.execute(
             select(User).where(
                 User.verification_token == token,
-                User.verification_token_expires > datetime.utcnow()
+                User.verification_token_expires > datetime.now(timezone.utc)
             )
         )
         user = result.scalar_one_or_none()
@@ -136,7 +136,7 @@ class AuthService:
             )
         
         # Update last login
-        user.last_login_at = datetime.utcnow()
+        user.last_login_at = datetime.now(timezone.utc)
         
         # Create tokens
         token_data = {
@@ -152,7 +152,7 @@ class AuthService:
         refresh_token = RefreshToken(
             user_id=user.id,
             token=refresh_token_str,
-            expires_at=datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
             ip_address=ip_address,
             user_agent=user_agent
         )
@@ -172,7 +172,7 @@ class AuthService:
             select(RefreshToken).where(
                 RefreshToken.token == refresh_token_str,
                 RefreshToken.is_revoked == False,
-                RefreshToken.expires_at > datetime.utcnow()
+                RefreshToken.expires_at > datetime.now(timezone.utc)
             )
         )
         refresh_token = result.scalar_one_or_none()
@@ -212,7 +212,7 @@ class AuthService:
         new_refresh = RefreshToken(
             user_id=user.id,
             token=new_refresh_token,
-            expires_at=datetime.utcnow() + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
             ip_address=refresh_token.ip_address,
             user_agent=refresh_token.user_agent
         )
@@ -232,7 +232,7 @@ class AuthService:
         
         # Generate reset token
         user.reset_token = secrets.token_urlsafe(32)
-        user.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+        user.reset_token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
         await db.commit()
         
         # Send reset email
@@ -251,7 +251,7 @@ class AuthService:
         result = await db.execute(
             select(User).where(
                 User.reset_token == token,
-                User.reset_token_expires > datetime.utcnow()
+                User.reset_token_expires > datetime.now(timezone.utc)
             )
         )
         user = result.scalar_one_or_none()

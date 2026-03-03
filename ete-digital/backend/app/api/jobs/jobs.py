@@ -22,6 +22,7 @@ from app.schemas.jobs import (
     ApplicationStatusUpdate
 )
 from app.services.jobs import job_service, application_service
+from app.services.notification_service import notification_service
 
 
 router = APIRouter()
@@ -168,6 +169,16 @@ async def update_application_status(
         new_status=status_data.status, employer_notes=status_data.employer_notes
     )
 
+    # Push real-time notification to candidate
+    await notification_service.create_and_push(
+        db=db,
+        user_id=str(application.candidate_id),
+        notif_type="application",
+        title="Application Status Updated",
+        message=f"Your application status has been updated to: {application.status.value}",
+        link=f"/dashboard/applications",
+    )
+
     return ApplicationResponse(
         id=str(application.id), job_id=str(application.job_id), candidate_id=str(application.candidate_id),
         cover_letter=application.cover_letter, vault_share_token=application.vault_share_token,
@@ -186,9 +197,10 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
-    await job_service.increment_view_count(db, uuid.UUID(job_id))
-
-    return JobResponse(
+    # Build the response BEFORE calling increment_view_count.
+    # increment_view_count commits, which expires all ORM objects in the session.
+    # Accessing job.status after expiry triggers a lazy load → MissingGreenlet in async.
+    response = JobResponse(
         id=str(job.id), employer_id=str(job.employer_id), title=job.title, company=job.company,
         description=job.description, requirements=job.requirements, job_type=job.job_type,
         location=job.location, remote_ok=job.remote_ok, salary_min=job.salary_min,
@@ -199,6 +211,11 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
         applications_count=job.applications_count, created_at=job.created_at,
         updated_at=job.updated_at, published_at=job.published_at, expires_at=job.expires_at
     )
+
+    # Fire view count increment after response is built (commit will expire the job object)
+    await job_service.increment_view_count(db, uuid.UUID(job_id))
+
+    return response
 
 
 @router.put("/{job_id}", response_model=JobResponse)

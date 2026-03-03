@@ -4,7 +4,7 @@ Business logic for job CRUD, search, and application management
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 import uuid
 
@@ -26,7 +26,7 @@ class JobService:
         job = Job(
             employer_id=employer_id,
             status=JobStatus.ACTIVE,
-            published_at=datetime.utcnow(),
+            published_at=datetime.now(timezone.utc),
             **job_data
         )
         db.add(job)
@@ -128,7 +128,7 @@ class JobService:
             )
         
         job.status = JobStatus.ACTIVE
-        job.published_at = datetime.utcnow()
+        job.published_at = datetime.now(timezone.utc)
         await db.commit()
         await db.refresh(job)
         return job
@@ -228,11 +228,14 @@ class JobService:
         db: AsyncSession,
         job_id: uuid.UUID
     ) -> None:
-        """Increment job view count"""
-        job = await self.get_job(db, job_id)
-        if job:
-            job.views_count += 1
-            await db.commit()
+        """Increment job view count using a direct SQL UPDATE to avoid session expunge issues."""
+        from sqlalchemy import update as sql_update
+        await db.execute(
+            sql_update(Job)
+            .where(Job.id == job_id)
+            .values(views_count=Job.views_count + 1)
+        )
+        await db.commit()
 
 
 class ApplicationService:

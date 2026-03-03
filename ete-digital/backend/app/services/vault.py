@@ -4,7 +4,7 @@ Business logic for candidate portfolio management
 """
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, List, Tuple, Dict
 import uuid
 
@@ -273,7 +273,7 @@ class ShareTokenService:
             # Create token
             expires_at = None
             if expires_hours:
-                expires_at = datetime.utcnow() + timedelta(hours=expires_hours)
+                expires_at = datetime.now(timezone.utc) + timedelta(hours=expires_hours)
             
             token = VaultShareToken(
                 vault_item_id=item_id,
@@ -302,8 +302,12 @@ class ShareTokenService:
         token_str: str
     ) -> Optional[VaultShareToken]:
         """Get share token by token string"""
+        try:
+            token_uuid = uuid.UUID(token_str)
+        except (ValueError, AttributeError):
+            return None
         result = await db.execute(
-            select(VaultShareToken).where(VaultShareToken.token == token_str)
+            select(VaultShareToken).where(VaultShareToken.token == token_uuid)
         )
         return result.scalar_one_or_none()
     
@@ -329,7 +333,7 @@ class ShareTokenService:
             )
         
         # Check if expired
-        if token.expires_at and token.expires_at < datetime.utcnow():
+        if token.expires_at and token.expires_at < datetime.now(timezone.utc):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Share token has expired"
@@ -356,7 +360,7 @@ class ShareTokenService:
         
         # Increment view counts
         token.view_count += 1
-        token.last_accessed_at = datetime.utcnow()
+        token.last_accessed_at = datetime.now(timezone.utc)
         item.view_count += 1
         
         await db.commit()
