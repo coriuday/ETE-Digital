@@ -19,6 +19,7 @@ from app.schemas.jobs import (
     ApplicationUpdate,
     ApplicationResponse,
     ApplicationListResponse,
+    ApplicationDetailResponse,
     ApplicationStatusUpdate
 )
 from app.services.jobs import job_service, application_service
@@ -139,20 +140,88 @@ async def get_my_applications(
     db: AsyncSession = Depends(get_db)
 ):
     """Get all applications for current candidate"""
-    applications, total = await application_service.get_candidate_applications(
-        db=db, candidate_id=uuid.UUID(current_user["user_id"]), page=page, page_size=page_size
-    )
+    from sqlalchemy import select as sa_select
+    from app.models.jobs import Application, Job
 
-    def to_app_response(app):
+    offset = (page - 1) * page_size
+    stmt = (
+        sa_select(Application, Job.title, Job.company)
+        .outerjoin(Job, Job.id == Application.job_id)
+        .where(Application.candidate_id == uuid.UUID(current_user["user_id"]))
+        .order_by(Application.created_at.desc())
+        .offset(offset)
+        .limit(page_size)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+
+    # Total count
+    from sqlalchemy import func
+    count_stmt = sa_select(func.count()).select_from(Application).where(
+        Application.candidate_id == uuid.UUID(current_user["user_id"])
+    )
+    total = (await db.execute(count_stmt)).scalar_one()
+
+    def to_app_response(app, job_title, company):
         return ApplicationResponse(
             id=str(app.id), job_id=str(app.job_id), candidate_id=str(app.candidate_id),
             cover_letter=app.cover_letter, vault_share_token=app.vault_share_token,
             custom_answers=app.custom_answers, status=app.status, match_score=app.match_score,
             match_explanation=app.match_explanation, employer_notes=app.employer_notes,
+            job_title=job_title, company_name=company,
             created_at=app.created_at, updated_at=app.updated_at
         )
 
-    return ApplicationListResponse(applications=[to_app_response(a) for a in applications], total=total, page=page, page_size=page_size)
+    return ApplicationListResponse(
+        applications=[to_app_response(row[0], row[1], row[2]) for row in rows],
+        total=total, page=page, page_size=page_size
+    )
+
+
+@router.get("/applications/{application_id}", response_model=ApplicationDetailResponse)
+async def get_application_detail(
+    application_id: str,
+    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get full application detail (Employer only) — includes candidate name, email, job title"""
+    from sqlalchemy import select as sa_select
+    from app.models.jobs import Application, Job
+    from app.models.users import User, UserProfile
+
+    stmt = (
+        sa_select(Application, Job.title, User.email, UserProfile.full_name)
+        .outerjoin(Job, Job.id == Application.job_id)
+        .outerjoin(User, User.id == Application.candidate_id)
+        .outerjoin(UserProfile, UserProfile.user_id == Application.candidate_id)
+        .where(Application.id == uuid.UUID(application_id))
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    app, job_title, candidate_email, candidate_name = row
+
+    # Verify this employer owns the job
+    if str(app.job_id) not in [
+        str(j.id) for j in (await db.execute(
+            sa_select(Job).where(Job.employer_id == uuid.UUID(current_user["user_id"]))
+        )).scalars().all()
+    ]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    return ApplicationDetailResponse(
+        id=str(app.id), job_id=str(app.job_id), candidate_id=str(app.candidate_id),
+        cover_letter=app.cover_letter, vault_share_token=app.vault_share_token,
+        custom_answers=app.custom_answers, status=app.status, match_score=app.match_score,
+        match_explanation=app.match_explanation, employer_notes=app.employer_notes,
+        candidate_name=candidate_name or "Unknown Candidate",
+        candidate_email=candidate_email or "",
+        job_title=job_title or "Unknown Job",
+        created_at=app.created_at, updated_at=app.updated_at
+    )
 
 
 @router.put("/applications/{application_id}/status", response_model=ApplicationResponse)

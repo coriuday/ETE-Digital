@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react';
 import AppShell from '../../components/layout/AppShell';
 import { Users, Search, CheckCircle2, XCircle, Shield } from 'lucide-react';
 import { api } from '../../api/client';
+import { useAuthStore } from '../../stores/authStore';
 
 interface AdminUser {
     id: string;
@@ -22,6 +23,7 @@ const roleColors: Record<string, string> = {
 };
 
 export default function AdminUsersPage() {
+    const { user: currentUser } = useAuthStore();
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(true);
@@ -153,15 +155,21 @@ export default function AdminUsersPage() {
                                                 {new Date(user.created_at).toLocaleDateString()}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <button
-                                                    onClick={() => toggleActive(user.id)}
-                                                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${user.is_active
-                                                        ? 'bg-red-50 text-red-600 hover:bg-red-100'
-                                                        : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
-                                                        }`}
-                                                >
-                                                    {user.is_active ? 'Deactivate' : 'Activate'}
-                                                </button>
+                                                {user.id === currentUser?.id ? (
+                                                    <span className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed">
+                                                        You
+                                                    </span>
+                                                ) : (
+                                                    <button
+                                                        onClick={() => toggleActive(user.id)}
+                                                        className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${user.is_active
+                                                            ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                                            : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
+                                                            }`}
+                                                    >
+                                                        {user.is_active ? 'Deactivate' : 'Activate'}
+                                                    </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

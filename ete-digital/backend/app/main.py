@@ -1,9 +1,12 @@
 """
 FastAPI Application Main Entry Point
 """
+from contextlib import asynccontextmanager
+import os
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -41,6 +44,22 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+# ---- Application Lifespan (startup / shutdown) ----
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Manage startup and shutdown events."""
+    # Startup
+    from app.services.scheduler import start_scheduler
+    start_scheduler()
+
+    yield  # Application running
+
+    # Shutdown
+    from app.services.scheduler import stop_scheduler
+    stop_scheduler()
+
+
 # Create FastAPI app
 app = FastAPI(
     title=settings.APP_NAME,
@@ -48,6 +67,7 @@ app = FastAPI(
     description="End-to-End Job Platform with Outcome-Driven Hiring",
     docs_url="/api/docs" if settings.DEBUG else None,
     redoc_url="/api/redoc" if settings.DEBUG else None,
+    lifespan=lifespan,
 )
 
 # Rate Limiter state + handler
@@ -109,3 +129,8 @@ app.include_router(notifications.router, prefix="/api/notifications", tags=["Not
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
+
+# Serve uploaded files (resumes, avatars)
+_uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+os.makedirs(_uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")

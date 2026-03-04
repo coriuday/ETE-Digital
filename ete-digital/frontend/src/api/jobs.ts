@@ -134,4 +134,10 @@ export const jobsApi = {
         });
         return response.data;
     },
+
+    // Get full application detail for employer (real candidate name, email, job title)
+    getApplicationDetail: async (applicationId: string): Promise<any> => {
+        const response = await api.get(`/api/jobs/applications/${applicationId}`);
+        return response.data;
+    },
 };

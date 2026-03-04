@@ -9,7 +9,7 @@ from typing import Optional, List, Tuple
 import uuid
 
 from app.models.jobs import Job, Application, JobStatus, ApplicationStatus
-from app.models.users import User, UserRole
+from app.models.users import User, UserRole, UserProfile
 from fastapi import HTTPException, status
 
 
@@ -283,17 +283,44 @@ class ApplicationService:
                 detail="You have already applied to this job"
             )
         
+        # Compute skills-based match score (0–100)
+        candidate_skills: list = []
+        try:
+            profile_result = await db.execute(
+                select(UserProfile).where(UserProfile.user_id == candidate_id)
+            )
+            profile = profile_result.scalar_one_or_none()
+            if profile and profile.skills:
+                candidate_skills = [s.lower().strip() for s in profile.skills]
+        except Exception:
+            pass  # Match score is optional — never block an application
+
+        job_skills: list = [s.lower().strip() for s in (job.skills_required or [])]
+        if job_skills:
+            matched = len(set(candidate_skills) & set(job_skills))
+            match_score = min(100, round(matched / len(job_skills) * 100))
+        else:
+            # No job skills listed — score based on keyword overlap in title/description
+            import re
+            jd_words = set(re.findall(r"[a-zA-Z]{4,}", (job.description or "").lower()))
+            cv_words = set(re.findall(r"[a-zA-Z]{4,}", " ".join(candidate_skills)))
+            if jd_words:
+                match_score = min(100, round(len(cv_words & jd_words) / len(jd_words) * 100))
+            else:
+                match_score = None
+
         # Create application
         application = Application(
             candidate_id=candidate_id,
             **application_data,
-            status=ApplicationStatus.PENDING
+            status=ApplicationStatus.PENDING,
+            match_score=match_score
         )
         db.add(application)
-        
+
         # Increment application count
         job.applications_count += 1
-        
+
         await db.commit()
         await db.refresh(application)
         return application

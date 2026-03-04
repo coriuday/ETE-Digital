@@ -11,7 +11,6 @@ import {
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X, ShieldCheck,
     PlusCircle, ClipboardList, Star, UserCheck, CheckCheck,
-
 } from 'lucide-react';
 
 interface NavItem {
@@ -301,9 +300,6 @@ export default function AppShell({ children }: AppShellProps) {
                         )}
                     </div>
 
-                    <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${roleColor} flex items-center justify-center text-white text-sm font-bold`}>
-                        {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
-                    </div>
                 </header>
 
                 {/* Page Content */}

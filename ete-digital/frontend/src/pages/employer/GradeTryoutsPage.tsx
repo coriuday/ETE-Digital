@@ -1,22 +1,34 @@
 /**
- * Grade Tryouts Page - Review and grade tryout submissions
+ * Grade Tryouts Page — Employer reviews and grades candidate submissions.
+ * Fetches real submissions from the backend via tryoutsApi.
  */
 import { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { ClipboardList, Star, GitBranch, Calendar, ChevronRight, RefreshCw } from 'lucide-react';
+import AppShell from '../../components/layout/AppShell';
+import { tryoutsApi } from '../../api/tryouts';
 
 interface Submission {
     id: string;
     tryout_id: string;
-    tryout_title: string;
     candidate_id: string;
-    candidate_name: string;
-    github_url?: string;
-    demo_url?: string;
+    submission_url?: string;
     notes?: string;
     status: string;
-    submitted_at: string;
-    score?: number;
+    auto_score?: number;
+    manual_score?: number;
+    final_score?: number;
+    feedback?: string;
+    created_at: string;
+    reviewed_at?: string;
 }
+
+const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
+    submitted: { color: 'bg-amber-100 text-amber-700', label: 'Pending Review' },
+    auto_graded: { color: 'bg-blue-100 text-blue-700', label: 'Auto-Graded' },
+    passed: { color: 'bg-emerald-100 text-emerald-700', label: 'Passed ✓' },
+    failed: { color: 'bg-red-100 text-red-600', label: 'Failed' },
+};
 
 export default function GradeTryoutsPage() {
     const [searchParams] = useSearchParams();
@@ -24,6 +36,7 @@ export default function GradeTryoutsPage() {
 
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [filter, setFilter] = useState<string>('all');
 
     useEffect(() => {
@@ -31,116 +44,193 @@ export default function GradeTryoutsPage() {
     }, [tryoutId]);
 
     const loadSubmissions = async () => {
+        setLoading(true);
+        setError('');
         try {
-            setSubmissions([]);
-            setLoading(false);
-        } catch (error) {
-            console.error('Failed to load submissions:', error);
+            if (tryoutId) {
+                // Load submissions for a specific tryout
+                const res = await tryoutsApi.getTryoutSubmissions(tryoutId);
+                setSubmissions(res.submissions ?? []);
+            } else {
+                // No specific tryout selected — show empty state with guidance
+                setSubmissions([]);
+            }
+        } catch (err: any) {
+            setError(err?.response?.data?.detail || 'Failed to load submissions. Please try again.');
+        } finally {
             setLoading(false);
         }
     };
 
-    const filteredSubmissions = submissions.filter(sub => {
-        if (filter === 'all') return true;
-        return sub.status === filter;
-    });
+    const filtered = submissions.filter(sub =>
+        filter === 'all' || sub.status === filter
+    );
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'pending': return 'bg-yellow-100 text-yellow-700';
-            case 'graded': return 'bg-green-100 text-green-700';
-            case 'rejected': return 'bg-red-100 text-red-700';
-            default: return 'bg-gray-100 text-gray-700';
-        }
-    };
+    const counts: Record<string, number> = { all: submissions.length };
+    submissions.forEach(s => { counts[s.status] = (counts[s.status] || 0) + 1; });
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading submissions...</p>
-                </div>
-            </div>
-        );
-    }
+    const getScore = (sub: Submission) => sub.final_score ?? sub.auto_score ?? sub.manual_score;
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="bg-white shadow">
-                <div className="container mx-auto px-4 py-6">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">Grade Tryouts</h1>
-                            <p className="text-gray-600 mt-1">Review and score candidate submissions</p>
-                        </div>
-                        <Link to="/employer/dashboard" className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                            Back to Dashboard
+        <AppShell>
+            <div className="p-6 lg:p-8 space-y-6">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900">Grade Tryouts</h1>
+                        <p className="text-gray-500 mt-1 text-sm">
+                            {tryoutId
+                                ? `Showing submissions for tryout ${tryoutId.slice(0, 8)}…`
+                                : 'Select a tryout from your jobs page to view submissions'}
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={loadSubmissions}
+                            disabled={loading}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition-colors disabled:opacity-50"
+                        >
+                            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+                            Refresh
+                        </button>
+                        <Link
+                            to="/employer/dashboard"
+                            className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
+                        >
+                            ← Dashboard
                         </Link>
                     </div>
                 </div>
-            </div>
 
-            <div className="container mx-auto px-4 py-6">
-                {/* Filter */}
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                    <div className="flex items-center gap-4">
-                        <label className="text-sm font-medium text-gray-700">Filter:</label>
-                        {['all', 'pending', 'graded'].map(f => (
-                            <button key={f} onClick={() => setFilter(f)}
-                                className={`px-4 py-2 rounded-lg transition capitalize ${filter === f ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
-                                {f} ({f === 'all' ? submissions.length : submissions.filter(s => s.status === f).length})
-                            </button>
+                {/* Filter tabs */}
+                {submissions.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                        {['all', 'submitted', 'auto_graded', 'passed', 'failed'].map(f => {
+                            const n = counts[f] ?? 0;
+                            if (f !== 'all' && n === 0) return null;
+                            const cfg = STATUS_CONFIG[f];
+                            return (
+                                <button
+                                    key={f}
+                                    onClick={() => setFilter(f)}
+                                    className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all capitalize ${filter === f
+                                        ? 'bg-gray-900 text-white border-gray-900'
+                                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                                        }`}
+                                >
+                                    {cfg?.label ?? 'All'} ({n})
+                                </button>
+                            );
+                        })}
+                    </div>
+                )}
+
+                {/* Content */}
+                {loading ? (
+                    <div className="space-y-3">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="h-24 bg-gray-100 rounded-2xl animate-pulse" />
                         ))}
                     </div>
-                </div>
-
-                {filteredSubmissions.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow p-12 text-center">
-                        <div className="text-6xl mb-4">📝</div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No submissions yet</h3>
-                        <p className="text-gray-600">
-                            {submissions.length === 0 ? 'No tryout submissions received yet' : 'No submissions match your filter'}
+                ) : error ? (
+                    <div className="bg-red-50 border border-red-200 rounded-2xl p-6 text-center">
+                        <p className="text-red-600 text-sm font-medium">{error}</p>
+                        <button
+                            onClick={loadSubmissions}
+                            className="mt-3 px-4 py-2 bg-white border border-red-200 rounded-xl text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                            Retry
+                        </button>
+                    </div>
+                ) : !tryoutId ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-14 text-center">
+                        <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <ClipboardList size={28} className="text-violet-500" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No tryout selected</h3>
+                        <p className="text-gray-500 text-sm mb-6">
+                            Go to your jobs, open a job with a tryout, and click "View Submissions".
+                        </p>
+                        <Link
+                            to="/employer/jobs"
+                            className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors"
+                        >
+                            View My Jobs <ChevronRight size={15} />
+                        </Link>
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-14 text-center">
+                        <div className="text-5xl mb-4">📝</div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-1">No submissions yet</h3>
+                        <p className="text-gray-500 text-sm">
+                            {submissions.length === 0
+                                ? 'No candidates have submitted to this tryout yet.'
+                                : `No submissions match the "${filter}" filter.`}
                         </p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {filteredSubmissions.map(sub => (
-                            <div key={sub.id} className="bg-white rounded-lg shadow p-6">
-                                <div className="flex justify-between items-start">
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="text-lg font-semibold text-gray-900">{sub.candidate_name}</h3>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(sub.status)}`}>{sub.status}</span>
-                                            {sub.score !== undefined && (
-                                                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">Score: {sub.score}/100</span>
-                                            )}
+                    <div className="space-y-3">
+                        {filtered.map(sub => {
+                            const cfg = STATUS_CONFIG[sub.status] ?? STATUS_CONFIG.submitted;
+                            const score = getScore(sub);
+                            return (
+                                <div key={sub.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-gray-200 transition-all">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div className="flex items-start gap-4 flex-1">
+                                            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0">
+                                                {sub.candidate_id.slice(0, 2).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                                    <p className="text-sm font-semibold text-gray-800">
+                                                        Candidate {sub.candidate_id.slice(0, 8)}…
+                                                    </p>
+                                                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.color}`}>
+                                                        {cfg.label}
+                                                    </span>
+                                                    {score !== undefined && score !== null && (
+                                                        <span className="flex items-center gap-1 px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-full text-xs font-semibold">
+                                                            <Star size={10} /> {score}/100
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                                    <span className="flex items-center gap-1">
+                                                        <Calendar size={11} />
+                                                        Submitted {new Date(sub.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                    {sub.submission_url && (
+                                                        <a
+                                                            href={sub.submission_url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="flex items-center gap-1 text-violet-600 hover:text-violet-700 font-medium"
+                                                        >
+                                                            <GitBranch size={11} /> View Submission
+                                                        </a>
+                                                    )}
+                                                    {sub.notes && (
+                                                        <span className="text-gray-400 truncate max-w-xs" title={sub.notes}>
+                                                            "{sub.notes.slice(0, 60)}{sub.notes.length > 60 ? '…' : ''}"
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
-                                        <p className="text-gray-600 mb-3">{sub.tryout_title}</p>
-                                        <div className="flex items-center gap-4 text-sm text-gray-600 mb-3">
-                                            <span>📅 Submitted {new Date(sub.submitted_at).toLocaleDateString()}</span>
-                                        </div>
-                                        <div className="flex items-center gap-3">
-                                            {sub.github_url && (
-                                                <a href={sub.github_url} target="_blank" rel="noopener noreferrer"
-                                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium">GitHub Repo →</a>
-                                            )}
-                                            {sub.demo_url && (
-                                                <a href={sub.demo_url} target="_blank" rel="noopener noreferrer"
-                                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium">Live Demo →</a>
-                                            )}
-                                        </div>
+                                        <Link
+                                            to={`/employer/tryouts/grade/${sub.id}`}
+                                            className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors text-sm font-semibold flex-shrink-0"
+                                        >
+                                            {sub.status === 'submitted' ? 'Grade Now' : 'View Details'}
+                                            <ChevronRight size={14} />
+                                        </Link>
                                     </div>
-                                    <Link to={`/employer/tryouts/grade/${sub.id}`}
-                                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition text-sm font-medium">
-                                        {sub.status === 'pending' ? 'Grade Now' : 'View Details'}
-                                    </Link>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
-        </div>
+        </AppShell>
     );
 }

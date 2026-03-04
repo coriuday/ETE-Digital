@@ -2,7 +2,7 @@
  * Applications Page - Employer view all applications
  */
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
 
 interface Application {
@@ -18,10 +18,11 @@ interface Application {
 }
 
 export default function ApplicationsPage() {
+    const [searchParams] = useSearchParams();
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [filterJob, setFilterJob] = useState<string>('all');
+    const [filterJob, setFilterJob] = useState<string>(searchParams.get('job') || 'all');
     const [jobs, setJobs] = useState<any[]>([]);
 
     useEffect(() => {

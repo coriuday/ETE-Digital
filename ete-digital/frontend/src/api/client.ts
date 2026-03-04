@@ -26,10 +26,36 @@ api.interceptors.request.use(
     (error) => Promise.reject(error)
 );
 
-// Response interceptor - Handle token refresh
+/**
+ * Normalise FastAPI / Pydantic error responses so `error.response.data.detail`
+ * is always a string. Without this, rendering `detail` directly in JSX crashes
+ * React when detail is an array of ValidationError objects (422 responses).
+ */
+function normaliseErrorDetail(error: AxiosError): AxiosError {
+    const data = error.response?.data as any;
+    if (!data) return error;
+
+    if (Array.isArray(data.detail)) {
+        // Pydantic v2 validation errors → flatten to one readable message
+        data.detail = (data.detail as any[])
+            .map((e) => {
+                const field = Array.isArray(e.loc) ? e.loc.join('.') : String(e.loc ?? '');
+                return field ? `${field}: ${e.msg}` : e.msg;
+            })
+            .join('; ');
+    } else if (data.detail && typeof data.detail === 'object') {
+        data.detail = JSON.stringify(data.detail);
+    }
+    return error;
+}
+
+// Response interceptor - Handle token refresh + error normalisation
 api.interceptors.response.use(
     (response) => response,
     async (error: AxiosError) => {
+        // Always normalise error detail FIRST so UI never crashes on raw objects
+        normaliseErrorDetail(error);
+
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
         // If 401 and not already retried, try to refresh token

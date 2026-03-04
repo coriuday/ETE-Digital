@@ -77,6 +77,24 @@ export const vaultApi = {
         await api.delete(`/api/vault/items/${itemId}`);
     },
 
+    // Upload a file to MinIO and create a vault item
+    uploadVaultFile: async (data: {
+        file: File;
+        title: string;
+        description?: string;
+        item_type?: string;
+    }): Promise<VaultItem> => {
+        const form = new FormData();
+        form.append('file', data.file);
+        form.append('title', data.title);
+        form.append('description', data.description ?? '');
+        form.append('item_type', data.item_type ?? 'project');
+        const response = await api.post('/api/vault/items/upload', form, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data;
+    },
+
     // Get vault statistics
     getVaultStats: async (): Promise<VaultStats> => {
         const response = await api.get('/api/vault/stats');

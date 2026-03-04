@@ -141,6 +141,37 @@ class ApplicationResponse(BaseModel):
     
     employer_notes: Optional[str]
     
+    # Enriched fields (joined from Job table for candidate dashboard)
+    job_title: Optional[str] = None
+    company_name: Optional[str] = None
+    
+    created_at: datetime
+    updated_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+
+
+class ApplicationDetailResponse(BaseModel):
+    """Full application detail for employer view (includes candidate info)"""
+    id: str
+    job_id: str
+    candidate_id: str
+    
+    cover_letter: Optional[str]
+    vault_share_token: Optional[str]
+    custom_answers: Optional[Dict]
+    
+    status: ApplicationStatus
+    match_score: Optional[int]
+    match_explanation: Optional[Dict]
+    employer_notes: Optional[str]
+    
+    # Enriched fields
+    candidate_name: Optional[str] = None
+    candidate_email: Optional[str] = None
+    job_title: Optional[str] = None
+    
     created_at: datetime
     updated_at: Optional[datetime]
     

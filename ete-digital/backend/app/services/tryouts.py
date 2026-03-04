@@ -264,14 +264,54 @@ class SubmissionService:
         )
         tryout = tryout_result.scalar_one_or_none()
         
-        # Placeholder scoring logic
-        # TODO: Implement actual test runner and scoring
-        auto_score = 85  # Mock score
-        score_breakdown = {
-            "code_quality": 90,
-            "test_coverage": 80,
-            "performance": 85
-        }
+        # Rubric-based scoring: each key in scoring_rubric is a criterion with max points.
+        # We estimate a score per criterion by checking keyword overlap between
+        # the submission text and the tryout requirements/description.
+        rubric: dict = tryout.scoring_rubric or {}
+        total_rubric_points = sum(rubric.values()) if rubric else 0
+
+        # Build a vocabulary of keywords from tryout requirements and description
+        import re
+
+        def _tokenise(text: str) -> set:
+            """Lower-case word tokens from text, 3+ chars only."""
+            return {w for w in re.findall(r"[a-zA-Z]{3,}", (text or "").lower())}
+
+        requirement_tokens = _tokenise((tryout.requirements or "") + " " + (tryout.description or ""))
+
+        # Submission evidence: notes + submission_url text
+        submission_text = (submission.notes or "") + " " + (
+            getattr(submission, "submission_url", None) or ""
+            if hasattr(submission, "submission_url")
+            else getattr(submission, "github_url", None) or ""
+        )
+        submission_tokens = _tokenise(submission_text)
+
+        # If no rubric defined, fall back to keyword-hit ratio × 100
+        if not rubric or total_rubric_points == 0:
+            if requirement_tokens:
+                hit_ratio = len(submission_tokens & requirement_tokens) / max(len(requirement_tokens), 1)
+                auto_score = min(100, int(50 + hit_ratio * 50))  # baseline 50, up to 100
+            else:
+                auto_score = 70  # neutral default when tryout has no requirements text
+            score_breakdown = {"overall": auto_score}
+        else:
+            score_breakdown = {}
+            weighted_sum = 0.0
+            for criterion, max_pts in rubric.items():
+                # Criterion-specific keyword: use the criterion name itself as keyword
+                crit_tokens = _tokenise(criterion)
+                crit_hit = bool(crit_tokens & submission_tokens)
+                # Base per-criterion estimate from overall keyword overlap
+                hit_ratio = len(submission_tokens & requirement_tokens) / max(len(requirement_tokens), 1)
+                # Boost slightly if criterion keyword appears in submission
+                criterion_ratio = min(1.0, hit_ratio + (0.15 if crit_hit else 0.0))
+                earned = round(max_pts * criterion_ratio)
+                score_breakdown[criterion] = {"max": max_pts, "earned": earned}
+                weighted_sum += (earned / max_pts) * max_pts
+
+            auto_score = min(100, int(weighted_sum / total_rubric_points * 100))
+
         
         submission.auto_score = auto_score
         submission.score_breakdown = score_breakdown

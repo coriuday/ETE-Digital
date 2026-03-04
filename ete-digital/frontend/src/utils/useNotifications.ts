@@ -1,16 +1,11 @@
 /**
- * useNotifications — Real-time notification hook
+ * useNotifications — REST polling notification hook
  *
- * Connects to the backend WebSocket endpoint for live push notifications.
- * Also loads initial notification list via REST API.
- * Automatically reconnects on disconnect with exponential backoff.
- *
- * Token is read from localStorage (set by authStore.login).
+ * Fetches notifications via REST API every 60 seconds.
+ * WebSocket removed — it caused constant 403 errors and resource drain.
  */
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuthStore } from '../stores/authStore';
+import { useState, useEffect, useCallback } from 'react';
 
-const WS_BASE = import.meta.env.VITE_WS_URL || 'ws://localhost:8000';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
 export interface NotificationItem {
@@ -37,16 +32,11 @@ function getToken(): string | null {
 }
 
 export function useNotifications(): UseNotificationsReturn {
-    const { user } = useAuthStore();
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-    const [isConnected, setIsConnected] = useState(false);
-    const wsRef = useRef<WebSocket | null>(null);
-    const reconnectDelay = useRef(1000);
-    const reconnectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-    // ---- REST: fetch initial list ----
+    // ---- REST: fetch notification list ----
     const fetchNotifications = useCallback(async () => {
         const token = getToken();
         if (!token) return;
@@ -64,71 +54,16 @@ export function useNotifications(): UseNotificationsReturn {
                 );
             }
         } catch (_) {
-            // Silently fail — WS will keep notifications up-to-date
+            // Silently fail
         }
     }, []);
 
-    // ---- WebSocket connection ----
-    const connect = useCallback(() => {
-        const token = getToken();
-        if (!user?.id || !token) return;
-
-        const url = `${WS_BASE}/api/ws/${user.id}?token=${token}`;
-        const ws = new WebSocket(url);
-        wsRef.current = ws;
-
-        ws.onopen = () => {
-            setIsConnected(true);
-            reconnectDelay.current = 1000;
-        };
-
-        ws.onmessage = (event) => {
-            try {
-                const msg = JSON.parse(event.data);
-
-                if (msg.type === 'notification' && msg.data) {
-                    const notif: NotificationItem = msg.data;
-                    setNotifications((prev) => {
-                        if (prev.find((n) => n.id === notif.id)) return prev;
-                        return [notif, ...prev];
-                    });
-                }
-
-                if (msg.type === 'ping') {
-                    ws.send(JSON.stringify({ type: 'pong' }));
-                }
-            } catch (_) {
-                // Ignore malformed messages
-            }
-        };
-
-        ws.onclose = () => {
-            setIsConnected(false);
-            wsRef.current = null;
-
-            // Exponential backoff reconnect (max 30s)
-            if (user?.id && getToken()) {
-                reconnectTimer.current = setTimeout(() => {
-                    reconnectDelay.current = Math.min(reconnectDelay.current * 2, 30000);
-                    connect();
-                }, reconnectDelay.current);
-            }
-        };
-
-        ws.onerror = () => {
-            ws.close();
-        };
-    }, [user?.id]);
-
+    // Poll every 60 seconds
     useEffect(() => {
         fetchNotifications();
-        connect();
-
-        return () => {
-            if (reconnectTimer.current) clearTimeout(reconnectTimer.current);
-            wsRef.current?.close();
-        };
-    }, [fetchNotifications, connect]);
+        const interval = setInterval(fetchNotifications, 60_000);
+        return () => clearInterval(interval);
+    }, [fetchNotifications]);
 
     // ---- REST: mark single notification read ----
     const markRead = useCallback(async (id: string) => {
@@ -162,5 +97,5 @@ export function useNotifications(): UseNotificationsReturn {
         }
     }, []);
 
-    return { notifications, unreadCount, isConnected, markRead, markAllRead };
+    return { notifications, unreadCount, isConnected: true, markRead, markAllRead };
 }

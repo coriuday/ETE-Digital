@@ -213,7 +213,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     return {
         "user_id": user_id,
         "email": payload.get("email"),
-        "role": payload.get("role"),
+        "role": payload.get("role", "").lower(),  # normalise to lowercase
     }
 
 
@@ -250,7 +250,7 @@ def require_role(*allowed_roles):
                 detail="Invalid token payload",
             )
 
-        user_role = payload.get("role")
+        user_role = payload.get("role", "").lower()  # normalise to lowercase
         if user_role not in role_values:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

@@ -1,13 +1,13 @@
 /**
  * Application Details Page — Employer reviews a single candidate application
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
 import {
     ArrowLeft, Mail, Briefcase, CalendarDays,
     CheckCircle2, XCircle, Clock, Star,
-    Trophy, ExternalLink, Loader2, ChevronRight, MessageSquare
+    ExternalLink, Loader2, ChevronRight, MessageSquare
 } from 'lucide-react';
 
 function MatchGauge({ score }: { score: number }) {
@@ -69,14 +69,31 @@ export default function ApplicationDetailsPage() {
     const navigate = useNavigate();
     const [notes, setNotes] = useState('');
     const [updating, setUpdating] = useState<string | null>(null);
-    const [currentStatus, setCurrentStatus] = useState('applied');
+    const [appData, setAppData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!applicationId) return;
+        (async () => {
+            try {
+                const data = await jobsApi.getApplicationDetail(applicationId);
+                setAppData(data);
+                setNotes(data.employer_notes || '');
+            } catch {
+                setError('Failed to load application details.');
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, [applicationId]);
 
     const handleAction = async (newStatus: string) => {
         if (!applicationId) return;
         setUpdating(newStatus);
         try {
             await jobsApi.updateApplicationStatus(applicationId, newStatus, notes);
-            setCurrentStatus(newStatus);
+            setAppData((prev: any) => ({ ...prev, status: newStatus }));
         } catch {
             alert('Failed to update status');
         } finally {
@@ -84,23 +101,27 @@ export default function ApplicationDetailsPage() {
         }
     };
 
-    // Placeholder data until API exposes GET /api/jobs/applications/:id
-    const app = {
-        id: applicationId ?? '',
-        status: currentStatus,
-        cover_letter: 'I am excited about this opportunity and believe my skills align well with the role requirements. I have over 5 years of experience in similar positions and am passionate about contributing to your team.',
-        match_score: 82,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        candidate_name: 'Alex Johnson',
-        candidate_email: 'alex.johnson@example.com',
-        candidate_id: 'placeholder',
-        job_title: 'Senior Developer',
-        tryout_score: 87,
-    };
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <Loader2 size={32} className="animate-spin text-blue-500" />
+            </div>
+        );
+    }
 
+    if (error || !appData) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
+                <p className="text-gray-500">{error || 'Application not found.'}</p>
+                <button onClick={() => navigate(-1)} className="text-blue-600 underline text-sm">Go back</button>
+            </div>
+        );
+    }
+
+    const app = appData;
     const statuses = ['applied', 'reviewed', 'shortlisted', 'hired'];
-    const currentIdx = statuses.indexOf(app.status);
+    const currentStatus = app.status?.toLowerCase?.() ?? 'applied';
+    const currentIdx = statuses.indexOf(currentStatus);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -116,8 +137,8 @@ export default function ApplicationDetailsPage() {
                         <div>
                             <div className="flex items-center gap-3 mb-2 flex-wrap">
                                 <h1 className="text-2xl md:text-3xl font-extrabold text-white">{app.candidate_name}</h1>
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border capitalize ${STATUS_CLS[app.status] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                    {app.status}
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border capitalize ${STATUS_CLS[currentStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                    {currentStatus}
                                 </span>
                             </div>
                             <p className="text-blue-200 text-sm flex items-center gap-2 flex-wrap">
@@ -127,7 +148,7 @@ export default function ApplicationDetailsPage() {
                                 {new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                             </p>
                         </div>
-                        <MatchGauge score={app.match_score} />
+                        <MatchGauge score={app.match_score ?? 0} />
                     </div>
                 </div>
             </div>
@@ -141,7 +162,7 @@ export default function ApplicationDetailsPage() {
                         <h2 className="font-bold text-gray-900 text-lg mb-4">Candidate Profile</h2>
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-violet-100 flex items-center justify-center text-2xl font-extrabold text-blue-700">
-                                {app.candidate_name[0]}
+                                {(app.candidate_name || 'U')[0]}
                             </div>
                             <div>
                                 <p className="font-bold text-gray-900">{app.candidate_name}</p>
@@ -159,24 +180,9 @@ export default function ApplicationDetailsPage() {
                         <h2 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
                             <MessageSquare size={18} className="text-gray-400" /> Cover Letter
                         </h2>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">{app.cover_letter}</p>
-                    </div>
-
-                    {/* Tryout score */}
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-6">
-                        <div className="flex items-center gap-3 mb-3">
-                            <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                                <Trophy size={20} className="text-amber-600" />
-                            </div>
-                            <div>
-                                <h2 className="font-bold text-gray-900">Tryout Results</h2>
-                                <p className="text-xs text-amber-700">Completed skill assessment</p>
-                            </div>
-                            <div className="ml-auto text-2xl font-extrabold text-amber-700">{app.tryout_score}%</div>
-                        </div>
-                        <div className="h-2 bg-amber-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-amber-400 to-orange-400 rounded-full" style={{ width: `${app.tryout_score}%` }} />
-                        </div>
+                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                            {app.cover_letter || <span className="text-gray-400 italic">No cover letter provided.</span>}
+                        </p>
                     </div>
 
                     {/* Notes */}
