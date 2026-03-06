@@ -9,7 +9,7 @@ import { jobsApi, Job } from '../../api/jobs';
 import { useAuthStore } from '../../stores/authStore';
 import {
     ArrowLeft, MapPin, Clock, Globe, Eye, Users,
-    CheckCircle2, Star, DollarSign, Loader2, Building2, CalendarDays, Zap, Code2, ChevronRight
+    CheckCircle2, Star, Loader2, Building2, CalendarDays, Zap, Code2, ChevronRight
 } from 'lucide-react';
 
 export default function JobDetailsPage() {

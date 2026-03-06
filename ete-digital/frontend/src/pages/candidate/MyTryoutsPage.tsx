@@ -8,8 +8,8 @@ import { tryoutsApi, Submission } from '../../api/tryouts';
 export default function MyTryoutsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
-    const [page, setPage] = useState(1);
-    const [total, setTotal] = useState(0);
+    const [page] = useState(1);
+
 
     useEffect(() => { loadSubmissions(); }, [page]);
 
@@ -18,7 +18,6 @@ export default function MyTryoutsPage() {
         try {
             const response = await tryoutsApi.getMySubmissions(page);
             setSubmissions(response.submissions);
-            setTotal(response.total);
         } catch (error) {
             console.error('Failed to load submissions:', error);
         } finally {

@@ -2,7 +2,7 @@
  * Loading Skeleton Components
  * Skeleton screens for better loading UX
  */
-import React from 'react';
+
 
 export function SkeletonCard() {
     return (

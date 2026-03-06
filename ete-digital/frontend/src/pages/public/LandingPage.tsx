@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Code, Zap, ChevronRight, Briefcase, Star, Search, ShieldCheck } from 'lucide-react';
+import { Code, Zap, ChevronRight, Briefcase, ShieldCheck } from 'lucide-react';
 
 const LandingPage = () => {
     return (
