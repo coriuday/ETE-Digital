@@ -2,10 +2,45 @@
 -- ETE Digital — Full Database Schema for Supabase
 -- Generated from all Alembic migrations (final state)
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
+-- ⚠️  Safe to re-run: drops existing tables/types first
 -- ============================================================
 
 -- Enable UUID extension (already enabled in Supabase by default)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ============================================================
+-- CLEANUP — drop everything first so this script is re-runnable
+-- Order matters: child tables before parents
+-- ============================================================
+
+DROP TABLE IF EXISTS alembic_version        CASCADE;
+DROP TABLE IF EXISTS interviews             CASCADE;
+DROP TABLE IF EXISTS vault_share_tokens     CASCADE;
+DROP TABLE IF EXISTS talent_vault_items     CASCADE;
+DROP TABLE IF EXISTS tryout_submissions     CASCADE;
+DROP TABLE IF EXISTS tryouts               CASCADE;
+DROP TABLE IF EXISTS applications          CASCADE;
+DROP TABLE IF EXISTS notifications         CASCADE;
+DROP TABLE IF EXISTS audit_logs            CASCADE;
+DROP TABLE IF EXISTS refresh_tokens        CASCADE;
+DROP TABLE IF EXISTS company_profiles      CASCADE;
+DROP TABLE IF EXISTS user_profiles         CASCADE;
+DROP TABLE IF EXISTS jobs                  CASCADE;
+DROP TABLE IF EXISTS users                 CASCADE;
+
+DROP TYPE IF EXISTS interviewstatus   CASCADE;
+DROP TYPE IF EXISTS interviewtype     CASCADE;
+DROP TYPE IF EXISTS companysize       CASCADE;
+DROP TYPE IF EXISTS vaultitemtype     CASCADE;
+DROP TYPE IF EXISTS tryoutstatus      CASCADE;
+DROP TYPE IF EXISTS paymentstatus     CASCADE;
+DROP TYPE IF EXISTS submissionstatus  CASCADE;
+DROP TYPE IF EXISTS notificationtype  CASCADE;
+DROP TYPE IF EXISTS jobstatus         CASCADE;
+DROP TYPE IF EXISTS jobtype           CASCADE;
+DROP TYPE IF EXISTS auditaction       CASCADE;
+DROP TYPE IF EXISTS applicationstatus CASCADE;
+DROP TYPE IF EXISTS userrole          CASCADE;
 
 -- ============================================================
 -- ENUMS
