@@ -16,9 +16,9 @@ python-jose[cryptography]==3.3.0
 cryptography==43.0.3
 python-multipart==0.0.18
 
-# Redis
-redis==5.2.1
-hiredis==3.1.0
+# Redis (optional — uncomment if you add a Redis server later)
+# redis==5.2.1
+# hiredis==3.1.0
 
 # HTTP Client
 httpx==0.28.1

@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
     
-    # Redis
-    REDIS_URL: str = "redis://localhost:6379/0"
+    # Redis (optional — used only if REDIS_URL provided; falls back to in-memory)
+    REDIS_URL: Optional[str] = None
     REDIS_CACHE_TTL: int = 3600  # 1 hour
     
     # Security - JWT
@@ -51,6 +51,7 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
+        "https://ete-digital.vercel.app",
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
@@ -60,11 +61,6 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
     GOOGLE_REDIRECT_URI: str = "http://localhost:8000/api/auth/oauth/google/callback"
-    
-    # OAuth2 - LinkedIn
-    LINKEDIN_CLIENT_ID: Optional[str] = None
-    LINKEDIN_CLIENT_SECRET: Optional[str] = None
-    LINKEDIN_REDIRECT_URI: str = "http://localhost:8000/api/auth/oauth/linkedin/callback"
     
     # Email / SMTP
     EMAIL_ENABLED: bool = True          # Set False to skip sending (console log only)
