@@ -37,6 +37,13 @@ class AuthService:
         full_name: Optional[str] = None
     ) -> User:
         """Register a new user"""
+        # ADMIN role cannot be self-registered — must be created via DB / seed script
+        if role == UserRole.ADMIN:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Admin accounts cannot be created through registration"
+            )
+
         # Check if user already exists
         result = await db.execute(select(User).where(User.email == email))
         existing_user = result.scalar_one_or_none()
@@ -46,6 +53,7 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Email already registered"
             )
+
         
         # Auto-verify in development so login works immediately
         is_dev = getattr(settings, 'ENVIRONMENT', 'production') == 'development'
