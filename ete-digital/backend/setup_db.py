@@ -20,12 +20,12 @@ for cmd in cmds:
         capture_output=True, text=True
     )
     if result.returncode == 0:
-        print(f"✅ {cmd[:60]}")
+        print(f"✅ {cmd}")
     else:
         # May already exist — not fatal
         err = result.stderr.strip()
         if "already exists" in err:
-            print(f"⚠️  already exists: {cmd[:60]}")
+            print(f"⚠️  already exists: {cmd}")
         else:
             print(f"❌ Error: {err}")
 

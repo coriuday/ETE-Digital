@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
+import asyncio
 import secrets
 import uuid
 
@@ -16,7 +17,8 @@ from app.core.security import (
     create_access_token,
     create_refresh_token,
     decrypt_field,
-    encrypt_field
+    encrypt_field,
+    validate_password_strength
 )
 from app.core.config import settings
 from app.services.email import email_service
@@ -74,8 +76,10 @@ class AuthService:
         
         # Only send verification email in production
         if not is_dev:
-            verification_url = f"{settings.CORS_ORIGINS[0]}/verify-email?token={user.verification_token}"
-            email_service.send_verification_email(user.email, verification_url)
+            verification_url = f"{settings.FRONTEND_URL}/verify-email?token={user.verification_token}"
+            await asyncio.to_thread(
+                email_service.send_verification_email, user.email, verification_url
+            )
         
         return user
 
@@ -236,8 +240,10 @@ class AuthService:
         await db.commit()
         
         # Send reset email
-        reset_url = f"{settings.CORS_ORIGINS[0]}/reset-password?token={user.reset_token}"
-        email_service.send_password_reset_email(user.email, reset_url)
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={user.reset_token}"
+        await asyncio.to_thread(
+            email_service.send_password_reset_email, user.email, reset_url
+        )
         
         return True
     
@@ -261,7 +267,14 @@ class AuthService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid or expired reset token"
             )
-        
+
+        # Validate new password strength
+        if not validate_password_strength(new_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Password too weak. Must be 8+ characters with uppercase, lowercase, digit, and special character."
+            )
+
         # Update password
         user.password_hash = hash_password(new_password)
         user.reset_token = None

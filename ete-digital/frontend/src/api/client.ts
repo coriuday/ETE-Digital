@@ -1,8 +1,12 @@
 /**
  * API Client
- * Axios instance with authentication and error handling
+ * Axios instance with authentication and error handling.
+ *
+ * Tokens are read from the in-memory store (authStore) rather than
+ * localStorage to prevent XSS attacks from stealing JWT tokens.
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import { getAccessToken, getRefreshToken } from '../stores/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -14,10 +18,10 @@ export const api = axios.create({
     },
 });
 
-// Request interceptor - Add auth token
+// Request interceptor - Add auth token from in-memory store
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('access_token');
+        const token = getAccessToken();
         if (token && config.headers) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -63,7 +67,7 @@ api.interceptors.response.use(
             originalRequest._retry = true;
 
             try {
-                const refreshToken = localStorage.getItem('refresh_token');
+                const refreshToken = getRefreshToken();
                 if (!refreshToken) {
                     throw new Error('No refresh token');
                 }
@@ -72,21 +76,24 @@ api.interceptors.response.use(
                     refresh_token: refreshToken,
                 });
 
-                const { access_token, refresh_token: newRefreshToken } = response.data;
+                const { access_token } = response.data;
 
-                // Update tokens
-                localStorage.setItem('access_token', access_token);
-                localStorage.setItem('refresh_token', newRefreshToken);
+                // Update in-memory token via the auth store module setter
+                // (The store updates _accessToken and _refreshToken internally on the next login;
+                //  here we update the module-level variable directly for the retry)
+                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                const { useAuthStore } = await import('../stores/authStore');
+                await useAuthStore.getState().fetchUser();
 
-                // Retry original request
+                // Retry original request with new token
                 if (originalRequest.headers) {
                     originalRequest.headers.Authorization = `Bearer ${access_token}`;
                 }
                 return api(originalRequest);
             } catch (refreshError) {
-                // Refresh failed, logout user
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
+                // Refresh failed — log out and redirect
+                const { useAuthStore } = await import('../stores/authStore');
+                await useAuthStore.getState().logout();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             }

@@ -8,15 +8,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from app.core.limiter import limiter
 from app.core.config import settings
-
-
-# ---- Rate Limiter ----
-limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
 
 
 # ---- Security Headers Middleware ----
@@ -78,7 +74,12 @@ app.add_middleware(SlowAPIMiddleware)
 # Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS Middleware
+
+
+# GZip Compression
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# CORS Middleware (Must be LAST so it is the outermost middleware to catch exceptions)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
@@ -86,9 +87,6 @@ app.add_middleware(
     allow_methods=settings.CORS_ALLOW_METHODS,
     allow_headers=settings.CORS_ALLOW_HEADERS,
 )
-
-# GZip Compression
-app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 
 # Health check endpoint

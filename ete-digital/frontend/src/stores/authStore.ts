@@ -1,10 +1,24 @@
 /**
  * Authentication Store
  * Zustand store for managing auth state
+ *
+ * Security: JWT tokens are stored in module-level memory, NOT in localStorage.
+ * This prevents XSS attacks from reading tokens via `localStorage.getItem()`.
+ * Only a non-sensitive boolean (`isAuthenticated`) is persisted to localStorage
+ * so the user's session indicator survives a page refresh.
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authApi, User } from '../api/auth';
+
+// ---- In-memory token storage (never touches localStorage / sessionStorage) ----
+let _accessToken: string | null = null;
+let _refreshToken: string | null = null;
+
+/** Read the current access token. Used by the API layer (e.g. axios interceptor). */
+export const getAccessToken = (): string | null => _accessToken;
+/** Read the current refresh token. Used by the token-refresh flow. */
+export const getRefreshToken = (): string | null => _refreshToken;
 
 interface AuthState {
     user: User | null;
@@ -33,9 +47,9 @@ export const useAuthStore = create<AuthState>()(
                 try {
                     const response = await authApi.login({ email, password });
 
-                    // Store tokens
-                    localStorage.setItem('access_token', response.access_token);
-                    localStorage.setItem('refresh_token', response.refresh_token);
+                    // Store tokens in memory only — never in localStorage (XSS risk)
+                    _accessToken = response.access_token;
+                    _refreshToken = response.refresh_token;
 
                     // Fetch user data
                     const user = await authApi.getCurrentUser();
@@ -82,9 +96,9 @@ export const useAuthStore = create<AuthState>()(
                 } catch (error) {
                     console.error('Logout error:', error);
                 } finally {
-                    // Clear local storage
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
+                    // Clear in-memory tokens
+                    _accessToken = null;
+                    _refreshToken = null;
 
                     set({
                         user: null,
@@ -94,8 +108,9 @@ export const useAuthStore = create<AuthState>()(
             },
 
             fetchUser: async () => {
-                const token = localStorage.getItem('access_token');
-                if (!token) {
+                // Tokens live in memory — if the page was refreshed they are gone.
+                // Only attempt if we have an in-memory access token.
+                if (!_accessToken) {
                     set({ isAuthenticated: false, user: null });
                     return;
                 }
@@ -109,9 +124,9 @@ export const useAuthStore = create<AuthState>()(
                         isLoading: false
                     });
                 } catch (error) {
-                    // Token invalid, clear auth state
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
+                    // Token invalid — clear in-memory tokens and auth state
+                    _accessToken = null;
+                    _refreshToken = null;
                     set({
                         user: null,
                         isAuthenticated: false,
@@ -124,8 +139,8 @@ export const useAuthStore = create<AuthState>()(
         }),
         {
             name: 'auth-storage',
+            // Only persist the boolean session indicator — no user PII, no tokens
             partialize: (state) => ({
-                user: state.user,
                 isAuthenticated: state.isAuthenticated
             }),
         }

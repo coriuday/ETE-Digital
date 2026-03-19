@@ -4,7 +4,7 @@ Centralized settings management using Pydantic BaseSettings
 """
 from typing import List, Optional
 from pydantic_settings import BaseSettings
-from pydantic import PostgresDsn, validator
+from pydantic import PostgresDsn
 import secrets
 
 
@@ -46,6 +46,9 @@ class Settings(BaseSettings):
     PASSWORD_REQUIRE_DIGIT: bool = True
     PASSWORD_REQUIRE_SPECIAL: bool = True
     
+    # Frontend URL (used for email links — e.g. email verification, password reset)
+    FRONTEND_URL: str = "http://localhost:5173"
+
     # CORS
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
@@ -55,6 +58,9 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
+
+    # Frontend URL used for building email links
+    FRONTEND_URL: str = "http://localhost:5173"
     
     # OAuth2 - Google
     GOOGLE_CLIENT_ID: Optional[str] = None

@@ -18,7 +18,7 @@ from app.schemas.users import (
     UserResponse
 )
 from app.services.auth import auth_service
-from app.main import limiter
+from app.core.limiter import limiter
 from pydantic import BaseModel
 
 

@@ -1,9 +1,10 @@
 """
 User and Authentication Models
 """
-from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 import uuid
 import enum
 
@@ -41,6 +42,10 @@ class User(Base):
     reset_token = Column(String(255))
     reset_token_expires = Column(DateTime(timezone=True))
 
+    # ORM relationships
+    profile = relationship("UserProfile", back_populates="user", uselist=False, cascade="all, delete-orphan")
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
+
     def __repr__(self):
         return f"<User {self.email}>"
 
@@ -49,7 +54,11 @@ class UserProfile(Base):
     """User profile with additional information"""
     __tablename__ = "user_profiles"
 
-    user_id = Column(UUID(as_uuid=True), primary_key=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True
+    )
     
     # Basic info
     full_name = Column(String(255))
@@ -77,6 +86,9 @@ class UserProfile(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # ORM inverse relationship
+    user = relationship("User", back_populates="profile")
+
     def __repr__(self):
         return f"<UserProfile {self.full_name}>"
 
@@ -86,7 +98,12 @@ class RefreshToken(Base):
     __tablename__ = "refresh_tokens"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
     token = Column(String(500), unique=True, nullable=False, index=True)
     expires_at = Column(DateTime(timezone=True), nullable=False)
     is_revoked = Column(Boolean, default=False, nullable=False)
@@ -96,6 +113,9 @@ class RefreshToken(Base):
     user_agent = Column(String(500))
     
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    # ORM inverse relationship
+    user = relationship("User", back_populates="refresh_tokens")
 
     def __repr__(self):
         return f"<RefreshToken {self.id}>"
