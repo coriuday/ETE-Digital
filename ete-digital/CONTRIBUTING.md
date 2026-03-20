@@ -1,97 +1,232 @@
 # Contributing to ETE Digital
 
-Thank you for your interest in contributing to ETE Digital! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to **ETE Digital**! 🎉
+
+We're building an open, fair job platform — every contribution, big or small, helps us get there. This guide will walk you through everything you need to know to get started.
+
+---
+
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [How to Contribute](#how-to-contribute)
+  - [Reporting Bugs](#reporting-bugs)
+  - [Suggesting Features](#suggesting-features)
+  - [Your First Code Contribution](#your-first-code-contribution)
+  - [Pull Request Process](#pull-request-process)
+- [Development Setup](#development-setup)
+- [Code Style Guidelines](#code-style-guidelines)
+- [Testing](#testing)
+- [Commit Message Convention](#commit-message-convention)
+- [Database Migrations](#database-migrations)
+- [Community](#community)
+
+---
 
 ## Code of Conduct
 
-This project adheres to a Code of Conduct that all contributors are expected to follow. Please read [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) before contributing.
+By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it before contributing.
 
-## How Can I Contribute?
+---
+
+## Getting Started
+
+1. **Fork** the repository on GitHub
+2. **Clone** your fork locally:
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/ete-digital.git
+   cd ete-digital
+   ```
+3. **Add upstream** remote:
+   ```bash
+   git remote add upstream https://github.com/ORIGINAL_ORG/ete-digital.git
+   ```
+4. **Set up your development environment** (see [Development Setup](#development-setup))
+
+---
+
+## How to Contribute
 
 ### Reporting Bugs
 
-Before creating bug reports, please check existing issues. When creating a bug report, include:
+Before submitting a bug report:
+- Check the [existing issues](https://github.com/yourusername/ete-digital/issues) to avoid duplicates
+- Ensure the bug is reproducible on the latest version
 
-- **Clear title and description**
+When submitting, please include:
+- **Clear title** describing the issue
 - **Steps to reproduce** the behavior
-- **Expected vs actual behavior**
-- **Screenshots** (if applicable)
-- **Environment details** (OS, Python/Node version, etc.)
+- **Expected behavior** vs. **actual behavior**
+- **Environment details** (OS, Python version, Node.js version, browser)
+- **Relevant logs** or screenshots
 
-### Suggesting Enhancements
+---
 
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, include:
+### Suggesting Features
 
-- **Clear title and description**
-- **Use case** and motivation
-- **Proposed solution** (if you have one)
-- **Alternative solutions** considered
+We love new ideas! Before submitting:
+- Check if the feature has already been requested in [existing issues](https://github.com/yourusername/ete-digital/issues)
 
-### Pull Requests
+When submitting a feature request, include:
+- **Clear title** and description
+- **The problem it solves** — why do we need this?
+- **Proposed solution** with as much detail as possible
+- **Alternatives considered**
 
-1. **Fork the repository and create your branch from `develop`**
+---
 
+### Your First Code Contribution
+
+Unsure where to start? Look for issues labeled:
+
+| Label | Description |
+|-------|-------------|
+| `good first issue` | Simple issues ideal for newcomers |
+| `help wanted` | Issues where we need extra help |
+| `bug` | Something isn't working correctly |
+| `enhancement` | New feature or improvement |
+| `documentation` | Improvements or additions to docs |
+
+---
+
+### Pull Request Process
+
+1. **Sync with upstream** before starting:
+   ```bash
+   git fetch upstream
+   git checkout main
+   git merge upstream/main
+   ```
+
+2. **Create a feature branch** from `main`:
    ```bash
    git checkout -b feature/your-feature-name
+   # or for bug fixes:
+   git checkout -b fix/bug-description
    ```
 
-2. **Make your changes**
-   - Follow the coding style guidelines below
-   - Add tests for your changes
-   - Update documentation as needed
+3. **Make your changes** — follow [Code Style Guidelines](#code-style-guidelines), add tests, update docs.
 
-3. **Ensure tests pass**
-
+4. **Commit** using [conventional commits](#commit-message-convention):
    ```bash
-   # Backend
-   cd backend && pytest tests/
-   
-   # Frontend
-   cd frontend && npm run test
+   git commit -m "feat(tryouts): add auto-grading rubric validation"
    ```
 
-4. **Commit your changes**
-   - Use clear, descriptive commit messages
-   - Follow conventional commits format: `type(scope): description`
-   - Types: feat, fix, docs, style, refactor, test, chore
+5. **Push and open a Pull Request:**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+   - Use a clear, descriptive title
+   - Reference related issues (e.g., `Closes #123`)
+   - Add screenshots or recordings for UI changes
 
-5. **Push to your fork and submit a pull request**
+#### PR Requirements Checklist
+
+- [ ] Code follows project style guidelines
+- [ ] All tests pass locally (`pytest` and `npm run test`)
+- [ ] New features have corresponding tests
+- [ ] Documentation updated (if applicable)
+- [ ] No `.env`, `__pycache__`, or build artifacts committed
+- [ ] Branch is up to date with `main`
+
+---
 
 ## Development Setup
 
-See [README.md](README.md#development) for detailed setup instructions.
+### Prerequisites
 
-## Coding Style
+- Python 3.11+
+- Node.js 20+
+- Docker & Docker Compose
 
-### Backend (Python)
+### Backend
 
-- Follow **PEP 8** style guide
-- Use **type hints** for function signatures
-- Format code with **Black** (line length: 100)
-- Sort imports with **isort**
-- Docstrings for all public functions/classes
+```bash
+cd backend
+
+# Create and activate virtual environment
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Configure environment
+cp .env.example .env            # then edit .env
+
+# Run migrations & start server
+alembic upgrade head
+uvicorn app.main:app --reload --port 8000
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+cp .env.example .env.local      # then edit .env.local
+npm run dev
+```
+
+### Full Stack (Docker)
+
+```bash
+cd infra/docker
+docker-compose up -d
+```
+
+---
+
+## Code Style Guidelines
+
+### Python (Backend)
+
+We use **Black**, **Ruff**, **isort**, and **mypy**:
+
+```bash
+cd backend
+black .
+ruff check . --fix
+isort .
+mypy app/
+```
+
+Key practices:
+- Use type hints on all functions
+- Write `async` functions for all I/O operations
+- Use Pydantic schemas for all request/response models
+- Docstrings for all public functions and classes
 
 ```python
-def calculate_match_score(candidate: dict, job: dict) -> int:
+async def calculate_match_score(candidate: dict, job: dict) -> int:
     """
     Calculate match score between candidate and job.
-    
+
     Args:
         candidate: Candidate profile dictionary
         job: Job requirements dictionary
-        
+
     Returns:
         Match score (0-100)
     """
-    pass
+    ...
 ```
 
-### Frontend (TypeScript/React)
+### TypeScript / React (Frontend)
 
-- Follow **Airbnb React Style Guide**
-- Use **TypeScript** for type safety
-- Format code with **Prettier**
-- Use **functional components** and hooks
+We use **ESLint** and **Prettier**:
+
+```bash
+cd frontend
+npm run lint
+npm run format
+```
+
+Key practices:
+- Use functional components with hooks
+- Use TypeScript strictly — avoid `any`
+- Use Zustand for global state, React Query for server state
 - Props documented with TypeScript interfaces
 
 ```tsx
@@ -101,91 +236,104 @@ interface ButtonProps {
   children: React.ReactNode;
 }
 
-export const Button: React.FC<ButtonProps> = ({ variant, onClick, children }) => {
-  return <button className={`btn-${variant}`} onClick={onClick}>{children}</button>;
-};
+export const Button: React.FC<ButtonProps> = ({ variant, onClick, children }) => (
+  <button className={`btn-${variant}`} onClick={onClick}>{children}</button>
+);
 ```
 
-## Testing Guidelines
+---
+
+## Testing
 
 ### Backend Tests
 
-- Unit tests for all services and utilities
-- Integration tests for API endpoints
-- Minimum **80% code coverage**
-- Use **pytest fixtures** for test data
-
-```python
-def test_create_user(db_session):
-    user = create_user(email="test@example.com", role=UserRole.CANDIDATE)
-    assert user.email == "test@example.com"
-    assert user.is_verified is False
+```bash
+cd backend
+pytest tests/ -v
+pytest tests/ --cov=app --cov-report=html    # with coverage
 ```
+
+We use `pytest` + `httpx` for async API testing. Aim for **80%+ coverage**.
 
 ### Frontend Tests
 
-- Component tests with React Testing Library
-- Unit tests for utilities and hooks
-- Minimum **80% code coverage**
-
-```tsx
-it('renders login button', () => {
-  render(<LoginPage />);
-  expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
-});
+```bash
+cd frontend
+npm run test
+npm run test:coverage
 ```
+
+We use `vitest` + React Testing Library. Tests live alongside components in `*.test.tsx` files.
+
+### Guidelines
+
+- Write tests for all new features and bug fixes
+- Test edge cases and error conditions
+- Mock external services (database, storage, email) in unit tests
+
+---
+
+## Commit Message Convention
+
+We use **[Conventional Commits](https://www.conventionalcommits.org/)**:
+
+```
+<type>(<scope>): <short description>
+```
+
+| Type | Description |
+|------|-------------|
+| `feat` | A new feature |
+| `fix` | A bug fix |
+| `docs` | Documentation only |
+| `style` | Formatting (no logic change) |
+| `refactor` | Code restructuring |
+| `test` | Adding or updating tests |
+| `chore` | Build, deps, CI changes |
+| `perf` | Performance improvements |
+
+**Examples:**
+```
+feat(auth): add JWT refresh token rotation
+fix(vault): resolve encryption key loading issue
+docs(api): update tryout submission endpoint docs
+test(jobs): add edge case tests for salary filter
+```
+
+**Breaking changes** — append `!` and add a `BREAKING CHANGE:` footer:
+```
+feat(auth)!: remove legacy token endpoint
+
+BREAKING CHANGE: /api/auth/token is removed. Use /api/auth/login instead.
+```
+
+---
 
 ## Database Migrations
 
-When making database changes:
+When making schema changes:
 
-1. Create migration
+```bash
+# Create migration
+cd backend
+alembic revision --autogenerate -m "Add new field to User"
 
-   ```bash
-   cd backend
-   alembic revision --autogenerate -m "Add new field to User"
-   ```
+# Review the generated file carefully, then test:
+alembic upgrade head
+alembic downgrade -1      # verify rollback works
+alembic upgrade head      # re-apply
 
-2. Review generated migration carefully
-3. Test migration up and down
+# Include the migration file in your PR
+```
 
-   ```bash
-   alembic upgrade head
-   alembic downgrade -1
-   ```
+---
 
-4. Include migration in your PR
+## Community
 
-## Documentation
+- **GitHub Issues** — Bug reports & feature requests
+- **GitHub Discussions** — General questions and ideas
+- **Email** — [support@etedigital.com](mailto:support@etedigital.com)
 
-- Update README if adding new features
-- Add docstrings/comments for complex logic
-- Update API documentation (OpenAPI spec)
-- Create/update architecture diagrams if needed
+---
 
-## Review Process
-
-1. **Automated checks must pass**
-   - CI pipeline (tests, linting, security)
-   - No merge conflicts
-
-2. **Code review by maintainers**
-   - At least one approval required
-   - Address all review comments
-
-3. **Merge**
-   - Squash and merge to keep history clean
-   - Delete branch after merge
-
-## Release Process
-
-- We follow [Semantic Versioning](https://semver.org/)
-- Releases are created from `main` branch
-- Changelog updated for each release
-
-## Questions?
-
-- Open a [discussion](https://github.com/yourusername/ete-digital/discussions)
-- Join our community chat (link TBD)
-
-Thank you for contributing! 🚀
+Thank you for helping make ETE Digital better! 💙
