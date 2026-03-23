@@ -11,6 +11,15 @@ ETE Digital is a production-grade, open-source job platform that revolutionizes 
 
 ---
 
+## 👥 Contributors
+
+| Contributor | GitHub | Role |
+|-------------|--------|------|
+| **Ashish Kumar** | [@ashuisalluneed](https://github.com/ashuisalluneed) | Gen AI Frontend Dev |
+| **Uday Kumar Kori** | [@coriuday](https://github.com/coriuday) | Gen AI Fullstack Dev |
+
+---
+
 ## ✨ Key Features
 
 ### 🎯 Job Tryouts
@@ -54,7 +63,7 @@ ETE Digital is a production-grade, open-source job platform that revolutionizes 
 ### 1. Clone Repository
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/coriuday/ETE-Digital
 cd ete-digital
 ```
 
@@ -346,13 +355,13 @@ ete-digital/
 
 ### Security Checklist
 
-- [ ] Enable HTTPS in production (use Let's Encrypt)
-- [ ] Set strong `JWT_SECRET_KEY` (32+ random chars)
-- [ ] Set `ENCRYPTION_KEY` (Fernet.generate_key())
-- [ ] Configure CSP headers
-- [ ] Enable rate limiting
-- [ ] Regular dependency updates
-- [ ] Security scanning (Snyk, Bandit)
+- [x] Enable HTTPS in production (use Let's Encrypt)
+- [x] Set strong `JWT_SECRET_KEY` (32+ random chars)
+- [x] Set `ENCRYPTION_KEY` (Fernet.generate_key())
+- [x] Configure CSP headers
+- [x] Enable rate limiting
+- [x] Regular dependency updates
+- [x] Security scanning (Snyk, Bandit)
 
 ---
 
@@ -365,17 +374,6 @@ ete-digital/
 - **Caching:** Redis for sessions and hot data
 - **Stateless API:** Ready for horizontal scaling
 - **JSONB Fields:** Flexible schema for evolving requirements
-
-### Production Recommendations
-
-- **Database:** PostgreSQL with read replicas
-- **Cache:** Redis Cluster
-- **Storage:** S3 or MinIO cluster
-- **CDN:** CloudFront or Cloudflare for static assets
-- **Kubernetes:** HPA for auto-scaling (2-10 pods)
-- **Load Balancer:** NGINX or AWS ALB
-
-**Target:** 100k+ requests/day with <200ms p95 latency
 
 ---
 
@@ -403,56 +401,7 @@ We welcome contributions! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for gu
 ## 📄 License
 
 This project is licensed under the **MIT License** - see [`LICENSE`](LICENSE) file for details.
-
----
-
-## 🗺️ Roadmap
-
-### Phase 1: Foundation ✅ COMPLETE
-
-- [x] Project setup & Docker environment
-- [x] Database schema design
-- [x] CI/CD pipeline
-
-### Phase 2: Core Backend ✅ COMPLETE
-
-- [x] Authentication & user management
-- [x] Job posting service
-- [x] Tryout service
-- [x] Application management
-
-### Phase 3: Talent Vault ✅ COMPLETE
-
-- [x] Encrypted storage
-- [x] Share token system
-- [x] Public access via tokens
-
-### Phase 4: Frontend ✅ COMPLETE
-
-- [x] Authentication UI (Login, Register, Forgot Password)
-- [x] Job search & listings with filtering
-- [x] Tryout submission interface
-- [x] Talent vault management (CRUD, sharing)
-- [x] Employer & candidate dashboards
-- [x] Application management
-
-### Phase 5: Advanced Features ✅ COMPLETE
-
-- [x] **Rate Limiting** — SlowAPI on auth endpoints (429 on abuse)
-- [x] **Real-Time Notifications** — WebSocket push with JWT auth gate
-- [x] **Notification bell** — Live unread badge + dropdown in AppShell
-- [x] **Backend Test Suite** — 21 pytest tests (auth, jobs, vault, rate limiting)
-- [x] **Frontend Test Suite** — 18 Vitest tests (auth, jobs, vault, notifications)
-
-### Phase 6: Production
-
-- [ ] Kubernetes deployment
-- [ ] Monitoring (Prometheus, Grafana)
-- [ ] Security audit
-- [ ] Performance optimization
-- [ ] Payment integration
-
----
+x---
 
 ## 🙏 Acknowledgments
 
@@ -468,10 +417,9 @@ Built with:
 
 ## 📞 Support
 
-- **Issues:** [GitHub Issues](https://github.com/yourusername/ete-digital/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/yourusername/ete-digital/discussions)
-- **Email:** <support@etedigital.com> (coming soon)
+- **Issues:** [GitHub Issues](https://github.com/coriuday/ETE-Digital/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/coriuday/ETE-Digital/discussions)
 
 ---
 
-**Built with ❤️ for the open-source community**
+**Built with ❤️ by [@ashuisalluneed](https://github.com/ashuisalluneed) & [@coriuday](https://github.com/coriuday)**
