@@ -23,7 +23,7 @@ class PaymentService:
 
     def create_payment_intent(
         self,
-        amount_paise: int,  # Amount in smallest currency unit (paise for INR, cents for USD)
+        amount_minor_units: int,  # Amount in smallest currency unit (paise/INR, cents/USD, etc.)
         currency: str = "inr",
         metadata: Optional[dict] = None,
         capture_method: str = "manual",  # 'manual' = escrow; 'automatic' = immediate capture
@@ -32,8 +32,9 @@ class PaymentService:
         Create a Stripe PaymentIntent.
         
         Args:
-            amount_paise: Amount in smallest unit (paise for INR)
-            currency: ISO currency code
+            amount_minor_units: Amount in the smallest denomination of the given currency
+                                (paise for INR, cents for USD, etc.)
+            currency: ISO currency code (e.g. 'inr', 'usd')
             metadata: Optional metadata dict (e.g., tryout_id, candidate_id)
             capture_method: 'manual' for escrow, 'automatic' for immediate
         
@@ -47,7 +48,7 @@ class PaymentService:
         try:
             import stripe
             intent = stripe.PaymentIntent.create(
-                amount=amount_paise,
+                amount=amount_minor_units,
                 currency=currency,
                 capture_method=capture_method,
                 metadata=metadata or {},
@@ -106,7 +107,7 @@ class PaymentService:
 
     def create_checkout_session(
         self,
-        amount_paise: int,
+        amount_minor_units: int,  # Amount in smallest currency unit (paise/INR, cents/USD, etc.)
         currency: str,
         success_url: str,
         cancel_url: str,
@@ -128,7 +129,7 @@ class PaymentService:
                 line_items=[{
                     "price_data": {
                         "currency": currency,
-                        "unit_amount": amount_paise,
+                        "unit_amount": amount_minor_units,
                         "product_data": {
                             "name": "Job Tryout Payment",
                             "description": "Payment for completing a job tryout task",

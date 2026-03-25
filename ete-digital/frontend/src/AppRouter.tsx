@@ -14,7 +14,7 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import EmailVerificationPage from './pages/auth/EmailVerificationPage';
 
 // ---- Misc Pages ----
-import DashboardPage from './pages/candidate/DashboardPage'; // using candidate/DashboardPage as default Dashboard?
+import DashboardPage from './pages/candidate/DashboardPage';
 import LandingPage from './pages/public/LandingPage';
 import NotFoundPage from './pages/public/NotFoundPage';
 
@@ -66,7 +66,13 @@ import AccountSettingsPage from './pages/settings/AccountSettingsPage';
 import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
 
 export default function AppRouter() {
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, user } = useAuthStore();
+
+    // Redirect authenticated users to their role-appropriate dashboard
+    const roleHome =
+        user?.role === 'employer' ? '/employer/dashboard'
+        : user?.role === 'admin'  ? '/admin'
+        : '/dashboard'; // candidate (default)
 
     return (
         <BrowserRouter>
@@ -74,17 +80,17 @@ export default function AppRouter() {
                 {/* Landing Page */}
                 <Route
                     path="/"
-                    element={isAuthenticated ? <Navigate to="/dashboard" /> : <LandingPage />}
+                    element={isAuthenticated ? <Navigate to={roleHome} /> : <LandingPage />}
                 />
 
-                {/* Auth Routes (redirect to dashboard if already logged in) */}
+                {/* Auth Routes (redirect to role dashboard if already logged in) */}
                 <Route
                     path="/login"
-                    element={isAuthenticated ? <Navigate to="/dashboard" /> : <LoginPage />}
+                    element={isAuthenticated ? <Navigate to={roleHome} /> : <LoginPage />}
                 />
                 <Route
                     path="/register"
-                    element={isAuthenticated ? <Navigate to="/dashboard" /> : <RegisterPage />}
+                    element={isAuthenticated ? <Navigate to={roleHome} /> : <RegisterPage />}
                 />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
