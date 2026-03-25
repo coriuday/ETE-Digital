@@ -1,10 +1,21 @@
 """
 WebSocket — Real-Time Notification Manager
 
-Authenticated via JWT query param: ws://host/api/ws/{user_id}?token=<access_token>
+Authentication flow (Fix for audit issues #3 & #4):
+  1. Client connects — connection is ACCEPTED before auth check.
+  2. Client MUST send {"type": "auth", "token": "<access_token>"} within 10 seconds.
+  3. Server verifies the JWT, binds the connection to the user, then sends {"type": "connected"}.
+  4. Connections that fail to authenticate within the timeout are closed with 1008.
+
+NOTE on multi-worker scaling (audit issue #4):
+  The in-memory dict works correctly for single-worker development deployments.
+  For production with multiple Uvicorn workers, replace with a Redis pub/sub backend:
+    - Each worker subscribes to "ws:notify:{user_id}" on connect/disconnect.
+    - `send_to_user` publishes to that channel; the worker holding the socket delivers it.
+  REDIS_URL is now a required production setting (enforced in config.py).
 """
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
-from typing import Dict, Optional
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+from typing import Dict
 import asyncio
 import json
 import logging
@@ -15,6 +26,8 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+AUTH_TIMEOUT_SECONDS = 10
+
 
 class ConnectionManager:
     """Manages active WebSocket connections keyed by user_id (str)."""
@@ -23,7 +36,6 @@ class ConnectionManager:
         self.active: Dict[str, WebSocket] = {}
 
     async def connect(self, user_id: str, ws: WebSocket):
-        await ws.accept()
         self.active[user_id] = ws
         logger.info(f"[WS] Connected: {user_id}  active={len(self.active)}")
 
@@ -63,27 +75,51 @@ ws_manager = ConnectionManager()
 async def websocket_endpoint(
     websocket: WebSocket,
     user_id: str,
-    token: Optional[str] = Query(default=None),
 ):
     """
     WebSocket endpoint for real-time notifications.
 
-    Connect: ws://localhost:8000/api/ws/{user_id}?token=<JWT>
-    The JWT must belong to the same user_id.
+    Connect: ws://localhost:8000/api/ws/{user_id}
+    Authenticate: After connecting, immediately send:
+        {"type": "auth", "token": "<JWT access token>"}
+    Do NOT pass the token in the URL — it would be logged by every proxy/server.
     """
-    # ---- Auth gate ----
-    if not token:
+    # Accept the connection before authentication so we can send a close frame
+    # with a proper status code if auth fails.
+    await websocket.accept()
+
+    # ---- Auth gate: wait for the client to send the token as the first message ----
+    try:
+        raw = await asyncio.wait_for(
+            websocket.receive_text(), timeout=AUTH_TIMEOUT_SECONDS
+        )
+        msg = json.loads(raw)
+    except asyncio.TimeoutError:
+        logger.warning(f"[WS] Auth timeout for user_id={user_id}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+    except Exception as e:
+        logger.warning(f"[WS] Invalid auth message for user_id={user_id}: {e}")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
+    if msg.get("type") != "auth" or not msg.get("token"):
+        logger.warning(f"[WS] Missing auth message from user_id={user_id}")
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    token = msg["token"]
     payload = decode_access_token(token)
     if not payload or payload.get("sub") != user_id:
+        logger.warning(f"[WS] Invalid JWT for user_id={user_id}")
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
+    # ---- Authenticated: register the connection ----
     await ws_manager.connect(user_id, websocket)
-    # Send initial welcome
-    await ws_manager.send_to_user(user_id, {"type": "connected", "message": "Real-time notifications active"})
+    await ws_manager.send_to_user(
+        user_id, {"type": "connected", "message": "Real-time notifications active"}
+    )
 
     try:
         while True:

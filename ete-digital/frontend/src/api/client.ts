@@ -78,12 +78,11 @@ api.interceptors.response.use(
 
                 const { access_token } = response.data;
 
-                // Update in-memory token via the auth store module setter
-                // (The store updates _accessToken and _refreshToken internally on the next login;
-                //  here we update the module-level variable directly for the retry)
-                // eslint-disable-next-line @typescript-eslint/no-var-requires
-                const { useAuthStore } = await import('../stores/authStore');
-                await useAuthStore.getState().fetchUser();
+                // CRITICAL FIX (audit issue #5):
+                // Update the module-level _accessToken so ALL subsequent requests
+                // use the new token — not just the manually patched retry below.
+                const { setAccessToken } = await import('../stores/authStore');
+                setAccessToken(access_token);
 
                 // Retry original request with new token
                 if (originalRequest.headers) {
