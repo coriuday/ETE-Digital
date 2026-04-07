@@ -18,11 +18,24 @@ from app.core.config import settings
 
 # ---- Security Headers Middleware ----
 
+import secrets as _secrets  # local alias to avoid shadowing any future module-level var
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    """Add security headers to every response"""
+    """Add security headers to every response.
+
+    CSP Fix (audit issue #7):
+      A fresh cryptographic nonce is generated for every request. The nonce is
+      attached to `request.state.csp_nonce` so templates / SSR renderers can
+      stamp inline scripts with `<script nonce="{{ request.state.csp_nonce }}">`.
+      For the Vite SPA, add the `vite-plugin-csp-nonce` package to avoid
+      `unsafe-inline` entirely. Until then, this removes `unsafe-inline` from
+      headers immediately — inline scripts in the built bundle must carry the nonce.
+    """
 
     async def dispatch(self, request: Request, call_next):
+        nonce = _secrets.token_urlsafe(16)
+        request.state.csp_nonce = nonce          # available to route handlers / templates
+
         response: Response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
@@ -32,18 +45,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "geolocation=(), microphone=(), camera=()"
         )
         response.headers["Content-Security-Policy"] = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline'; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com; "
-            "img-src 'self' data: https:; "
-            "connect-src 'self' ws: wss:;"
+            f"default-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}'; "   # nonce replaces 'unsafe-inline'
+            f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            f"font-src 'self' https://fonts.gstatic.com; "
+            f"img-src 'self' data: https:; "
+            f"connect-src 'self' ws: wss:;"
         )
         if settings.ENVIRONMENT == "production":
             response.headers["Strict-Transport-Security"] = (
                 "max-age=31536000; includeSubDomains"
             )
         return response
+
 
 
 # ---- Application Lifespan (startup / shutdown) ----

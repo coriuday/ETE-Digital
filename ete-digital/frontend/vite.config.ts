@@ -22,7 +22,7 @@ export default defineConfig({
     },
     build: {
         outDir: 'dist',
-        sourcemap: true,
+        sourcemap: 'hidden', // generates maps for Sentry/error tracking but does NOT serve them publicly
         chunkSizeWarningLimit: 1000,
         rollupOptions: {
             output: {

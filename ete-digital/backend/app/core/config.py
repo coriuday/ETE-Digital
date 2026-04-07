@@ -4,9 +4,8 @@ Centralized settings management using Pydantic BaseSettings
 """
 
 from typing import List, Optional
+from pydantic import PostgresDsn, model_validator
 from pydantic_settings import BaseSettings
-from pydantic import PostgresDsn
-import secrets
 
 
 class Settings(BaseSettings):
@@ -16,8 +15,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "ETE Digital"
     APP_VERSION: str = "1.0.0"
     ENVIRONMENT: str = "development"
-    DEBUG: bool = True
-
+    DEBUG: bool = False
     # Server
     HOST: str = "0.0.0.0"  # nosec B104 — intentional: container bind-all for Docker
     PORT: int = 8000
@@ -30,16 +28,15 @@ class Settings(BaseSettings):
     # Redis (optional — used only if REDIS_URL provided; falls back to in-memory)
     REDIS_URL: Optional[str] = None
     REDIS_CACHE_TTL: int = 3600  # 1 hour
-
-    # Security - JWT
-    JWT_SECRET_KEY: str = secrets.token_urlsafe(32)
+    
+    # Security - JWT  ← REQUIRED: must be set via JWT_SECRET_KEY env var
+    JWT_SECRET_KEY: str  # no default — must be provided explicitly
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # Security - Encryption (field-level)
-    ENCRYPTION_KEY: str = secrets.token_urlsafe(32)
-
+    # Security - Encryption (field-level)  ← REQUIRED: must be set via ENCRYPTION_KEY env var
+    ENCRYPTION_KEY: str  # no default — must be provided explicitly
     # Security - Password
     PASSWORD_MIN_LENGTH: int = 8
     PASSWORD_REQUIRE_UPPERCASE: bool = True
@@ -60,10 +57,7 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
-
-    # Frontend URL used for building email links
-    FRONTEND_URL: str = "http://localhost:5173"
-
+    
     # OAuth2 - Google
     GOOGLE_CLIENT_ID: Optional[str] = None
     GOOGLE_CLIENT_SECRET: Optional[str] = None
@@ -119,6 +113,22 @@ class Settings(BaseSettings):
     # Monitoring
     SENTRY_DSN: Optional[str] = None
     LOG_LEVEL: str = "INFO"
+    
+    @model_validator(mode='after')
+    def _validate_production_settings(self) -> 'Settings':
+        """Enforce settings that are critical in non-development environments."""
+        if self.ENVIRONMENT == 'production':
+            if self.DEBUG:
+                raise ValueError(
+                    "DEBUG must be False in production. "
+                    "Set ENVIRONMENT=development to use debug mode."
+                )
+            if not self.REDIS_URL:
+                raise ValueError(
+                    "REDIS_URL must be set in production for rate limiting and "
+                    "WebSocket pub/sub to function correctly across workers."
+                )
+        return self
 
     class Config:
         env_file = ".env"

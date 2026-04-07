@@ -30,6 +30,15 @@ htmlcov/
 *.cover
 .hypothesis/
 
+# Linting reports (these should never be committed — fix the violations instead)
+flake8_report.txt
+*.flake8
+bandit_report.json
+
+# Ad-hoc / one-off scripts at backend root (use backend/scripts/ instead)
+backend/generate_hashes.py
+backend/setup_db.py
+
 # MyPy
 .mypy_cache/
 .dmypy.json

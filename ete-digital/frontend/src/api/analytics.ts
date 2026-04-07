@@ -48,12 +48,15 @@ export const analyticsApi = {
         return response.data;
     },
 
-    // Legacy aliases kept for backwards compat
+    // @deprecated — Use `getAnalyticsSummary` instead.
+    // TODO: Remove these aliases once all callers are updated. Track at issue #N.
     getDashboard: async (days = 30) => {
         const response = await api.get('/api/analytics/summary', { params: { days } });
         return response.data;
     },
 
+    // @deprecated — Use job detail API directly via jobsApi.
+    // TODO: Remove these aliases once all callers are updated. Track at issue #N.
     getJobAnalytics: async (jobId: string) => {
         const response = await api.get(`/api/jobs/${jobId}`);
         return response.data;

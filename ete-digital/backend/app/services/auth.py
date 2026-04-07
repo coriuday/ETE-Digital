@@ -53,7 +53,7 @@ class AuthService:
             )
 
         # Auto-verify in development so login works immediately
-        is_dev = getattr(settings, "ENVIRONMENT", "production") == "development"
+        is_dev = settings.ENVIRONMENT == 'development'
 
         # Create user
         user = User(
