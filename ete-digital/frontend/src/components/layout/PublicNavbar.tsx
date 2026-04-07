@@ -18,7 +18,6 @@ export default function PublicNavbar() {
     const navLinks = [
         { label: 'Jobs', href: '/jobs' },
         { label: 'How It Works', href: '/how-it-works' },
-        { label: 'Pricing', href: '/pricing' },
         { label: 'About', href: '/about' },
     ];
 
