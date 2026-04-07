@@ -13,12 +13,12 @@ const values = [
     { icon: <Zap className="w-6 h-6 text-primary-600" />, title: 'Speed to Hire', desc: 'Traditional hiring takes 45+ days. Our streamlined tryout process cuts time-to-hire to under 2 weeks.' },
 ];
 
-const team = [
-    { name: 'Arjun Mehta', role: 'CEO & Co-founder', initials: 'AM', bio: 'Former engineering manager at Google. Frustrated by 6-month hiring cycles, he built the solution.' },
-    { name: 'Kavya Reddy', role: 'CTO & Co-founder', initials: 'KR', bio: 'Ex-Stripe engineer. Built the escrow payment system that makes paid tryouts trustworthy and fair.' },
-    { name: 'Siddhant Joshi', role: 'Head of Product', initials: 'SJ', bio: 'Previously at LinkedIn. Believes every candidate deserves a fair chance to show their real abilities.' },
-    { name: 'Meera Nair', role: 'Head of Operations', initials: 'MN', bio: 'Passionate about building equitable hiring systems that work for candidates from all backgrounds.' },
-];
+// const team = [
+//     { name: 'Arjun Mehta', role: 'CEO & Co-founder', initials: 'AM', bio: 'Former engineering manager at Google. Frustrated by 6-month hiring cycles, he built the solution.' },
+//     { name: 'Kavya Reddy', role: 'CTO & Co-founder', initials: 'KR', bio: 'Ex-Stripe engineer. Built the escrow payment system that makes paid tryouts trustworthy and fair.' },
+//     { name: 'Siddhant Joshi', role: 'Head of Product', initials: 'SJ', bio: 'Previously at LinkedIn. Believes every candidate deserves a fair chance to show their real abilities.' },
+//     { name: 'Meera Nair', role: 'Head of Operations', initials: 'MN', bio: 'Passionate about building equitable hiring systems that work for candidates from all backgrounds.' },
+// ];
 
 export default function AboutPage() {
     return (
@@ -106,7 +106,7 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Team */}
+            {/* Team
             <section className="py-16 bg-white">
                 <div className="max-w-6xl mx-auto px-4">
                     <h2 className="text-3xl font-bold text-gray-900 text-center mb-12">Meet the team</h2>
@@ -123,7 +123,7 @@ export default function AboutPage() {
                         ))}
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* CTA */}
             <section className="py-16 bg-gradient-to-r from-primary-600 to-secondary-700">
