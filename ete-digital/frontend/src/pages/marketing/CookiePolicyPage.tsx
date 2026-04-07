@@ -7,7 +7,7 @@ const CookiePolicyPage = () => {
             <div className="prose prose-invert border border-white/10 rounded-xl p-8 bg-slate-900/50 backdrop-blur-sm">
                 <p>Last updated: {new Date().toLocaleDateString()}</p>
                 <h2 className="text-2xl mt-6 mb-4">1. How We Use Cookies</h2>
-                <p>We use essential cookies to maintain your session and security on ETE Digital.</p>
+                <p>We use essential cookies to maintain your session and security on Jobsrow.</p>
             </div>
         </div>
     );

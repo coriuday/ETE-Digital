@@ -2,13 +2,16 @@
 Database connection and session management
 SQLAlchemy setup with async support
 """
+
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings
 
 
 # Convert PostgresDsn to async URL
-database_url = str(settings.DATABASE_URL).replace("postgresql://", "postgresql+asyncpg://")
+database_url = str(settings.DATABASE_URL).replace(
+    "postgresql://", "postgresql+asyncpg://"
+)
 
 # Create async engine
 engine = create_async_engine(
@@ -27,6 +30,7 @@ AsyncSessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
+
 
 # Base class for models (SQLAlchemy 2.x style)
 class Base(DeclarativeBase):

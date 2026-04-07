@@ -5,6 +5,7 @@ Uses APScheduler AsyncIOScheduler so it runs inside the FastAPI event loop.
 Tasks:
   - expire_jobs: Close jobs whose expires_at < now (runs every 30 min)
 """
+
 import logging
 from datetime import datetime, timezone
 

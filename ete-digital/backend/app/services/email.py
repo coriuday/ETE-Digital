@@ -6,6 +6,7 @@ to the console so the flow can be tested without a real mail server.
 Set SMTP_HOST=localhost, SMTP_PORT=1025 with MailHog for local testing.
 For Gmail/Mailgun, set SMTP_USE_TLS=True and SMTP_PORT=587.
 """
+
 import smtplib
 import logging
 from email.mime.text import MIMEText
@@ -35,7 +36,12 @@ class EmailService:
         logger.warning(
             "\n%s\n📧 EMAIL (console fallback — SMTP unavailable)\n"
             "To: %s\nSubject: %s\n%s\n%s\n%s",
-            separator, to_email, subject, separator, html_content, separator
+            separator,
+            to_email,
+            subject,
+            separator,
+            html_content,
+            separator,
         )
 
     def send_email(
@@ -43,7 +49,7 @@ class EmailService:
         to_email: str,
         subject: str,
         html_content: str,
-        text_content: Optional[str] = None
+        text_content: Optional[str] = None,
     ) -> bool:
         """Send an email. Falls back to console log if SMTP fails or is disabled."""
         if not self.enabled:

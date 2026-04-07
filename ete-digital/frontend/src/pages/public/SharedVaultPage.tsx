@@ -151,7 +151,7 @@ export default function SharedVaultPage() {
                 {/* Footer */}
                 <div className="mt-12 text-center">
                     <p className="text-primary-200 text-sm">
-                        Powered by <strong>ETE Digital</strong> • Open-source job platform
+                        Powered by <strong>Jobsrow</strong> • Open-source job platform
                     </p>
                 </div>
             </main>

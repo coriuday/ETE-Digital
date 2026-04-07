@@ -5,6 +5,7 @@ Usage:
     from app.services.notification_service import notification_service
     await notification_service.create_and_push(db, user_id, "tryout", "Title", "Body", "/link")
 """
+
 from datetime import datetime, timezone
 from typing import Optional
 import logging
@@ -56,6 +57,7 @@ class NotificationService:
         """Push a notification payload to WebSocket if user is online."""
         try:
             from app.api.platform.websocket import ws_manager
+
             payload = {
                 "type": "notification",
                 "data": {

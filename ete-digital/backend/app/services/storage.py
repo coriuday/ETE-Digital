@@ -1,13 +1,13 @@
 """
 Storage service for file uploads using MinIO
 """
-import io
+
 from typing import Optional, BinaryIO
 from app.core.config import settings
 
 try:
     from minio import Minio
-    from minio.error import S3Error
+
     MINIO_AVAILABLE = True
 except ImportError:
     MINIO_AVAILABLE = False
@@ -50,13 +50,13 @@ class StorageService:
     ) -> Optional[str]:
         """
         Upload a file to MinIO storage.
-        
+
         Args:
             file_data: File-like object
             file_path: Path in bucket (e.g., 'avatars/user-id.jpg')
             content_type: MIME type
             file_size: File size in bytes (-1 for unknown)
-        
+
         Returns:
             Public URL of uploaded file, or None on failure
         """
@@ -71,10 +71,12 @@ class StorageService:
                 object_name=file_path,
                 data=file_data,
                 length=file_size,
-                content_type=content_type
+                content_type=content_type,
             )
             protocol = "https" if settings.MINIO_SECURE else "http"
-            return f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket_name}/{file_path}"
+            return (
+                f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket_name}/{file_path}"
+            )
         except Exception as e:
             print(f"Failed to upload file: {e}")
             return None
@@ -82,10 +84,10 @@ class StorageService:
     def delete_file(self, file_path: str) -> bool:
         """
         Delete a file from MinIO storage.
-        
+
         Args:
             file_path: Path in bucket
-        
+
         Returns:
             True if deleted successfully
         """
@@ -100,18 +102,21 @@ class StorageService:
             print(f"Failed to delete file: {e}")
             return False
 
-    def get_presigned_url(self, file_path: str, expires_seconds: int = 3600) -> Optional[str]:
+    def get_presigned_url(
+        self, file_path: str, expires_seconds: int = 3600
+    ) -> Optional[str]:
         """
         Get a temporary presigned URL for a file.
-        
+
         Args:
             file_path: Path in bucket
             expires_seconds: URL validity in seconds
-        
+
         Returns:
             Presigned URL or None
         """
         from datetime import timedelta
+
         client = self._get_client()
         if not client:
             return None
@@ -120,7 +125,7 @@ class StorageService:
             return client.presigned_get_object(
                 bucket_name=self.bucket_name,
                 object_name=file_path,
-                expires=timedelta(seconds=expires_seconds)
+                expires=timedelta(seconds=expires_seconds),
             )
         except Exception as e:
             print(f"Failed to generate presigned URL: {e}")
@@ -129,18 +134,19 @@ class StorageService:
     def get_file_path(self, category: str, user_id: str, filename: str) -> str:
         """
         Generate a structured file path.
-        
+
         Args:
             category: 'avatars', 'resumes', 'vault', 'submissions'
             user_id: User UUID string
             filename: Original filename
-        
+
         Returns:
             Structured path: '{category}/{user_id}/{filename}'
         """
         import re
+
         # Sanitize filename
-        safe_filename = re.sub(r'[^\w\-_\.]', '_', filename)
+        safe_filename = re.sub(r"[^\w\-_\.]", "_", filename)
         return f"{category}/{user_id}/{safe_filename}"
 
 

@@ -62,7 +62,7 @@ vi.mock('../api/vault', () => ({
     },
 }));
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 describe('VaultDashboard — API and filtering logic', () => {
     beforeEach(() => { vi.clearAllMocks(); });

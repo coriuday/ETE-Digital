@@ -265,45 +265,45 @@ export default function JobSearchPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-slate-50 font-sans selection:bg-blue-500/30">
+        <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans selection:bg-violet-500/30 transition-colors duration-300">
             {/* Ambient Backgrounds */}
             <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600/10 rounded-full blur-[120px]" />
                 <div className="absolute top-[20%] right-[-10%] w-[30%] h-[50%] bg-purple-600/10 rounded-full blur-[100px]" />
             </div>
 
-            <div className="relative z-10 pt-24 pb-8 border-b border-white/5 bg-slate-900/30 backdrop-blur-md">
+            <div className="relative z-10 pt-24 pb-8 border-b border-slate-200 dark:border-white/5 bg-white/80 dark:bg-slate-900/30 backdrop-blur-md">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-10 text-center md:text-left">
-                        <h1 className="text-4xl md:text-5xl font-black mb-4">
-                            Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Elite Opportunities</span>
+                        <h1 className="text-4xl md:text-5xl font-black mb-4 text-slate-900 dark:text-white">
+                            Explore <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 to-indigo-600 dark:from-violet-400 dark:to-indigo-400">Elite Opportunities</span>
                         </h1>
-                        <p className="text-slate-400 text-lg md:text-xl max-w-2xl">
+                        <p className="text-slate-500 dark:text-slate-400 text-lg md:text-xl max-w-2xl">
                             {total > 0 ? `${total.toLocaleString()} positions curated for top engineering talent.` : 'Search from thousands of verified roles tailored to your skills.'}
                         </p>
                     </motion.div>
 
-                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 bg-slate-900/60 p-3 rounded-3xl border border-white/10 backdrop-blur-xl shadow-2xl">
-                        <div className="flex-1 flex items-center gap-3 px-4 bg-slate-800/50 rounded-2xl border border-white/5 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all">
+                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 bg-white/90 dark:bg-slate-900/60 p-3 rounded-3xl border border-slate-200 dark:border-white/10 backdrop-blur-xl shadow-sm dark:shadow-2xl">
+                        <div className="flex-1 flex items-center gap-3 px-4 bg-slate-100 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/5 focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/50 transition-all">
                             <Search size={20} className="text-blue-400 flex-shrink-0" />
                             <input
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Job title, skills, or company..."
-                                className="flex-1 py-4 bg-transparent outline-none text-white placeholder:text-slate-500 font-medium"
+                                className="flex-1 py-4 bg-transparent outline-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                             />
                         </div>
-                        <div className="md:w-1/3 flex items-center gap-3 px-4 bg-slate-800/50 rounded-2xl border border-white/5 focus-within:border-blue-500/50 focus-within:ring-1 focus-within:ring-blue-500/50 transition-all">
+                        <div className="md:w-1/3 flex items-center gap-3 px-4 bg-slate-100 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-white/5 focus-within:border-violet-500/50 focus-within:ring-1 focus-within:ring-violet-500/50 transition-all">
                             <MapPin size={20} className="text-purple-400 flex-shrink-0" />
                             <input
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
                                 placeholder="City or Remote"
-                                className="flex-1 py-4 bg-transparent outline-none text-white placeholder:text-slate-500 font-medium"
+                                className="flex-1 py-4 bg-transparent outline-none text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 font-medium"
                             />
                         </div>
                         <button type="submit"
-                            className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold rounded-2xl hover:scale-[1.02] transform transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+                            className="flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-2xl hover:scale-[1.02] transform transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)]">
                             Find Jobs
                         </button>
                     </form>

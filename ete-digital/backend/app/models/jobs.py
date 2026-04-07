@@ -1,7 +1,16 @@
 """
 Job and Application Models — aligned with service/schema layer
 """
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum as SQLEnum, Text, Numeric
+
+from sqlalchemy import (
+    Column,
+    String,
+    Boolean,
+    DateTime,
+    Integer,
+    Enum as SQLEnum,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 import uuid
@@ -12,6 +21,7 @@ from app.core.database import Base
 
 class JobType(str, enum.Enum):
     """Job type enumeration"""
+
     FULL_TIME = "full_time"
     PART_TIME = "part_time"
     CONTRACT = "contract"
@@ -20,6 +30,7 @@ class JobType(str, enum.Enum):
 
 class JobStatus(str, enum.Enum):
     """Job status enumeration"""
+
     DRAFT = "draft"
     ACTIVE = "active"
     CLOSED = "closed"
@@ -28,6 +39,7 @@ class JobStatus(str, enum.Enum):
 
 class Job(Base):
     """Job posting model"""
+
     __tablename__ = "jobs"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -54,11 +66,15 @@ class Job(Base):
     experience_required = Column(String(50), nullable=True)
 
     # Status
-    status = Column(SQLEnum(JobStatus), default=JobStatus.DRAFT, nullable=False, index=True)
+    status = Column(
+        SQLEnum(JobStatus), default=JobStatus.DRAFT, nullable=False, index=True
+    )
 
     # Tryout configuration
     has_tryout = Column(Boolean, default=False, nullable=False)
-    tryout_config = Column(JSONB)  # {'duration_days': 3, 'payment': 5000, 'rubric': {...}}
+    tryout_config = Column(
+        JSONB
+    )  # {'duration_days': 3, 'payment': 5000, 'rubric': {...}}
 
     # Outcome-based pricing (optional)
     outcome_terms = Column(JSONB)
@@ -69,7 +85,9 @@ class Job(Base):
     applications_count = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     published_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True))
@@ -80,6 +98,7 @@ class Job(Base):
 
 class ApplicationStatus(str, enum.Enum):
     """Application status enumeration"""
+
     PENDING = "pending"
     REVIEWED = "reviewed"
     SHORTLISTED = "shortlisted"
@@ -90,6 +109,7 @@ class ApplicationStatus(str, enum.Enum):
 
 class Application(Base):
     """Job application model"""
+
     __tablename__ = "applications"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -104,7 +124,9 @@ class Application(Base):
     vault_share_token = Column(String(500))  # Expiring link to talent vault items
 
     # Status
-    status = Column(SQLEnum(ApplicationStatus), default=ApplicationStatus.PENDING, nullable=False)
+    status = Column(
+        SQLEnum(ApplicationStatus), default=ApplicationStatus.PENDING, nullable=False
+    )
 
     # Matching score (if applicable)
     match_score = Column(Integer)  # 0-100
@@ -114,7 +136,9 @@ class Application(Base):
     employer_notes = Column(Text)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     def __repr__(self):

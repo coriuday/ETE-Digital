@@ -36,7 +36,7 @@ export default function EmailVerificationPage() {
                         <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center">
                             <Briefcase className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-2xl font-bold text-white">ETE Digital</span>
+                        <span className="text-2xl font-bold text-white">Jobsrow</span>
                     </Link>
                 </div>
 
@@ -54,7 +54,7 @@ export default function EmailVerificationPage() {
                                 <CheckCircle className="w-7 h-7 text-green-500" />
                             </div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Email verified!</h2>
-                            <p className="text-gray-500 text-sm mb-6">Your account is now active. You can log in and start using ETE Digital.</p>
+                            <p className="text-gray-500 text-sm mb-6">Your account is now active. You can log in and start using Jobsrow.</p>
                             <Link to="/login" className="inline-block px-8 py-3 bg-gradient-to-r from-primary-600 to-secondary-700 text-white rounded-xl font-semibold hover:opacity-90 transition-opacity">
                                 Go to Login
                             </Link>

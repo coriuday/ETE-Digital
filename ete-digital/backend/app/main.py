@@ -1,6 +1,7 @@
 """
 FastAPI Application Main Entry Point
 """
+
 from contextlib import asynccontextmanager
 import os
 from fastapi import FastAPI, Request, Response
@@ -17,6 +18,7 @@ from app.core.config import settings
 
 # ---- Security Headers Middleware ----
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to every response"""
 
@@ -26,7 +28,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        response.headers["Permissions-Policy"] = (
+            "geolocation=(), microphone=(), camera=()"
+        )
         response.headers["Content-Security-Policy"] = (
             "default-src 'self'; "
             "script-src 'self' 'unsafe-inline'; "
@@ -36,23 +40,28 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "connect-src 'self' ws: wss:;"
         )
         if settings.ENVIRONMENT == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
         return response
 
 
 # ---- Application Lifespan (startup / shutdown) ----
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage startup and shutdown events."""
     # Startup
     from app.services.scheduler import start_scheduler
+
     start_scheduler()
 
     yield  # Application running
 
     # Shutdown
     from app.services.scheduler import stop_scheduler
+
     stop_scheduler()
 
 
@@ -73,7 +82,6 @@ app.add_middleware(SlowAPIMiddleware)
 
 # Security Headers
 app.add_middleware(SecurityHeadersMiddleware)
-
 
 
 # GZip Compression
@@ -107,28 +115,34 @@ async def root():
     return {
         "message": f"Welcome to {settings.APP_NAME} API",
         "version": settings.APP_VERSION,
-        "docs": "/api/docs" if settings.DEBUG else "Documentation disabled in production",
+        "docs": (
+            "/api/docs" if settings.DEBUG else "Documentation disabled in production"
+        ),
     }
 
 
 # Register routers
-from app.api.auth import auth
-from app.api.users import users
-from app.api.jobs import jobs, analytics
-from app.api.talent import tryouts, vault
-from app.api.platform import notifications, admin, websocket
+from app.api.auth import auth  # noqa: E402
+from app.api.users import users  # noqa: E402
+from app.api.jobs import jobs, analytics  # noqa: E402
+from app.api.talent import tryouts, vault  # noqa: E402
+from app.api.platform import notifications, admin, websocket  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])
 app.include_router(vault.router, prefix="/api/vault", tags=["Talent Vault"])
-app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
+app.include_router(
+    notifications.router, prefix="/api/notifications", tags=["Notifications"]
+)
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
 
 # Serve uploaded files (resumes, avatars)
-_uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+_uploads_dir = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads"
+)
 os.makedirs(_uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")

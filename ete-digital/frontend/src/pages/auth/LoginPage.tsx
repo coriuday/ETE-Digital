@@ -57,7 +57,7 @@ export default function LoginPage() {
                         <div className="w-9 h-9 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20 flex items-center justify-center">
                             <Briefcase size={18} className="text-white" />
                         </div>
-                        <span className="text-white font-extrabold text-xl tracking-tight">ETE Digital</span>
+                        <span className="text-white font-extrabold text-xl tracking-tight">Jobsrow</span>
                     </div>
 
                     {/* Main copy */}
@@ -108,7 +108,7 @@ export default function LoginPage() {
                         <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-violet-600 rounded-lg flex items-center justify-center">
                             <Briefcase size={16} className="text-white" />
                         </div>
-                        <span className="font-extrabold text-gray-900 text-lg">ETE Digital</span>
+                        <span className="font-extrabold text-gray-900 text-lg">Jobsrow</span>
                     </div>
 
                     <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Welcome back</h1>
@@ -193,7 +193,7 @@ export default function LoginPage() {
                     </p>
 
                     <p className="text-center text-xs text-gray-300 mt-6">
-                        ETE Digital © 2025 · Building the future of hiring
+                        Jobsrow © 2025 · Building the future of hiring
                     </p>
                 </div>
             </div>

@@ -75,7 +75,7 @@ export default function RegisterPage() {
         <div className="min-h-screen bg-gradient-to-br from-primary-900 via-primary-800 to-secondary-900 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
                 <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold text-white mb-2">ETE Digital</h1>
+                    <h1 className="text-4xl font-bold text-white mb-2">Jobsrow</h1>
                     <p className="text-primary-200">Join the future of hiring</p>
                 </div>
 

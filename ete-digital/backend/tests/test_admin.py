@@ -1,8 +1,8 @@
 """
 Admin endpoint tests — platform stats, user management, job moderation
 """
+
 import pytest
-import uuid as _uuid
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio
@@ -24,7 +24,9 @@ async def test_get_platform_stats(client: AsyncClient, admin_token: str):
     assert isinstance(data["total_users"], int)
 
 
-async def test_get_platform_stats_candidate_forbidden(client: AsyncClient, candidate_token: str):
+async def test_get_platform_stats_candidate_forbidden(
+    client: AsyncClient, candidate_token: str
+):
     """Non-admin cannot access platform stats."""
     response = await client.get(
         "/api/admin/stats",
@@ -58,7 +60,9 @@ async def test_list_users_filter_by_role(client: AsyncClient, admin_token: str):
         assert user["role"] == "candidate"
 
 
-async def test_toggle_user_active(client: AsyncClient, admin_token: str, candidate_user):
+async def test_toggle_user_active(
+    client: AsyncClient, admin_token: str, candidate_user
+):
     """Admin can toggle a user's active status."""
     user_id = str(candidate_user.id)
     original_status = candidate_user.is_active

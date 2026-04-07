@@ -1,13 +1,14 @@
 """
 Talent Vault endpoint tests
 """
+
 import pytest
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio
 
 VAULT_ITEM_PAYLOAD = {
-    "type": "project",          # VaultItemType enum value (lowercase)
+    "type": "project",  # VaultItemType enum value (lowercase)
     "title": "My Portfolio Project",
     "description": "An awesome project built with FastAPI and React",
     "file_url": "https://github.com/example/project",

@@ -1,6 +1,7 @@
 /**
  * Theme Context and Provider
- * Simple dark/light mode system
+ * Dark/light mode system with localStorage persistence
+ * Applies both Tailwind dark class + data-theme attribute
  */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
@@ -10,45 +11,36 @@ interface ThemeContextType {
     theme: Theme;
     toggleTheme: () => void;
     setTheme: (theme: Theme) => void;
+    isDark: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const [theme, setThemeState] = useState<Theme>(() => {
-        // Check localStorage
-        const stored = localStorage.getItem('ete_theme');
-        if (stored === 'light' || stored === 'dark') {
-            return stored;
-        }
-        // Check system preference
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            return 'dark';
-        }
+        const stored = localStorage.getItem('jobsrow_theme');
+        if (stored === 'light' || stored === 'dark') return stored;
+        if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) return 'dark';
         return 'light';
     });
 
     useEffect(() => {
-        // Apply theme to document
+        const root = document.documentElement;
         if (theme === 'dark') {
-            document.documentElement.classList.add('dark');
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
         } else {
-            document.documentElement.classList.remove('dark');
+            root.classList.remove('dark');
+            root.removeAttribute('data-theme');
         }
-        // Save to localStorage
-        localStorage.setItem('ete_theme', theme);
+        localStorage.setItem('jobsrow_theme', theme);
     }, [theme]);
 
-    const toggleTheme = () => {
-        setThemeState(prev => prev === 'light' ? 'dark' : 'light');
-    };
-
-    const setTheme = (newTheme: Theme) => {
-        setThemeState(newTheme);
-    };
+    const toggleTheme = () => setThemeState(prev => prev === 'light' ? 'dark' : 'light');
+    const setTheme = (newTheme: Theme) => setThemeState(newTheme);
 
     return (
-        <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+        <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, isDark: theme === 'dark' }}>
             {children}
         </ThemeContext.Provider>
     );
@@ -56,8 +48,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
     const context = useContext(ThemeContext);
-    if (!context) {
-        throw new Error('useTheme must be used within ThemeProvider');
-    }
+    if (!context) throw new Error('useTheme must be used within ThemeProvider');
     return context;
 }

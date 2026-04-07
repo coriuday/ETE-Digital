@@ -7,7 +7,7 @@ const TermsPage = () => {
             <div className="prose prose-invert border border-white/10 rounded-xl p-8 bg-slate-900/50 backdrop-blur-sm">
                 <p>Last updated: {new Date().toLocaleDateString()}</p>
                 <h2 className="text-2xl mt-6 mb-4">1. Acceptance of Terms</h2>
-                <p>By accessing and using ETE Digital, you agree to be bound by these Terms of Service.</p>
+                <p>By accessing and using Jobsrow, you agree to be bound by these Terms of Service.</p>
             </div>
         </div>
     );

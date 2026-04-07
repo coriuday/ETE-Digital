@@ -2,7 +2,16 @@
 Tryout and Submission Models
 Aligned with TryoutCreate/TryoutResponse schemas
 """
-from sqlalchemy import Column, String, DateTime, Integer, Boolean, Enum as SQLEnum, Numeric, Text
+
+from sqlalchemy import (
+    Column,
+    String,
+    DateTime,
+    Integer,
+    Boolean,
+    Enum as SQLEnum,
+    Text,
+)
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 import uuid
@@ -13,6 +22,7 @@ from app.core.database import Base
 
 class TryoutStatus(str, enum.Enum):
     """Tryout status enumeration"""
+
     DRAFT = "draft"
     ACTIVE = "active"
     EXPIRED = "expired"
@@ -21,6 +31,7 @@ class TryoutStatus(str, enum.Enum):
 
 class Tryout(Base):
     """Job tryout/trial task model"""
+
     __tablename__ = "tryouts"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -30,36 +41,39 @@ class Tryout(Base):
     title = Column(String(255), nullable=False)
     description = Column(Text, nullable=False)
     requirements = Column(Text)
-    task_requirements = Column(JSONB)       # Detailed requirements (legacy)
-    test_cases = Column(JSONB)              # For code submissions
-    expected_deliverables = Column(JSONB)   # List of deliverables
+    task_requirements = Column(JSONB)  # Detailed requirements (legacy)
+    test_cases = Column(JSONB)  # For code submissions
+    expected_deliverables = Column(JSONB)  # List of deliverables
 
     # Duration and payment
-    estimated_duration_hours = Column(Integer, nullable=False, default=4)   # Schema field
-    duration_days = Column(Integer)          # Legacy field
-    payment_amount = Column(Integer, default=0)   # In cents
-    payment_currency = Column(String(3), default='USD')
-    currency = Column(String(3), default='INR')   # Legacy field
+    estimated_duration_hours = Column(
+        Integer, nullable=False, default=4
+    )  # Schema field
+    duration_days = Column(Integer)  # Legacy field
+    payment_amount = Column(Integer, default=0)  # In cents
+    payment_currency = Column(String(3), default="USD")
+    currency = Column(String(3), default="INR")  # Legacy field
 
     # Scoring rubric — aligned with schema (scoring_rubric key)
     scoring_rubric = Column(JSONB, nullable=False)
-    rubric = Column(JSONB)                  # Legacy field
+    rubric = Column(JSONB)  # Legacy field
     passing_score = Column(Integer, default=70)
     auto_grade_enabled = Column(Boolean, default=False)
 
     # Submission rules
     max_submissions = Column(Integer, default=1)
-    submission_format = Column(String(50), default='url')
+    submission_format = Column(String(50), default="url")
     submissions_count = Column(Integer, default=0)
 
     # Status
     status = Column(
-        SQLEnum(TryoutStatus, native_enum=False),
-        default=TryoutStatus.ACTIVE
+        SQLEnum(TryoutStatus, native_enum=False), default=TryoutStatus.ACTIVE
     )
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     expires_at = Column(DateTime(timezone=True))
 
@@ -69,6 +83,7 @@ class Tryout(Base):
 
 class SubmissionStatus(str, enum.Enum):
     """Submission status enumeration"""
+
     SUBMITTED = "submitted"
     GRADING = "grading"
     AUTO_GRADED = "auto_graded"
@@ -80,6 +95,7 @@ class SubmissionStatus(str, enum.Enum):
 
 class PaymentStatus(str, enum.Enum):
     """Payment status enumeration"""
+
     PENDING = "pending"
     ESCROWED = "escrowed"
     RELEASED = "released"
@@ -89,6 +105,7 @@ class PaymentStatus(str, enum.Enum):
 
 class TryoutSubmission(Base):
     """Tryout submission model"""
+
     __tablename__ = "tryout_submissions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -99,7 +116,7 @@ class TryoutSubmission(Base):
     submission_url = Column(String(500))
     submission_data = Column(JSONB)
     notes = Column(Text)
-    submission_notes = Column(Text)         # Legacy field alias
+    submission_notes = Column(Text)  # Legacy field alias
 
     # Scoring
     auto_score = Column(Integer)
@@ -114,19 +131,19 @@ class TryoutSubmission(Base):
 
     # Status
     status = Column(
-        SQLEnum(SubmissionStatus, native_enum=False),
-        default=SubmissionStatus.SUBMITTED
+        SQLEnum(SubmissionStatus, native_enum=False), default=SubmissionStatus.SUBMITTED
     )
 
     # Payment
     payment_status = Column(
-        SQLEnum(PaymentStatus, native_enum=False),
-        default=PaymentStatus.PENDING
+        SQLEnum(PaymentStatus, native_enum=False), default=PaymentStatus.PENDING
     )
     payment_transaction_id = Column(String(255))
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     graded_at = Column(DateTime(timezone=True))

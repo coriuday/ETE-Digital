@@ -6,11 +6,13 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../utils/useNotifications';
+import { useTheme } from '../../contexts/ThemeContext';
 import {
     LayoutDashboard, Search, Briefcase, FileText, Trophy,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X, ShieldCheck,
     PlusCircle, ClipboardList, Star, UserCheck, CheckCheck,
+    Sun, Moon, LayoutGrid,
 } from 'lucide-react';
 
 interface NavItem {
@@ -76,6 +78,8 @@ export default function AppShell({ children }: AppShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
+    const { theme, toggleTheme } = useTheme();
+    const isDark = theme === 'dark';
 
     const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
 
@@ -109,15 +113,18 @@ export default function AppShell({ children }: AppShellProps) {
             className={`flex flex-col h-full bg-gray-900 text-white transition-all duration-300
         ${mobile ? 'w-72' : collapsed ? 'w-20' : 'w-64'}`}
         >
-            {/* Logo */}
+            {/* Logo — Jobsrow */}
             <div className={`flex items-center gap-3 px-4 py-5 border-b border-white/10
         ${collapsed && !mobile ? 'justify-center' : ''}`}>
-                <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${roleColor} flex items-center justify-center flex-shrink-0`}>
-                    {user?.role === 'admin' ? <ShieldCheck size={18} /> : <Trophy size={18} />}
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
+                    {user?.role === 'admin' ? <ShieldCheck size={18} /> : <LayoutGrid size={18} />}
                 </div>
                 {(!collapsed || mobile) && (
                     <div>
-                        <p className="text-sm font-bold text-white leading-tight">ETE Digital</p>
+                        <div className="flex items-baseline gap-0">
+                            <span className="text-sm font-extrabold text-white leading-tight">Jobs</span>
+                            <span className="text-sm font-extrabold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">row</span>
+                        </div>
                         <p className="text-xs text-gray-400">{roleLabel} Panel</p>
                     </div>
                 )}
@@ -180,7 +187,7 @@ export default function AppShell({ children }: AppShellProps) {
     );
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <div className={`flex h-screen overflow-hidden transition-colors duration-200 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Desktop Sidebar */}
             <div className="hidden lg:flex flex-col relative flex-shrink-0">
                 <Sidebar />
@@ -212,15 +219,33 @@ export default function AppShell({ children }: AppShellProps) {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Topbar */}
-                <header className="bg-white border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center gap-4 flex-shrink-0">
+                <header className={`border-b px-4 lg:px-6 py-3 flex items-center gap-4 flex-shrink-0 transition-colors duration-200 ${
+                    isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                }`}>
                     <button
                         onClick={() => setMobileOpen(true)}
-                        className="lg:hidden p-2 rounded-lg text-gray-500 hover:bg-gray-100"
+                        className={`lg:hidden p-2 rounded-lg transition-colors ${
+                            isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'
+                        }`}
                     >
                         <Menu size={20} />
                     </button>
 
                     <div className="flex-1" />
+
+                    {/* Dark/Light Mode Toggle */}
+                    <button
+                        id="dashboard-theme-toggle"
+                        onClick={toggleTheme}
+                        aria-label="Toggle dark/light mode"
+                        className={`p-2 rounded-xl transition-all duration-200 ${
+                            isDark
+                                ? 'bg-gray-700 text-amber-400 hover:bg-gray-600'
+                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                    >
+                        {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                    </button>
 
 
 

@@ -32,7 +32,7 @@ export default function AboutPage() {
                         We're fixing how the world hires
                     </h1>
                     <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                        ETE Digital was born from a simple frustration: the hiring process was broken for everyone—candidates wasted time on unpaid tasks, and employers hired people who couldn't actually do the job.
+                        Jobsrow was born from a simple frustration: the hiring process was broken for everyone—candidates wasted time on unpaid tasks, and employers hired people who couldn't actually do the job.
                     </p>
                 </div>
             </section>
@@ -81,7 +81,7 @@ export default function AboutPage() {
                             <div className="space-y-4 text-gray-600 leading-relaxed text-sm">
                                 <p>In 2023, our co-founder Arjun was hiring engineers at a fast-growing startup. After 3 months, 120 interviews, and 15 take-home assignments (all unpaid), he was exhausted—and still hadn't found the right fit.</p>
                                 <p>Meanwhile, his friend Priya—a talented developer—had spent 40+ hours on unpaid take-homes for companies that ghosted her. The system was failing everyone.</p>
-                                <p>Arjun and Kavya teamed up to build ETE Digital: a platform where tryouts are paid, transparent, and lead to actual outcomes. Since launch, over ₹2.5 crore has been paid to candidates for completing tryouts.</p>
+                                <p>Arjun and Kavya teamed up to build Jobsrow: a platform where tryouts are paid, transparent, and lead to actual outcomes. Since launch, over ₹2.5 crore has been paid to candidates for completing tryouts.</p>
                                 <p className="font-medium text-gray-900">That's the future of hiring we're building.</p>
                             </div>
                         </div>

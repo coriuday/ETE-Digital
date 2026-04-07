@@ -32,6 +32,8 @@ import MyApplicationsPage from './pages/candidate/MyApplicationsPage';
 
 // ---- Public Pages ----
 import SharedVaultPage from './pages/public/SharedVaultPage';
+import CopyrightPage from './pages/public/CopyrightPage';
+import HowItWorksPage from './pages/public/HowItWorksPage';
 
 // ---- Employer Pages ----
 import EmployerJobsPage from './pages/employer/EmployerJobsPage';
@@ -102,11 +104,13 @@ export default function AppRouter() {
                 <Route path="/contact" element={<ContactPage />} />
                 <Route path="/faq" element={<FaqPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
+                <Route path="/how-it-works" element={<HowItWorksPage />} />
 
                 {/* Legal Pages */}
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/cookies" element={<CookiePolicyPage />} />
+                <Route path="/copyright" element={<CopyrightPage />} />
 
                 {/* Protected Routes */}
                 <Route element={<ProtectedRoute />}>

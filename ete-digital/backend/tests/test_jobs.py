@@ -1,6 +1,7 @@
 """
 Jobs and Applications endpoint tests
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -33,7 +34,9 @@ async def test_create_job_as_employer(client: AsyncClient, employer_token: str):
     assert data["status"] is not None
 
 
-async def test_create_job_as_candidate_forbidden(client: AsyncClient, candidate_token: str):
+async def test_create_job_as_candidate_forbidden(
+    client: AsyncClient, candidate_token: str
+):
     """Candidate cannot create a job — returns 403."""
     response = await client.post(
         "/api/jobs/",
@@ -77,5 +80,6 @@ async def test_search_jobs_with_query(client: AsyncClient, employer_token: str):
 async def test_get_job_not_found(client: AsyncClient):
     """Getting a non-existent job returns 404."""
     import uuid
+
     response = await client.get(f"/api/jobs/{uuid.uuid4()}")
     assert response.status_code == 404

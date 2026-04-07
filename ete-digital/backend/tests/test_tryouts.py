@@ -1,6 +1,7 @@
 """
 Tryout & submission endpoint tests
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -63,7 +64,9 @@ async def test_create_tryout_as_employer(client: AsyncClient, employer_token: st
     assert "id" in data
 
 
-async def test_create_tryout_as_candidate_forbidden(client: AsyncClient, candidate_token: str, employer_token: str):
+async def test_create_tryout_as_candidate_forbidden(
+    client: AsyncClient, candidate_token: str, employer_token: str
+):
     """Candidate cannot create a tryout — 403."""
     job_resp = await client.post(
         "/api/jobs/",
@@ -108,7 +111,9 @@ async def test_get_tryout_by_job(client: AsyncClient, employer_token: str):
     assert data["job_id"] == job_id
 
 
-async def test_submit_tryout_as_candidate(client: AsyncClient, employer_token: str, candidate_token: str):
+async def test_submit_tryout_as_candidate(
+    client: AsyncClient, employer_token: str, candidate_token: str
+):
     """Candidate can submit a solution for a tryout."""
     job_resp = await client.post(
         "/api/jobs/",

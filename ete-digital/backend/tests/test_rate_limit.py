@@ -1,6 +1,7 @@
 """
 Rate limiting tests — verifies SlowAPI returns 429 after limit is exceeded.
 """
+
 import pytest
 from httpx import AsyncClient
 
@@ -29,11 +30,14 @@ async def test_register_rate_limited(client: AsyncClient):
     """
     responses = []
     for i in range(6):
-        r = await client.post("/api/auth/register", json={
-            "email": f"ratelimit_{i}@test.com",
-            "password": "SecurePass1!",
-            "role": "candidate",
-        })
+        r = await client.post(
+            "/api/auth/register",
+            json={
+                "email": f"ratelimit_{i}@test.com",
+                "password": "SecurePass1!",
+                "role": "candidate",
+            },
+        )
         responses.append(r.status_code)
 
     assert 429 in responses, f"Expected 429 in responses, got: {responses}"

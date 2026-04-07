@@ -24,7 +24,7 @@ vi.mock('../api/auth', () => ({
     },
 }));
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 describe('Auth API mocking', () => {
     beforeEach(() => {

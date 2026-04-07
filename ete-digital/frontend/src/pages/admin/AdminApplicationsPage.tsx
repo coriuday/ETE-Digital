@@ -44,7 +44,7 @@ export default function AdminApplicationsPage() {
 
     useEffect(() => {
         fetchApplications();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        
     }, [page, statusFilter]);
 
     async function fetchApplications() {

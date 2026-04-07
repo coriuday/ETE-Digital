@@ -9,8 +9,8 @@ Quick start:
   docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=ete_dev_password_change_in_prod \
              -e POSTGRES_USER=ete_user -e POSTGRES_DB=ete_test postgres:15-alpine
 """
+
 import os
-import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -25,7 +25,7 @@ from app.models.users import User, UserRole
 
 TEST_DB_URL = os.environ.get(
     "TEST_DATABASE_URL",
-    "postgresql+asyncpg://ete_user:ete_dev_password_change_in_prod@localhost:5432/ete_digital"
+    "postgresql+asyncpg://ete_user:ete_dev_password_change_in_prod@localhost:5432/ete_digital",
 )
 
 
@@ -49,7 +49,9 @@ async def engine():
 @pytest_asyncio.fixture(scope="function")
 async def db_session(engine):
     """New session per test, auto-rolled back after each test."""
-    async_session = async_sessionmaker(engine, expire_on_commit=False, class_=AsyncSession)
+    async_session = async_sessionmaker(
+        engine, expire_on_commit=False, class_=AsyncSession
+    )
     async with async_session() as session:
         yield session
         await session.rollback()
@@ -58,18 +60,22 @@ async def db_session(engine):
 @pytest_asyncio.fixture(scope="function")
 async def client(db_session):
     """AsyncClient with DB dependency overridden to use test session."""
+
     async def override_get_db():
         yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
-    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as ac:
         yield ac
     app.dependency_overrides.clear()
 
 
 # ---- User Fixtures ----
 
-import uuid as _uuid
+import uuid as _uuid  # noqa: E402
+
 
 @pytest_asyncio.fixture
 async def candidate_user(db_session):
@@ -105,12 +111,20 @@ async def employer_user(db_session):
 
 @pytest_asyncio.fixture
 async def candidate_token(candidate_user):
-    return create_access_token({"sub": str(candidate_user.id), "role": "candidate", "email": candidate_user.email})
+    return create_access_token(
+        {
+            "sub": str(candidate_user.id),
+            "role": "candidate",
+            "email": candidate_user.email,
+        }
+    )
 
 
 @pytest_asyncio.fixture
 async def employer_token(employer_user):
-    return create_access_token({"sub": str(employer_user.id), "role": "employer", "email": employer_user.email})
+    return create_access_token(
+        {"sub": str(employer_user.id), "role": "employer", "email": employer_user.email}
+    )
 
 
 @pytest_asyncio.fixture
@@ -131,4 +145,6 @@ async def admin_user(db_session):
 
 @pytest_asyncio.fixture
 async def admin_token(admin_user):
-    return create_access_token({"sub": str(admin_user.id), "role": "admin", "email": admin_user.email})
+    return create_access_token(
+        {"sub": str(admin_user.id), "role": "admin", "email": admin_user.email}
+    )

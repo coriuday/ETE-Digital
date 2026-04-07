@@ -1,6 +1,7 @@
 """
 Company Profile and Interview Models
 """
+
 from sqlalchemy import Column, String, DateTime, Integer, Enum as SQLEnum, Text, Boolean
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
@@ -12,6 +13,7 @@ from app.core.database import Base
 
 class CompanySize(str, enum.Enum):
     """Company size enumeration"""
+
     STARTUP = "1-10"
     SMALL = "11-50"
     MEDIUM = "51-200"
@@ -21,6 +23,7 @@ class CompanySize(str, enum.Enum):
 
 class CompanyProfile(Base):
     """Employer's company profile"""
+
     __tablename__ = "company_profiles"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -60,7 +63,9 @@ class CompanyProfile(Base):
     verified_at = Column(DateTime(timezone=True))
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     def __repr__(self):
@@ -69,6 +74,7 @@ class CompanyProfile(Base):
 
 class InterviewStatus(str, enum.Enum):
     """Interview status"""
+
     SCHEDULED = "scheduled"
     COMPLETED = "completed"
     CANCELLED = "cancelled"
@@ -77,6 +83,7 @@ class InterviewStatus(str, enum.Enum):
 
 class InterviewType(str, enum.Enum):
     """Interview type"""
+
     VIDEO = "video"
     PHONE = "phone"
     IN_PERSON = "in_person"
@@ -87,6 +94,7 @@ class InterviewType(str, enum.Enum):
 
 class Interview(Base):
     """Scheduled interview model"""
+
     __tablename__ = "interviews"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -126,7 +134,9 @@ class Interview(Base):
     candidate_confirmed = Column(Boolean, default=False)
 
     # Timestamps
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     completed_at = Column(DateTime(timezone=True))
 

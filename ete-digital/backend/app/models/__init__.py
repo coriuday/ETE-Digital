@@ -1,6 +1,7 @@
 """
 Import all models for Alembic autogenerate
 """
+
 from app.models.users import User, UserProfile, RefreshToken
 from app.models.jobs import Job, Application
 from app.models.tryouts import Tryout, TryoutSubmission

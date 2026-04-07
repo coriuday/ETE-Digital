@@ -9,7 +9,8 @@ import { useAuthStore } from '../../stores/authStore';
 import api from '../../api/client';
 import {
     User, Lock, Trash2, Camera, Loader2, CheckCircle, AlertCircle,
-    Eye, EyeOff, FileText, Upload, Download, X
+    Eye, EyeOff, FileText, Upload, Download, X,
+    ChevronRight, Award, SlidersHorizontal, Ban,
 } from 'lucide-react';
 
 type Tab = 'profile' | 'password' | 'danger';
@@ -143,10 +144,14 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
 
     return (
         <div className="bg-white rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
+
+            {/* Employer Visibility Badge — Indeed style */}
+            <VisibilityToggle />
+
             {/* Avatar Section */}
             <div className="p-6 border-b border-gray-100 flex items-center gap-6">
                 <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-primary-500 to-secondary-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-20 h-20 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
                         {displayName[0]?.toUpperCase() || '?'}
                     </div>
                     <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border-2 border-gray-200 rounded-lg shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors">
@@ -155,8 +160,20 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
                 </div>
                 <div>
                     <h3 className="font-semibold text-gray-900">{displayName}</h3>
-                    <p className="text-sm text-gray-500">{user?.email}</p>
-                    <span className="inline-block mt-1 text-xs bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full font-medium capitalize">
+                    <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                        <span>✉</span> {user?.email}
+                    </p>
+                    {form.phone && (
+                        <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                            <span>📞</span> {form.phone}
+                        </p>
+                    )}
+                    {form.location && (
+                        <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
+                            <span>📍</span> {form.location}
+                        </p>
+                    )}
+                    <span className="inline-block mt-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium capitalize">
                         {user?.role}
                     </span>
                 </div>
@@ -168,25 +185,25 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                         <input type="text" name="fullName" value={form.fullName} onChange={handleChange}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none" />
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
                         <input type="text" name="location" value={form.location} onChange={handleChange}
                             placeholder="e.g. Bengaluru, India"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none" />
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                         <input type="tel" name="phone" value={form.phone} onChange={handleChange}
                             placeholder="+91 9876543210"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none" />
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
                         <input type="url" name="website" value={form.website} onChange={handleChange}
                             placeholder="https://yourwebsite.com"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none" />
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
                     </div>
                 </div>
 
@@ -194,14 +211,14 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
                     <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn URL</label>
                     <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={handleChange}
                         placeholder="https://linkedin.com/in/yourusername"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none" />
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
                 </div>
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                     <textarea name="bio" value={form.bio} onChange={handleChange} rows={3}
                         placeholder="Tell employers a bit about yourself..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none resize-none" />
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none" />
                 </div>
 
                 {error && (
@@ -213,7 +230,7 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
 
                 <div className="flex items-center gap-3 pt-2">
                     <button type="submit" disabled={saving}
-                        className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-2">
+                        className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-2">
                         {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Save Changes'}
                     </button>
                     {success && (
@@ -227,8 +244,15 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
 
             {/* Resume Upload — Candidate only */}
             {user?.role === 'candidate' && (
-                <div className="px-6 pb-6">
+                <div className="px-6 pb-2">
                     <ResumeUploadSection fetchUser={fetchUser} />
+                </div>
+            )}
+
+            {/* Improve Job Matches — Indeed style */}
+            {user?.role === 'candidate' && (
+                <div className="px-6 pb-6">
+                    <ImproveMatchesSection />
                 </div>
             )}
         </div>
@@ -274,7 +298,33 @@ function ResumeUploadSection({ fetchUser }: { fetchUser: () => Promise<void> }) 
             </h3>
             <p className="text-xs text-gray-400 mb-4">PDF or DOCX — max 5 MB. Your resume is shared with employers when you apply.</p>
 
-            {resumeUrl ? (
+            {/* Indeed-style two-button row */}
+            {!resumeUrl && !uploading && (
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                    <label className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-indigo-500 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-50 transition-colors cursor-pointer">
+                        <Upload className="w-4 h-4" />
+                        Upload Resume
+                        <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} disabled={uploading} className="sr-only" />
+                    </label>
+                    <button
+                        type="button"
+                        className="flex items-center justify-center gap-2 px-4 py-3 border-2 border-indigo-500 text-indigo-600 rounded-xl text-sm font-semibold hover:bg-indigo-50 transition-colors"
+                        onClick={() => {}}
+                    >
+                        <FileText className="w-4 h-4" />
+                        Build a Jobsrow Resume
+                    </button>
+                </div>
+            )}
+
+            {uploading && (
+                <div className="flex items-center gap-3 border border-indigo-200 bg-indigo-50 rounded-xl px-4 py-3 mb-4">
+                    <Loader2 className="w-5 h-5 text-indigo-500 animate-spin" />
+                    <span className="text-sm text-indigo-600">Uploading…</span>
+                </div>
+            )}
+
+            {resumeUrl && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                     <FileText className="w-5 h-5 text-green-600 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
@@ -286,28 +336,12 @@ function ResumeUploadSection({ fetchUser }: { fetchUser: () => Promise<void> }) 
                             className="flex items-center gap-1.5 text-xs font-semibold text-green-700 hover:underline">
                             <Download className="w-3.5 h-3.5" /> Download
                         </a>
-                        <label className="flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:underline cursor-pointer">
+                        <label className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:underline cursor-pointer">
                             <Upload className="w-3.5 h-3.5" /> Replace
                             <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} className="sr-only" />
                         </label>
                     </div>
                 </div>
-            ) : (
-                <label className={`flex flex-col items-center justify-center gap-3 border-2 border-dashed rounded-xl px-6 py-8 cursor-pointer transition-colors
-                    ${uploading ? 'border-primary-300 bg-primary-50' : 'border-gray-200 hover:border-primary-400 hover:bg-primary-50/50'}`}>
-                    {uploading ? (
-                        <><Loader2 className="w-7 h-7 text-primary-500 animate-spin" /><span className="text-sm text-primary-600">Uploading…</span></>
-                    ) : (
-                        <>
-                            <Upload className="w-7 h-7 text-gray-400" />
-                            <div className="text-center">
-                                <p className="text-sm font-medium text-gray-700">Click to upload resume</p>
-                                <p className="text-xs text-gray-400 mt-0.5">PDF or DOCX, up to 5 MB</p>
-                            </div>
-                        </>
-                    )}
-                    <input type="file" accept=".pdf,.doc,.docx" onChange={handleFileChange} disabled={uploading} className="sr-only" />
-                </label>
             )}
 
             {uploadError && (
@@ -316,6 +350,8 @@ function ResumeUploadSection({ fetchUser }: { fetchUser: () => Promise<void> }) 
                     {uploadError}
                 </div>
             )}
+
+            <p className="text-xs text-gray-400 mt-3">By continuing, you agree to receive job opportunities from Jobsrow.</p>
         </div>
     );
 }
@@ -472,6 +508,110 @@ function DangerZoneTab() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+
+/**
+ * VisibilityToggle — "Employers can find you" banner (Indeed style)
+ */
+function VisibilityToggle() {
+    const [visible, setVisible] = useState(true);
+    return (
+        <div
+            className={`mx-6 mt-6 flex items-center justify-between px-4 py-3 rounded-xl border transition-all cursor-pointer
+                ${visible
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                    : 'bg-gray-50 border-gray-200 text-gray-500'
+                }`}
+            onClick={() => setVisible(v => !v)}
+            role="button"
+            aria-pressed={visible}
+        >
+            <div className="flex items-center gap-2">
+                {visible
+                    ? <Eye className="w-4 h-4" />
+                    : <EyeOff className="w-4 h-4" />
+                }
+                <span className="text-sm font-semibold">
+                    {visible ? 'Employers can find you' : 'Hidden from employers'}
+                </span>
+            </div>
+            {/* Toggle pill */}
+            <div className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                visible ? 'bg-emerald-500' : 'bg-gray-300'
+            }`}>
+                <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
+                    visible ? 'translate-x-4' : 'translate-x-1'
+                }`} />
+            </div>
+        </div>
+    );
+}
+
+
+/**
+ * ImproveMatchesSection — Indeed-style expandable profile completeness rows
+ */
+function ImproveMatchesSection() {
+    const [expanded, setExpanded] = useState<string | null>(null);
+
+    const rows = [
+        {
+            key: 'qualifications',
+            icon: <Award className="w-5 h-5 text-indigo-500" />,
+            title: 'Qualifications',
+            subtitle: 'Highlight your skills and experience.',
+            content: 'Add your educational background, certifications, and key skills to help employers assess your fit for roles.',
+        },
+        {
+            key: 'preferences',
+            icon: <SlidersHorizontal className="w-5 h-5 text-violet-500" />,
+            title: 'Job preferences',
+            subtitle: 'Save specific details like minimum desired pay and schedule.',
+            content: 'Set your preferred work type (remote/onsite/hybrid), expected salary range, preferred locations, and availability.',
+        },
+        {
+            key: 'hide',
+            icon: <Ban className="w-5 h-5 text-gray-400" />,
+            title: 'Hide jobs with these details',
+            subtitle: 'Filter out jobs that don\'t match your preferences.',
+            content: 'Specify companies, job types, or salary ranges you want to exclude from your job search results.',
+        },
+    ];
+
+    return (
+        <div className="border-t border-gray-100 pt-6">
+            <h3 className="text-sm font-bold text-gray-900 mb-4">Improve your job matches</h3>
+            <div className="divide-y divide-gray-100 border border-gray-200 rounded-xl overflow-hidden">
+                {rows.map(row => (
+                    <div key={row.key}>
+                        <button
+                            className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 transition-colors text-left"
+                            onClick={() => setExpanded(prev => prev === row.key ? null : row.key)}
+                        >
+                            {row.icon}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-semibold text-gray-900">{row.title}</p>
+                                <p className="text-xs text-gray-400 mt-0.5">{row.subtitle}</p>
+                            </div>
+                            <ChevronRight
+                                className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${
+                                    expanded === row.key ? 'rotate-90' : ''
+                                }`}
+                            />
+                        </button>
+                        {expanded === row.key && (
+                            <div className="px-4 pb-4 pt-1 bg-gray-50 border-t border-gray-100">
+                                <p className="text-sm text-gray-600">{row.content}</p>
+                                <button className="mt-3 text-xs font-semibold text-indigo-600 hover:underline">
+                                    Update {row.title.toLowerCase()} →
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

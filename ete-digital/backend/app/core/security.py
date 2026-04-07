@@ -5,6 +5,7 @@ Security utilities for ETE Digital
 - Field-level encryption (Fernet)
 - RBAC decorators
 """
+
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from passlib.context import CryptContext
@@ -27,6 +28,7 @@ security = HTTPBearer()
 
 # ========== Password Hashing ==========
 
+
 def hash_password(password: str) -> str:
     """Hash password using Argon2"""
     return pwd_context.hash(password)
@@ -45,12 +47,12 @@ def validate_password_strength(password: str) -> bool:
     """
     if len(password) < settings.PASSWORD_MIN_LENGTH:
         return False
-    
+
     has_upper = any(c.isupper() for c in password)
     has_lower = any(c.islower() for c in password)
     has_digit = any(c.isdigit() for c in password)
     has_special = any(not c.isalnum() for c in password)
-    
+
     checks = []
     if settings.PASSWORD_REQUIRE_UPPERCASE:
         checks.append(has_upper)
@@ -60,30 +62,30 @@ def validate_password_strength(password: str) -> bool:
         checks.append(has_digit)
     if settings.PASSWORD_REQUIRE_SPECIAL:
         checks.append(has_special)
-    
+
     return all(checks)
 
 
 # ========== JWT Tokens ==========
 
-def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+
+def create_access_token(
+    data: Dict[str, Any], expires_delta: Optional[timedelta] = None
+) -> str:
     """Create JWT access token"""
     to_encode = data.copy()
-    
+
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
-    
-    to_encode.update({
-        "exp": expire,
-        "type": "access"
-    })
-    
+        expire = datetime.now(timezone.utc) + timedelta(
+            minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES
+        )
+
+    to_encode.update({"exp": expire, "type": "access"})
+
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
 
@@ -91,17 +93,14 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
 def create_refresh_token(data: Dict[str, Any]) -> str:
     """Create JWT refresh token"""
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
-    
-    to_encode.update({
-        "exp": expire,
-        "type": "refresh"
-    })
-    
+    expire = datetime.now(timezone.utc) + timedelta(
+        days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS
+    )
+
+    to_encode.update({"exp": expire, "type": "refresh"})
+
     encoded_jwt = jwt.encode(
-        to_encode,
-        settings.JWT_SECRET_KEY,
-        algorithm=settings.JWT_ALGORITHM
+        to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
 
@@ -110,9 +109,7 @@ def decode_token(token: str) -> Dict[str, Any]:
     """Decode and validate JWT token"""
     try:
         payload = jwt.decode(
-            token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
         return payload
     except JWTError:
@@ -130,9 +127,7 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
     """
     try:
         payload = jwt.decode(
-            token,
-            settings.JWT_SECRET_KEY,
-            algorithms=[settings.JWT_ALGORITHM]
+            token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM]
         )
         if payload.get("type") != "access":
             return None
@@ -143,21 +138,22 @@ def decode_access_token(token: str) -> Optional[Dict[str, Any]]:
 
 # ========== Field-Level Encryption ==========
 
+
 class FieldEncryption:
     """Encrypt/decrypt sensitive fields using Fernet symmetric encryption"""
-    
+
     def __init__(self, key: str):
         # Derive a proper Fernet key from the settings key
         key_bytes = hashlib.sha256(key.encode()).digest()
         self.fernet = Fernet(base64.urlsafe_b64encode(key_bytes))
-    
+
     def encrypt(self, plaintext: str) -> str:
         """Encrypt plaintext to base64 string"""
         if not plaintext:
             return ""
         encrypted = self.fernet.encrypt(plaintext.encode())
         return base64.urlsafe_b64encode(encrypted).decode()
-    
+
     def decrypt(self, ciphertext: str) -> str:
         """Decrypt base64 string to plaintext"""
         if not ciphertext:
@@ -189,6 +185,7 @@ def decrypt_field(value: str) -> str:
 
 # ========== RBAC Decorators ==========
 
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     """
     Dependency to get current authenticated user from JWT token
@@ -196,20 +193,20 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     """
     token = credentials.credentials
     payload = decode_token(token)
-    
+
     if payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token type",
         )
-    
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",
         )
-    
+
     return {
         "user_id": user_id,
         "email": payload.get("email"),
@@ -221,19 +218,21 @@ def require_role(*allowed_roles):
     """
     FastAPI dependency factory to require specific roles.
     Usage: current_user: dict = Depends(require_role(UserRole.EMPLOYER))
-    
+
     Returns a dependency function that FastAPI can inject, which validates
     the user's role and returns the current_user dict.
     """
     # Convert enum values to their string values for comparison
     role_values = set()
     for r in allowed_roles:
-        if hasattr(r, 'value'):
+        if hasattr(r, "value"):
             role_values.add(r.value)
         else:
             role_values.add(str(r))
 
-    async def _require_role(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    async def _require_role(
+        credentials: HTTPAuthorizationCredentials = Depends(security),
+    ):
         token = credentials.credentials
         payload = decode_token(token)
 

@@ -1,11 +1,13 @@
 """
 Payment service using Stripe for tryout payment processing
 """
+
 from typing import Optional, Tuple
 from app.core.config import settings
 
 try:
     import stripe
+
     STRIPE_AVAILABLE = True
 except ImportError:
     STRIPE_AVAILABLE = False
@@ -30,22 +32,26 @@ class PaymentService:
     ) -> Tuple[Optional[str], Optional[str]]:
         """
         Create a Stripe PaymentIntent.
-        
+
         Args:
             amount_paise: Amount in smallest unit (paise for INR)
             currency: ISO currency code
             metadata: Optional metadata dict (e.g., tryout_id, candidate_id)
             capture_method: 'manual' for escrow, 'automatic' for immediate
-        
+
         Returns:
             Tuple of (client_secret, payment_intent_id) or (None, None) on error
         """
         if not self._is_available():
             print("Stripe not configured. Payments are in simulation mode.")
-            return ("simulated_secret", "simulated_pi_" + (metadata or {}).get("tryout_id", "test"))
+            return (
+                "simulated_secret",
+                "simulated_pi_" + (metadata or {}).get("tryout_id", "test"),
+            )
 
         try:
             import stripe
+
             intent = stripe.PaymentIntent.create(
                 amount=amount_paise,
                 currency=currency,
@@ -61,7 +67,7 @@ class PaymentService:
         """
         Capture (release from escrow) a PaymentIntent.
         Used when employer approves tryout and releases payment to candidate.
-        
+
         Returns:
             True if captured successfully
         """
@@ -71,6 +77,7 @@ class PaymentService:
 
         try:
             import stripe
+
             stripe.PaymentIntent.capture(payment_intent_id)
             return True
         except Exception as e:
@@ -78,14 +85,12 @@ class PaymentService:
             return False
 
     def refund_payment(
-        self,
-        payment_intent_id: str,
-        reason: str = "requested_by_customer"
+        self, payment_intent_id: str, reason: str = "requested_by_customer"
     ) -> bool:
         """
         Refund a PaymentIntent back to employer.
         Used when tryout is rejected or expired.
-        
+
         Returns:
             True if refunded successfully
         """
@@ -95,10 +100,8 @@ class PaymentService:
 
         try:
             import stripe
-            stripe.Refund.create(
-                payment_intent=payment_intent_id,
-                reason=reason
-            )
+
+            stripe.Refund.create(payment_intent=payment_intent_id, reason=reason)
             return True
         except Exception as e:
             print(f"Stripe refund failed: {e}")
@@ -114,7 +117,7 @@ class PaymentService:
     ) -> Optional[str]:
         """
         Create a Stripe Checkout session URL for hosted payment page.
-        
+
         Returns:
             Checkout session URL or None
         """
@@ -123,19 +126,22 @@ class PaymentService:
 
         try:
             import stripe
+
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
-                line_items=[{
-                    "price_data": {
-                        "currency": currency,
-                        "unit_amount": amount_paise,
-                        "product_data": {
-                            "name": "Job Tryout Payment",
-                            "description": "Payment for completing a job tryout task",
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": currency,
+                            "unit_amount": amount_paise,
+                            "product_data": {
+                                "name": "Job Tryout Payment",
+                                "description": "Payment for completing a job tryout task",
+                            },
                         },
-                    },
-                    "quantity": 1,
-                }],
+                        "quantity": 1,
+                    }
+                ],
                 mode="payment",
                 success_url=success_url,
                 cancel_url=cancel_url,
@@ -143,7 +149,7 @@ class PaymentService:
                 payment_intent_data={
                     "capture_method": "manual",
                     "metadata": metadata or {},
-                }
+                },
             )
             return session.url
         except Exception as e:
@@ -153,11 +159,11 @@ class PaymentService:
     def verify_webhook(self, payload: bytes, sig_header: str) -> Optional[dict]:
         """
         Verify and parse a Stripe webhook event.
-        
+
         Args:
             payload: Raw request body bytes
             sig_header: Stripe-Signature header value
-        
+
         Returns:
             Event dict or None if invalid
         """
@@ -166,6 +172,7 @@ class PaymentService:
 
         try:
             import stripe
+
             event = stripe.Webhook.construct_event(
                 payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
             )

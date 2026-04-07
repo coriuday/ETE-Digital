@@ -1,6 +1,7 @@
 """
 Authentication endpoint tests
 """
+
 import uuid
 import pytest
 from httpx import AsyncClient
@@ -16,12 +17,15 @@ def unique_email(prefix: str = "user") -> str:
 async def test_register_success(client: AsyncClient):
     """Registering a new user returns 201 with user data."""
     email = unique_email("new")
-    response = await client.post("/api/auth/register", json={
-        "email": email,
-        "password": "SecurePass1!",
-        "role": "candidate",
-        "full_name": "New User",
-    })
+    response = await client.post(
+        "/api/auth/register",
+        json={
+            "email": email,
+            "password": "SecurePass1!",
+            "role": "candidate",
+            "full_name": "New User",
+        },
+    )
     assert response.status_code == 201, response.json()
     data = response.json()
     assert data["email"] == email
@@ -48,20 +52,26 @@ async def test_register_duplicate_email(client: AsyncClient):
 
 async def test_register_weak_password(client: AsyncClient):
     """Registering with a weak password returns 422 or 400."""
-    response = await client.post("/api/auth/register", json={
-        "email": unique_email("weak"),
-        "password": "short",
-        "role": "candidate",
-    })
+    response = await client.post(
+        "/api/auth/register",
+        json={
+            "email": unique_email("weak"),
+            "password": "short",
+            "role": "candidate",
+        },
+    )
     assert response.status_code in (400, 422)
 
 
 async def test_login_success(client: AsyncClient, candidate_user):
     """Login with correct credentials returns access and refresh tokens."""
-    response = await client.post("/api/auth/login", json={
-        "email": candidate_user.email,
-        "password": "TestPass1!",
-    })
+    response = await client.post(
+        "/api/auth/login",
+        json={
+            "email": candidate_user.email,
+            "password": "TestPass1!",
+        },
+    )
     assert response.status_code == 200, response.json()
     data = response.json()
     assert "access_token" in data
@@ -71,19 +81,25 @@ async def test_login_success(client: AsyncClient, candidate_user):
 
 async def test_login_wrong_password(client: AsyncClient, candidate_user):
     """Login with wrong password returns 401."""
-    response = await client.post("/api/auth/login", json={
-        "email": candidate_user.email,
-        "password": "WrongPass99!",
-    })
+    response = await client.post(
+        "/api/auth/login",
+        json={
+            "email": candidate_user.email,
+            "password": "WrongPass99!",
+        },
+    )
     assert response.status_code == 401
 
 
 async def test_login_nonexistent_user(client: AsyncClient):
     """Login with unknown email returns 401."""
-    response = await client.post("/api/auth/login", json={
-        "email": "nobody@example.com",
-        "password": "AnyPass1!",
-    })
+    response = await client.post(
+        "/api/auth/login",
+        json={
+            "email": "nobody@example.com",
+            "password": "AnyPass1!",
+        },
+    )
     assert response.status_code == 401
 
 
@@ -95,7 +111,7 @@ async def test_logout_no_token(client: AsyncClient):
 
 async def test_forgot_password_always_succeeds(client: AsyncClient):
     """Forgot password endpoint always returns 200 to prevent user enumeration."""
-    response = await client.post("/api/auth/forgot-password", json={
-        "email": "doesnotexist@example.com"
-    })
+    response = await client.post(
+        "/api/auth/forgot-password", json={"email": "doesnotexist@example.com"}
+    )
     assert response.status_code == 200

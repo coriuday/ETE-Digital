@@ -1,13 +1,16 @@
 """
 Notification & WebSocket endpoint smoke tests
 """
+
 import pytest
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio
 
 
-async def test_get_notifications_for_new_user(client: AsyncClient, candidate_token: str):
+async def test_get_notifications_for_new_user(
+    client: AsyncClient, candidate_token: str
+):
     """New user gets an empty notification list."""
     response = await client.get(
         "/api/notifications/",
@@ -20,7 +23,9 @@ async def test_get_notifications_for_new_user(client: AsyncClient, candidate_tok
     assert isinstance(data["unread_count"], int)
 
 
-async def test_notifications_unread_only_filter(client: AsyncClient, candidate_token: str):
+async def test_notifications_unread_only_filter(
+    client: AsyncClient, candidate_token: str
+):
     """Unread-only filter returns subset of notifications."""
     response = await client.get(
         "/api/notifications/?unread_only=true",
@@ -50,7 +55,9 @@ async def test_mark_all_read_succeeds(client: AsyncClient, candidate_token: str)
     assert "message" in data
 
 
-async def test_websocket_upgrade_without_token_rejected(client: AsyncClient, candidate_user):
+async def test_websocket_upgrade_without_token_rejected(
+    client: AsyncClient, candidate_user
+):
     """WebSocket endpoint without a valid token returns non-101 (rejected)."""
     user_id = str(candidate_user.id)
     response = await client.get(

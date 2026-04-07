@@ -55,7 +55,7 @@ vi.mock('../api/jobs', () => ({
     },
 }));
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 
 describe('Jobs API — search and retrieval', () => {
     beforeEach(() => { vi.clearAllMocks(); });

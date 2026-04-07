@@ -3,6 +3,7 @@ WebSocket — Real-Time Notification Manager
 
 Authenticated via JWT query param: ws://host/api/ws/{user_id}?token=<access_token>
 """
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
 from typing import Dict, Optional
 import asyncio
@@ -83,7 +84,9 @@ async def websocket_endpoint(
 
     await ws_manager.connect(user_id, websocket)
     # Send initial welcome
-    await ws_manager.send_to_user(user_id, {"type": "connected", "message": "Real-time notifications active"})
+    await ws_manager.send_to_user(
+        user_id, {"type": "connected", "message": "Real-time notifications active"}
+    )
 
     try:
         while True:
