@@ -47,12 +47,15 @@ class Settings(BaseSettings):
     # Frontend URL (used for email links — e.g. email verification, password reset)
     FRONTEND_URL: str = "http://localhost:5173"
 
-    # CORS
+    # CORS — allow frontend origins
+    # Can be overridden with CORS_ORIGINS env var (comma-separated list)
     CORS_ORIGINS: List[str] = [
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "https://ete-digital.vercel.app",
+        "https://ete-digital-git-main.vercel.app",
+        "https://*.vercel.app",
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]

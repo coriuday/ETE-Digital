@@ -50,7 +50,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             f"font-src 'self' https://fonts.gstatic.com; "
             f"img-src 'self' data: https:; "
-            f"connect-src 'self' ws: wss:;"
+            f"connect-src 'self' ws: wss: https://ete-digital-backend.onrender.com https://*.supabase.co;"
         )
         if settings.ENVIRONMENT == "production":
             response.headers["Strict-Transport-Security"] = (
