@@ -193,8 +193,8 @@ export default function AppShell({ children }: AppShellProps) {
                 <Sidebar />
                 <button
                     onClick={() => setCollapsed(!collapsed)}
-                    className="absolute -right-3 top-20 w-6 h-6 bg-white border border-gray-200 rounded-full
-            flex items-center justify-center shadow-sm hover:bg-gray-50 transition-colors z-10"
+                    className={`absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10 transition-colors border
+            ${isDark ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-200' : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-600'}`}
                 >
                     {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
                 </button>
