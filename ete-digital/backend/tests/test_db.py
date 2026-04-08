@@ -14,4 +14,5 @@ async def test():
     except Exception as e:
         print('DB ERROR:', e)
 
-asyncio.run(test())
+if __name__ == "__main__":
+    asyncio.run(test())

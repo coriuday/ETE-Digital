@@ -2,7 +2,7 @@
 Job-related Pydantic schemas
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict
 from datetime import datetime
 from app.models.jobs import JobType, JobStatus, ApplicationStatus
@@ -102,8 +102,7 @@ class JobResponse(BaseModel):
     published_at: Optional[datetime]
     expires_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class JobListResponse(BaseModel):
@@ -158,8 +157,7 @@ class ApplicationResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ApplicationDetailResponse(BaseModel):
@@ -186,8 +184,7 @@ class ApplicationDetailResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ApplicationListResponse(BaseModel):

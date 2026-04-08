@@ -2,7 +2,7 @@
 User-related Pydantic schemas
 """
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, ConfigDict
 from typing import Optional, List
 from datetime import datetime
 from app.models.users import UserRole
@@ -19,7 +19,7 @@ class UserRegister(BaseModel):
     role: UserRole
     full_name: Optional[str] = Field(None, max_length=255)
 
-    @validator("password")
+    @field_validator("password")
     def validate_password_strength(cls, v):
         from app.core.security import validate_password_strength
 
@@ -70,7 +70,7 @@ class PasswordResetConfirm(BaseModel):
     token: str
     new_password: str = Field(..., min_length=8, max_length=100)
 
-    @validator("new_password")
+    @field_validator("new_password")
     def validate_password_strength(cls, v):
         from app.core.security import validate_password_strength
 
@@ -114,8 +114,7 @@ class UserProfileResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserResponse(BaseModel):
@@ -129,8 +128,7 @@ class UserResponse(BaseModel):
     created_at: datetime
     profile: Optional[UserProfileResponse] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 # ========== Admin ==========

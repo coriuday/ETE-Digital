@@ -2,7 +2,7 @@
 Talent Vault-related Pydantic schemas
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict
 from datetime import datetime
 from app.models.vault import VaultItemType
@@ -66,8 +66,7 @@ class VaultItemResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class VaultItemListResponse(BaseModel):
@@ -85,7 +84,7 @@ class VaultItemListResponse(BaseModel):
 class ShareTokenCreate(BaseModel):
     """Create share token for vault items"""
 
-    vault_item_ids: List[str] = Field(..., min_items=1)
+    vault_item_ids: List[str] = Field(..., min_length=1)
 
     # Access control
     expires_hours: Optional[int] = Field(None, ge=1, le=720)  # Max 30 days
@@ -116,8 +115,7 @@ class ShareTokenResponse(BaseModel):
     created_at: datetime
     last_accessed_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ShareTokenListResponse(BaseModel):

@@ -24,4 +24,5 @@ async def test():
                          headers={"Authorization": f"Bearer {token}"})
         print("With auth:", r2.status_code, r2.text[:200] if r2.status_code != 200 else "OK")
 
-asyncio.run(test())
+if __name__ == "__main__":
+    asyncio.run(test())

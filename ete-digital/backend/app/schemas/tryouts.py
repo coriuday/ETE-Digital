@@ -2,7 +2,7 @@
 Tryout-related Pydantic schemas
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import Optional, List, Dict
 from datetime import datetime
 from app.models.tryouts import TryoutStatus, SubmissionStatus, PaymentStatus
@@ -91,8 +91,7 @@ class TryoutResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TryoutListResponse(BaseModel):
@@ -149,8 +148,7 @@ class SubmissionResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime]
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class SubmissionListResponse(BaseModel):
