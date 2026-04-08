@@ -1,13 +1,14 @@
-# Jobsrow - Open-Source Job & Talent Platform
+# ETE Digital — Open-Source Job & Talent Platform
 
 > **Outcome-driven hiring meets verifiable skill signals**
 
-Jobsrow is a production-grade, open-source job platform that revolutionizes hiring through **Job Tryouts** (trial tasks), a candidate-owned **Talent Vault**, and **explainable matching**. Built with modern technology and security-first principles.
+ETE Digital is a production-grade, open-source job platform that revolutionizes hiring through **Job Tryouts** (trial tasks), a candidate-owned **Talent Vault**, and **explainable matching**. Built with a modern, security-first stack and deployed on Vercel + Render + Supabase.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18+-blue.svg)](https://react.dev/)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
+[![CI](https://github.com/coriuday/ETE-Digital/actions/workflows/ci.yml/badge.svg)](https://github.com/coriuday/ETE-Digital/actions/workflows/ci.yml)
 
 ---
 
@@ -27,7 +28,7 @@ Jobsrow is a production-grade, open-source job platform that revolutionizes hiri
 - Employers create **trial tasks** with auto-grading rubrics
 - Candidates complete real work samples instead of traditional interviews
 - Payment escrow ensures fairness
-- Verified samples auto-populate talent vault
+- Verified samples auto-populate the Talent Vault
 
 ### 🏆 Talent Vault
 
@@ -38,17 +39,17 @@ Jobsrow is a production-grade, open-source job platform that revolutionizes hiri
 
 ### 🔍 Explainable Matching
 
-- Skill-based scoring with transparency
-- Full-text search across jobs
+- Skill-based scoring with full transparency
+- Full-text search across all job listings
 - Filter by: type, location, salary, skills, remote
 
 ### 🔐 Security First
 
-- Argon2 password hashing
+- Argon2id password hashing
 - JWT authentication with token rotation
 - Field-level encryption (Fernet)
 - RBAC (Role-Based Access Control)
-- GDPR/CCPA compliance ready
+- GDPR / CCPA compliance-ready
 
 ---
 
@@ -63,8 +64,8 @@ Jobsrow is a production-grade, open-source job platform that revolutionizes hiri
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/coriuday/Jobsrow
-cd Jobsrow
+git clone https://github.com/coriuday/ETE-Digital.git
+cd ETE-Digital/ete-digital
 ```
 
 ### 2. Setup Environment
@@ -74,7 +75,7 @@ cd Jobsrow
 cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 
-# Edit .env files with your settings
+# Edit the .env files with your settings
 ```
 
 ### 3. Start Development Stack
@@ -88,9 +89,9 @@ Services will be available at:
 
 - **Frontend:** <http://localhost:5173>
 - **Backend API:** <http://localhost:8000>
-- **API Docs:** <http://localhost:8000/api/docs>
+- **API Docs (Swagger):** <http://localhost:8000/api/docs>
+- **API Docs (ReDoc):** <http://localhost:8000/api/redoc>
 - **MinIO Console:** <http://localhost:9001>
-- **MailHog:** <http://localhost:8025>
 
 ### 4. Initialize Database
 
@@ -105,12 +106,10 @@ docker exec ete-backend alembic upgrade head
 ### Backend
 
 - **Framework:** FastAPI (async Python)
-- **Database:** PostgreSQL 15 (with asyncpg)
+- **Database:** PostgreSQL via Supabase
 - **Cache:** Redis 7
 - **Storage:** MinIO (S3-compatible)
-- **Email:** SMTP (MailHog for dev)
-- **ORM:** SQLAlchemy (async)
-- **Migrations:** Alembic
+- **ORM:** SQLAlchemy (async) + Alembic migrations
 
 ### Frontend
 
@@ -122,9 +121,9 @@ docker exec ete-backend alembic upgrade head
 
 ### Infrastructure
 
+- **Hosting:** Vercel (frontend) + Render (backend)
+- **Database:** Supabase (PostgreSQL)
 - **Container:** Docker + Docker Compose
-- **Orchestration:** Kubernetes (ready)
-- **IaC:** Terraform templates
 - **CI/CD:** GitHub Actions
 
 ---
@@ -170,22 +169,12 @@ POST /api/jobs
 Authorization: Bearer <token>
 {
   "title": "Senior Developer",
-  "company": "Tech Corp",
   "description": "...",
-  "requirements": "...",
   "job_type": "full_time",
   "remote_ok": true,
-  "salary_min": 100000,
-  "salary_max": 150000,
+  "salary_min": 500000,
+  "salary_max": 1500000,
   "skills_required": ["Python", "FastAPI", "React"]
-}
-
-# Apply to job (candidate)
-POST /api/jobs/{job_id}/apply
-Authorization: Bearer <token>
-{
-  "cover_letter": "...",
-  "vault_share_token": "optional-token"
 }
 ```
 
@@ -197,14 +186,9 @@ POST /api/tryouts
 {
   "job_id": "...",
   "title": "Build a REST API",
-  "description": "...",
   "estimated_duration_hours": 4,
   "payment_amount": 5000,
-  "scoring_rubric": {
-    "code_quality": 40,
-    "functionality": 40,
-    "tests": 20
-  },
+  "scoring_rubric": { "code_quality": 40, "functionality": 40, "tests": 20 },
   "passing_score": 70
 }
 
@@ -216,65 +200,26 @@ POST /api/tryouts/{id}/submit
 }
 ```
 
-### Talent Vault
-
-```bash
-# Add item to vault (candidate)
-POST /api/vault/items
-{
-  "type": "project",
-  "title": "E-commerce Platform",
-  "description": "...",
-  "file_url": "https://github.com/user/project",
-  "metadata": {
-    "tech_stack": ["React", "Node.js"],
-    "live_url": "https://demo.com"
-  }
-}
-
-# Create share token
-POST /api/vault/share
-{
-  "vault_item_ids": ["..."],
-  "expires_hours": 48,
-  "max_views": 10,
-  "shared_with_company": "Tech Corp"
-}
-
-# Access via token (public)
-GET /api/vault/shared/{token}
-```
-
-**Full API Documentation:** <http://localhost:8000/api/docs> (when running)
+**Full API Docs:** <http://localhost:8000/api/docs> (when running locally)
 
 ---
 
 ## 🔧 Development
 
-### Backend Development
+### Backend
 
 ```bash
-cd backend
-
-# Install dependencies
+cd ete-digital/backend
 pip install -r requirements.txt
-
-# Run migrations
 alembic upgrade head
-
-# Start dev server
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-### Frontend Development
+### Frontend
 
 ```bash
-cd frontend
-
-# Install dependencies
+cd ete-digital/frontend
 npm install
-
-# Start dev server
 npm run dev
 ```
 
@@ -282,26 +227,12 @@ npm run dev
 
 ```bash
 # Backend
-cd backend
+cd ete-digital/backend
 pytest tests/ --cov=app
 
 # Frontend
-cd frontend
+cd ete-digital/frontend
 npm run test
-```
-
-### Database Migrations
-
-```bash
-# Create migration
-cd backend
-alembic revision --autogenerate -m "Add new field"
-
-# Apply migration
-alembic upgrade head
-
-# Rollback
-alembic downgrade -1
 ```
 
 ---
@@ -309,116 +240,63 @@ alembic downgrade -1
 ## 🏗️ Project Structure
 
 ```
-Jobsrow/
-├── backend/           # FastAPI backend
-│   ├── app/
-│   │   ├── api/       # API endpoints
-│   │   ├── core/      # Config, security, database
-│   │   ├── models/    # SQLAlchemy models
-│   │   ├── schemas/   # Pydantic schemas
-│   │   ├── services/  # Business logic
-│   │   └── main.py    # FastAPI app
-│   ├── alembic/       # Database migrations
-│   ├── tests/         # Backend tests
-│   └── requirements.txt
-├── frontend/          # Vite + React frontend
-│   ├── src/
-│   │   ├── api/       # API client
-│   │   ├── components/# React components
-│   │   ├── pages/     # Page components
-│   │   ├── stores/    # Zustand stores
-│   │   └── styles/    # CSS & Tailwind
-│   └── package.json
-├── infra/             # Infrastructure
-│   ├── docker/        # Docker Compose
-│   ├── k8s/           # Kubernetes manifests
-│   └── terraform/     # IaC templates
-├── docs/              # Documentation
-└── README.md
+ETE-Digital/
+├── .github/workflows/     # CI/CD pipelines (GitHub Actions)
+├── ete-digital/
+│   ├── backend/           # FastAPI backend
+│   │   ├── app/
+│   │   │   ├── api/       # API route handlers
+│   │   │   ├── core/      # Config, security, database
+│   │   │   ├── models/    # SQLAlchemy models
+│   │   │   ├── schemas/   # Pydantic schemas
+│   │   │   ├── services/  # Business logic
+│   │   │   └── main.py    # FastAPI entry point
+│   │   ├── alembic/       # Database migrations
+│   │   └── tests/         # Backend test suite
+│   ├── frontend/          # Vite + React frontend
+│   │   └── src/
+│   │       ├── api/       # API client layer
+│   │       ├── components/# Reusable components
+│   │       ├── pages/     # Page components
+│   │       └── stores/    # Zustand state stores
+│   ├── infra/             # Docker, Kubernetes, Terraform
+│   └── supabase/          # Database migrations & config
+└── render.yaml            # Render deployment config
 ```
 
 ---
 
 ## 🔒 Security
 
-### Built-in Security Features
-
 - ✅ **Password Hashing:** Argon2id (OWASP recommended)
 - ✅ **Authentication:** JWT with access + refresh tokens
 - ✅ **Token Rotation:** Automatic refresh token rotation
 - ✅ **Field Encryption:** Fernet encryption for PII
-- ✅ **RBAC:** Role-based access control
-- ✅ **Rate Limiting:** SlowAPI — auth endpoints (5 req/min login/register, 3/min forgot-password)
-- ✅ **CORS:** Configurable origins
-- ✅ **SQL Injection:** Prevented (SQLAlchemy ORM)
-- ✅ **XSS:** React's built-in protection
-
-### Security Checklist
-
-- [x] Enable HTTPS in production (use Let's Encrypt)
-- [x] Set strong `JWT_SECRET_KEY` (32+ random chars)
-- [x] Set `ENCRYPTION_KEY` (Fernet.generate_key())
-- [x] Configure CSP headers
-- [x] Enable rate limiting
-- [x] Regular dependency updates
-- [x] Security scanning (Snyk, Bandit)
-
----
-
-## 📈 Scalability
-
-### Architecture Decisions
-
-- **Async Everything:** FastAPI + asyncpg for high concurrency
-- **Connection Pooling:** 20 connections with 10 overflow
-- **Caching:** Redis for sessions and hot data
-- **Stateless API:** Ready for horizontal scaling
-- **JSONB Fields:** Flexible schema for evolving requirements
+- ✅ **RBAC:** Role-based access control (candidate / employer / admin)
+- ✅ **Rate Limiting:** SlowAPI — 5 req/min login, 3 req/min forgot-password
+- ✅ **CORS:** Configurable allowed origins
+- ✅ **SQL Injection:** Prevented via SQLAlchemy ORM
+- ✅ **XSS:** React's built-in escaping
 
 ---
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines.
-
-### Quick Contribution Guide
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open Pull Request
-
-### Development Workflow
-
-- Follow PEP 8 (Python) and Airbnb style guide (JavaScript)
-- Write tests for new features
-- Update documentation
-- Ensure CI passes
+We welcome contributions! Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for guidelines and [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community standards.
 
 ---
 
 ## 📄 License
 
-This project is licensed under the **MIT License** - see [`LICENSE`](LICENSE) file for details.
-x---
-
-## 🙏 Acknowledgments
-
-Built with:
-
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern Python web framework
-- [React](https://react.dev/) - UI library
-- [Tailwind CSS](https://tailwindcss.com/) - Utility-first CSS
-- [Vite](https://vitejs.dev/) - Next-gen frontend tooling
-- [SQLAlchemy](https://www.sqlalchemy.org/) - Python SQL toolkit
+This project is licensed under the **MIT License** — see the [`LICENSE`](LICENSE) file for details.
 
 ---
 
 ## 📞 Support
 
-- **Issues:** [GitHub Issues](https://github.com/coriuday/Jobsrow/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/coriuday/Jobsrow/discussions)
+- **Issues:** [GitHub Issues](https://github.com/coriuday/ETE-Digital/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/coriuday/ETE-Digital/discussions)
+- **Email:** [support@etedigital.com](mailto:support@etedigital.com)
 
 ---
 

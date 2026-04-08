@@ -1,6 +1,6 @@
-# Contributing to Jobsrow
+# Contributing to ETE Digital
 
-Thank you for your interest in contributing to **Jobsrow**! 🎉
+Thank you for your interest in contributing to **ETE Digital**! 🎉
 
 We're building an open, fair job platform — every contribution, big or small, helps us get there. This guide will walk you through everything you need to know to get started.
 
@@ -35,12 +35,12 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/Jobsrow.git
-   cd Jobsrow
+   git clone https://github.com/YOUR_USERNAME/ETE-Digital.git
+   cd ETE-Digital/ete-digital
    ```
 3. **Add upstream** remote:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_ORG/Jobsrow.git
+   git remote add upstream https://github.com/coriuday/ETE-Digital.git
    ```
 4. **Set up your development environment** (see [Development Setup](#development-setup))
 
@@ -51,7 +51,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 ### Reporting Bugs
 
 Before submitting a bug report:
-- Check the [existing issues](https://github.com/yourusername/Jobsrow/issues) to avoid duplicates
+- Check the [existing issues](https://github.com/coriuday/ETE-Digital/issues) to avoid duplicates
 - Ensure the bug is reproducible on the latest version
 
 When submitting, please include:
@@ -66,7 +66,7 @@ When submitting, please include:
 ### Suggesting Features
 
 We love new ideas! Before submitting:
-- Check if the feature has already been requested in [existing issues](https://github.com/yourusername/Jobsrow/issues)
+- Check if the feature has already been requested in [existing issues](https://github.com/coriuday/ETE-Digital/issues)
 
 When submitting a feature request, include:
 - **Clear title** and description
@@ -143,7 +143,7 @@ Unsure where to start? Look for issues labeled:
 ### Backend
 
 ```bash
-cd backend
+cd ete-digital/backend
 
 # Create and activate virtual environment
 python -m venv venv
@@ -163,7 +163,7 @@ uvicorn app.main:app --reload --port 8000
 ### Frontend
 
 ```bash
-cd frontend
+cd ete-digital/frontend
 npm install
 cp .env.example .env.local      # then edit .env.local
 npm run dev
@@ -172,7 +172,7 @@ npm run dev
 ### Full Stack (Docker)
 
 ```bash
-cd infra/docker
+cd ete-digital/infra/docker
 docker-compose up -d
 ```
 
@@ -182,13 +182,12 @@ docker-compose up -d
 
 ### Python (Backend)
 
-We use **Black**, **Ruff**, **isort**, and **mypy**:
+We use **Black**, **flake8**, and **mypy**:
 
 ```bash
-cd backend
+cd ete-digital/backend
 black .
-ruff check . --fix
-isort .
+flake8 app/
 mypy app/
 ```
 
@@ -215,12 +214,12 @@ async def calculate_match_score(candidate: dict, job: dict) -> int:
 
 ### TypeScript / React (Frontend)
 
-We use **ESLint** and **Prettier**:
+We use **ESLint** and **TypeScript strict mode**:
 
 ```bash
-cd frontend
+cd ete-digital/frontend
 npm run lint
-npm run format
+npx tsc --noEmit
 ```
 
 Key practices:
@@ -248,7 +247,7 @@ export const Button: React.FC<ButtonProps> = ({ variant, onClick, children }) =>
 ### Backend Tests
 
 ```bash
-cd backend
+cd ete-digital/backend
 pytest tests/ -v
 pytest tests/ --cov=app --cov-report=html    # with coverage
 ```
@@ -258,7 +257,7 @@ We use `pytest` + `httpx` for async API testing. Aim for **80%+ coverage**.
 ### Frontend Tests
 
 ```bash
-cd frontend
+cd ete-digital/frontend
 npm run test
 npm run test:coverage
 ```
@@ -315,7 +314,7 @@ When making schema changes:
 
 ```bash
 # Create migration
-cd backend
+cd ete-digital/backend
 alembic revision --autogenerate -m "Add new field to User"
 
 # Review the generated file carefully, then test:
@@ -332,8 +331,8 @@ alembic upgrade head      # re-apply
 
 - **GitHub Issues** — Bug reports & feature requests
 - **GitHub Discussions** — General questions and ideas
-- **Email** — [support@jobsrow.com](mailto:support@jobsrow.com)
+- **Email** — [support@etedigital.com](mailto:support@etedigital.com)
 
 ---
 
-Thank you for helping make Jobsrow better! 💙
+Thank you for helping make ETE Digital better! 💙

@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The following versions of Jobsrow currently receive security updates:
+The following versions of ETE Digital currently receive security updates:
 
 | Version | Supported |
 |---------|-----------|
@@ -22,9 +22,11 @@ We strongly recommend always running the latest version from the `main` branch o
 
 Send a **private** disclosure to:
 
-📧 **security@jobsrow.com**
+📧 **security@etedigital.com**
 
-If you prefer encrypted communication, request our PGP key in your first message. Use the subject line format:
+If you prefer, you may also use [GitHub's private vulnerability reporting](https://github.com/coriuday/ETE-Digital/security/advisories/new) feature directly on the repository.
+
+Use the subject line format:
 
 ```
 [SECURITY] <brief description of the vulnerability>
@@ -78,9 +80,9 @@ We follow responsible **Coordinated Vulnerability Disclosure (CVD)**:
 
 ---
 
-## Security Features in Jobsrow
+## Security Features in ETE Digital
 
-Jobsrow is built with security as a first-class concern across the entire stack:
+ETE Digital is built with security as a first-class concern across the entire stack:
 
 ### Authentication & Authorization
 - **Argon2id** password hashing (OWASP recommended)
@@ -92,11 +94,11 @@ Jobsrow is built with security as a first-class concern across the entire stack:
 - **Field-level encryption** with Fernet for sensitive PII
 - **Encrypted Talent Vault** storage
 - Share tokens with configurable expiry and view limits
-- GDPR/CCPA compliance-ready data handling
+- GDPR / CCPA compliance-ready data handling
 
 ### API Security
 - **Rate limiting** via SlowAPI:
-  - Login/Register: 5 requests/minute
+  - Login / Register: 5 requests/minute
   - Forgot Password: 3 requests/minute
 - **CORS** — configurable allowed origins
 - **SQL injection** prevention via SQLAlchemy ORM (parameterized queries)
@@ -106,13 +108,13 @@ Jobsrow is built with security as a first-class concern across the entire stack:
 - Docker containers with minimal base images
 - Environment variables for all secrets (no hardcoded credentials)
 - `.env` files excluded from version control via `.gitignore`
-- Kubernetes-ready with network policies
+- Deployed on Vercel (frontend), Render (backend), and Supabase (database)
 
 ---
 
 ## Security Best Practices for Self-Hosting
 
-If you are deploying Jobsrow yourself, follow these hardening steps:
+If you are deploying ETE Digital yourself, follow these hardening steps:
 
 ### Required Before Going Live
 
@@ -136,16 +138,15 @@ If you are deploying Jobsrow yourself, follow these hardening steps:
 - [ ] Run regular **dependency updates** (`pip-audit`, `npm audit`)
 - [ ] Perform static analysis scans (`bandit` for Python, `eslint-plugin-security` for JS)
 - [ ] Enable **PostgreSQL SSL mode** for database connections
-- [ ] Set up **log monitoring and alerting** (Prometheus, Grafana, Loki)
-- [ ] Schedule regular **automated backups** for the database and MinIO storage
-- [ ] Configure **read replicas** if running at scale to reduce attack surface on write DB
+- [ ] Set up **log monitoring and alerting**
+- [ ] Schedule regular **automated backups**
 
 ---
 
 ## Known Security Limitations
 
-- **Tryout payment escrow** is not yet integrated with a regulated payment processor. Do not use in production for real financial transactions until Phase 6 is complete.
-- **Email verification** is required — ensure your SMTP configuration is correct. Unverified accounts have limited privileges.
+- **Tryout payment escrow** is not yet integrated with a regulated payment processor. Do not use in production for real financial transactions until that feature is complete.
+- **Email verification** is required — ensure your SMTP configuration is correct before going live.
 
 ---
 
@@ -155,8 +156,9 @@ If you are deploying Jobsrow yourself, follow these hardening steps:
 |------|---------|
 | [Bandit](https://bandit.readthedocs.io/) | Python static security analysis |
 | [Dependabot](https://github.com/dependabot) | Automated dependency vulnerability alerts |
-| [npm audit](https://docs.npmjs.com/cli/v10/commands/npm-audit) | Node.js dependency vulnerability scanning |
-| [Snyk](https://snyk.io/) | Container & dependency scanning (CI) |
+| [npm audit](https://docs.npmjs.com/cli/v10/commands/npm-audit) | Node.js dependency scanning |
+| [Trivy](https://trivy.dev/) | Container & filesystem vulnerability scanning (CI) |
+| [Snyk](https://snyk.io/) | Dependency scanning (CI, optional) |
 
 ---
 
@@ -166,7 +168,6 @@ We do not currently operate a formal bug bounty program. However, we deeply valu
 
 - **Publicly acknowledge** your contribution in our security advisory (with your permission)
 - Provide a **letter of recognition** for significant findings
-- Track your name in our [Hall of Fame](#hall-of-fame) *(coming soon)*
 
 ---
 
@@ -174,10 +175,11 @@ We do not currently operate a formal bug bounty program. However, we deeply valu
 
 | Purpose | Contact |
 |---------|---------|
-| Security vulnerabilities | security@jobsrow.com |
-| General support | support@jobsrow.com |
-| Community discussions | [GitHub Discussions](https://github.com/yourusername/Jobsrow/discussions) |
+| Security vulnerabilities | [security@etedigital.com](mailto:security@etedigital.com) |
+| Code of conduct violations | [conduct@etedigital.com](mailto:conduct@etedigital.com) |
+| General support | [support@etedigital.com](mailto:support@etedigital.com) |
+| Community discussions | [GitHub Discussions](https://github.com/coriuday/ETE-Digital/discussions) |
 
 ---
 
-**Thank you for helping keep Jobsrow and its users safe.** 🔐
+**Thank you for helping keep ETE Digital and its users safe.** 🔐
