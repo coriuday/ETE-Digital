@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The following versions of ETE Digital currently receive security updates:
+The following versions of Jobsrow currently receive security updates:
 
 | Version | Supported |
 |---------|-----------|
@@ -22,7 +22,7 @@ We strongly recommend always running the latest version from the `main` branch o
 
 Send a **private** disclosure to:
 
-📧 **security@etedigital.com**
+📧 **security@jobsrow.com**
 
 If you prefer encrypted communication, request our PGP key in your first message. Use the subject line format:
 
@@ -78,9 +78,9 @@ We follow responsible **Coordinated Vulnerability Disclosure (CVD)**:
 
 ---
 
-## Security Features in ETE Digital
+## Security Features in Jobsrow
 
-ETE Digital is built with security as a first-class concern across the entire stack:
+Jobsrow is built with security as a first-class concern across the entire stack:
 
 ### Authentication & Authorization
 - **Argon2id** password hashing (OWASP recommended)
@@ -112,7 +112,7 @@ ETE Digital is built with security as a first-class concern across the entire st
 
 ## Security Best Practices for Self-Hosting
 
-If you are deploying ETE Digital yourself, follow these hardening steps:
+If you are deploying Jobsrow yourself, follow these hardening steps:
 
 ### Required Before Going Live
 
@@ -174,10 +174,10 @@ We do not currently operate a formal bug bounty program. However, we deeply valu
 
 | Purpose | Contact |
 |---------|---------|
-| Security vulnerabilities | security@etedigital.com |
-| General support | support@etedigital.com |
-| Community discussions | [GitHub Discussions](https://github.com/yourusername/ete-digital/discussions) |
+| Security vulnerabilities | security@jobsrow.com |
+| General support | support@jobsrow.com |
+| Community discussions | [GitHub Discussions](https://github.com/yourusername/Jobsrow/discussions) |
 
 ---
 
-**Thank you for helping keep ETE Digital and its users safe.** 🔐
+**Thank you for helping keep Jobsrow and its users safe.** 🔐

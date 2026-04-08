@@ -23,7 +23,7 @@ const MOCK_VAULT_ITEMS = [
         id: 'item-2',
         candidate_id: 'user-1',
         type: 'verified_sample',
-        title: 'Tryout Submission — ETE Challenge',
+        title: 'Tryout Submission — Jobsrow Challenge',
         description: 'Verified by employer after successful tryout',
         file_url: null,
         is_verified: true,

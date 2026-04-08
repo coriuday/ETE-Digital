@@ -77,7 +77,7 @@ export default function AboutPage() {
                 <div className="max-w-4xl mx-auto px-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
                         <div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6">The story behind ETE</h2>
+                            <h2 className="text-3xl font-bold text-gray-900 mb-6">The story behind Jobsrow</h2>
                             <div className="space-y-4 text-gray-600 leading-relaxed text-sm">
                                 <p>In 2023, our co-founder Arjun was hiring engineers at a fast-growing startup. After 3 months, 120 interviews, and 15 take-home assignments (all unpaid), he was exhausted—and still hadn't found the right fit.</p>
                                 <p>Meanwhile, his friend Priya—a talented developer—had spent 40+ hours on unpaid take-homes for companies that ghosted her. The system was failing everyone.</p>

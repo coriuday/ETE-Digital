@@ -1,6 +1,6 @@
-# Contributing to ETE Digital
+# Contributing to Jobsrow
 
-Thank you for your interest in contributing to **ETE Digital**! 🎉
+Thank you for your interest in contributing to **Jobsrow**! 🎉
 
 We're building an open, fair job platform — every contribution, big or small, helps us get there. This guide will walk you through everything you need to know to get started.
 
@@ -35,12 +35,12 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 1. **Fork** the repository on GitHub
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/YOUR_USERNAME/ete-digital.git
-   cd ete-digital
+   git clone https://github.com/YOUR_USERNAME/Jobsrow.git
+   cd Jobsrow
    ```
 3. **Add upstream** remote:
    ```bash
-   git remote add upstream https://github.com/ORIGINAL_ORG/ete-digital.git
+   git remote add upstream https://github.com/ORIGINAL_ORG/Jobsrow.git
    ```
 4. **Set up your development environment** (see [Development Setup](#development-setup))
 
@@ -51,7 +51,7 @@ By participating in this project, you agree to abide by our [Code of Conduct](CO
 ### Reporting Bugs
 
 Before submitting a bug report:
-- Check the [existing issues](https://github.com/yourusername/ete-digital/issues) to avoid duplicates
+- Check the [existing issues](https://github.com/yourusername/Jobsrow/issues) to avoid duplicates
 - Ensure the bug is reproducible on the latest version
 
 When submitting, please include:
@@ -66,7 +66,7 @@ When submitting, please include:
 ### Suggesting Features
 
 We love new ideas! Before submitting:
-- Check if the feature has already been requested in [existing issues](https://github.com/yourusername/ete-digital/issues)
+- Check if the feature has already been requested in [existing issues](https://github.com/yourusername/Jobsrow/issues)
 
 When submitting a feature request, include:
 - **Clear title** and description
@@ -332,8 +332,8 @@ alembic upgrade head      # re-apply
 
 - **GitHub Issues** — Bug reports & feature requests
 - **GitHub Discussions** — General questions and ideas
-- **Email** — [support@etedigital.com](mailto:support@etedigital.com)
+- **Email** — [support@jobsrow.com](mailto:support@jobsrow.com)
 
 ---
 
-Thank you for helping make ETE Digital better! 💙
+Thank you for helping make Jobsrow better! 💙

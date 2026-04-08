@@ -1,8 +1,8 @@
-# ETE Digital - Open-Source Job & Talent Platform
+# Jobsrow - Open-Source Job & Talent Platform
 
 > **Outcome-driven hiring meets verifiable skill signals**
 
-ETE Digital is a production-grade, open-source job platform that revolutionizes hiring through **Job Tryouts** (trial tasks), a candidate-owned **Talent Vault**, and **explainable matching**. Built with modern technology and security-first principles.
+Jobsrow is a production-grade, open-source job platform that revolutionizes hiring through **Job Tryouts** (trial tasks), a candidate-owned **Talent Vault**, and **explainable matching**. Built with modern technology and security-first principles.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
@@ -63,8 +63,8 @@ ETE Digital is a production-grade, open-source job platform that revolutionizes 
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/coriuday/ETE-Digital
-cd ete-digital
+git clone https://github.com/coriuday/Jobsrow
+cd Jobsrow
 ```
 
 ### 2. Setup Environment
@@ -309,7 +309,7 @@ alembic downgrade -1
 ## 🏗️ Project Structure
 
 ```
-ete-digital/
+Jobsrow/
 ├── backend/           # FastAPI backend
 │   ├── app/
 │   │   ├── api/       # API endpoints
@@ -417,8 +417,8 @@ Built with:
 
 ## 📞 Support
 
-- **Issues:** [GitHub Issues](https://github.com/coriuday/ETE-Digital/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/coriuday/ETE-Digital/discussions)
+- **Issues:** [GitHub Issues](https://github.com/coriuday/Jobsrow/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/coriuday/Jobsrow/discussions)
 
 ---
 

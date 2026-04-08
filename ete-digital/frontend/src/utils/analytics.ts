@@ -14,7 +14,7 @@ interface AnalyticsEvent {
 
 class Analytics {
     private events: AnalyticsEvent[] = [];
-    private readonly STORAGE_KEY = 'ete_analytics';
+    private readonly STORAGE_KEY = 'jobsrow_analytics';
     private readonly MAX_EVENTS = 1000;
 
     constructor() {
