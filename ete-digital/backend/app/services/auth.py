@@ -52,8 +52,8 @@ class AuthService:
                 detail="Email already registered",
             )
 
-        # Auto-verify in development so login works immediately
-        is_dev = settings.ENVIRONMENT == 'development'
+        # Auto-verify unconditionally as requested to bypass email verification issues
+        is_dev = True
 
         # Create user
         user = User(
@@ -140,11 +140,11 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated"
             )
 
-        if not user.is_verified:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Email not verified. Please check your email.",
-            )
+        # if not user.is_verified:
+        #     raise HTTPException(
+        #         status_code=status.HTTP_403_FORBIDDEN,
+        #         detail="Email not verified. Please check your email.",
+        #     )
 
         # Update last login
         user.last_login_at = datetime.now(timezone.utc)
