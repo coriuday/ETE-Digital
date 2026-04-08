@@ -14,7 +14,7 @@ function App() {
     // gone because it lives only in memory). Prevents the flash-then-logout UX.
     useEffect(() => {
         initializeAuth()
-    }, []) // eslint-disable-line react-hooks/exhaustive-deps
+    }, [])
 
     return (
         <ErrorBoundary>

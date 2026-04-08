@@ -3,8 +3,8 @@ Database connection and session management
 SQLAlchemy setup with async support
 """
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
 
@@ -23,7 +23,7 @@ engine = create_async_engine(
 )
 
 # Async session factory
-AsyncSessionLocal = sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     engine,
     class_=AsyncSession,
     expire_on_commit=False,
