@@ -1,128 +1,155 @@
 -- ============================================================
--- ETE Digital — Full Database Schema for Supabase
--- Generated from all Alembic migrations (final state)
+-- ETE Digital — CANONICAL Database Schema for Supabase
+-- Version: 002 (Post-enum-fix rebuild)
+-- Last updated: 2026-04-08
+--
+-- CRITICAL: All enum values match Python SQLAlchemy model .value
 -- Run this in: Supabase Dashboard → SQL Editor → New Query
 -- ⚠️  Safe to re-run: drops existing tables/types first
 -- ============================================================
 
--- Enable UUID extension (already enabled in Supabase by default)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================
--- CLEANUP — drop everything first so this script is re-runnable
--- Order matters: child tables before parents
+-- CLEANUP — drop in dependency order (children before parents)
 -- ============================================================
 
-DROP TABLE IF EXISTS alembic_version        CASCADE;
-DROP TABLE IF EXISTS interviews             CASCADE;
-DROP TABLE IF EXISTS vault_share_tokens     CASCADE;
-DROP TABLE IF EXISTS talent_vault_items     CASCADE;
-DROP TABLE IF EXISTS tryout_submissions     CASCADE;
-DROP TABLE IF EXISTS tryouts               CASCADE;
-DROP TABLE IF EXISTS applications          CASCADE;
-DROP TABLE IF EXISTS notifications         CASCADE;
-DROP TABLE IF EXISTS audit_logs            CASCADE;
-DROP TABLE IF EXISTS refresh_tokens        CASCADE;
-DROP TABLE IF EXISTS company_profiles      CASCADE;
-DROP TABLE IF EXISTS user_profiles         CASCADE;
-DROP TABLE IF EXISTS jobs                  CASCADE;
-DROP TABLE IF EXISTS users                 CASCADE;
+DROP TABLE IF EXISTS public.interviews             CASCADE;
+DROP TABLE IF EXISTS public.vault_share_tokens     CASCADE;
+DROP TABLE IF EXISTS public.talent_vault_items     CASCADE;
+DROP TABLE IF EXISTS public.tryout_submissions     CASCADE;
+DROP TABLE IF EXISTS public.tryouts               CASCADE;
+DROP TABLE IF EXISTS public.applications          CASCADE;
+DROP TABLE IF EXISTS public.notifications         CASCADE;
+DROP TABLE IF EXISTS public.audit_logs            CASCADE;
+DROP TABLE IF EXISTS public.refresh_tokens        CASCADE;
+DROP TABLE IF EXISTS public.company_profiles      CASCADE;
+DROP TABLE IF EXISTS public.user_profiles         CASCADE;
+DROP TABLE IF EXISTS public.jobs                  CASCADE;
+DROP TABLE IF EXISTS public.users                 CASCADE;
+DROP TABLE IF EXISTS public.alembic_version       CASCADE;
 
-DROP TYPE IF EXISTS interviewstatus   CASCADE;
-DROP TYPE IF EXISTS interviewtype     CASCADE;
-DROP TYPE IF EXISTS companysize       CASCADE;
-DROP TYPE IF EXISTS vaultitemtype     CASCADE;
-DROP TYPE IF EXISTS tryoutstatus      CASCADE;
-DROP TYPE IF EXISTS paymentstatus     CASCADE;
-DROP TYPE IF EXISTS submissionstatus  CASCADE;
-DROP TYPE IF EXISTS notificationtype  CASCADE;
-DROP TYPE IF EXISTS jobstatus         CASCADE;
-DROP TYPE IF EXISTS jobtype           CASCADE;
-DROP TYPE IF EXISTS auditaction       CASCADE;
-DROP TYPE IF EXISTS applicationstatus CASCADE;
-DROP TYPE IF EXISTS userrole          CASCADE;
+DROP TYPE IF EXISTS public.interviewstatus   CASCADE;
+DROP TYPE IF EXISTS public.interviewtype     CASCADE;
+DROP TYPE IF EXISTS public.companysize       CASCADE;
+DROP TYPE IF EXISTS public.vaultitemtype     CASCADE;
+DROP TYPE IF EXISTS public.tryoutstatus      CASCADE;
+DROP TYPE IF EXISTS public.paymentstatus     CASCADE;
+DROP TYPE IF EXISTS public.submissionstatus  CASCADE;
+DROP TYPE IF EXISTS public.notificationtype  CASCADE;
+DROP TYPE IF EXISTS public.jobstatus         CASCADE;
+DROP TYPE IF EXISTS public.jobtype           CASCADE;
+DROP TYPE IF EXISTS public.auditaction       CASCADE;
+DROP TYPE IF EXISTS public.applicationstatus CASCADE;
+DROP TYPE IF EXISTS public.userrole          CASCADE;
 
 -- ============================================================
--- ENUMS
+-- ENUMS — Values EXACTLY match Python model .value strings
 -- ============================================================
 
-CREATE TYPE userrole AS ENUM ('CANDIDATE', 'EMPLOYER', 'ADMIN');
+-- UserRole.CANDIDATE.value = 'candidate', etc.
+CREATE TYPE userrole AS ENUM ('candidate', 'employer', 'admin');
+
+-- ApplicationStatus.PENDING.value = 'pending', etc.
 CREATE TYPE applicationstatus AS ENUM (
-    'PENDING', 'REVIEWED', 'SHORTLISTED', 'REJECTED', 'HIRED', 'WITHDRAWN'
+    'pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn'
 );
+
+-- AuditAction values are lowercase with underscores
 CREATE TYPE auditaction AS ENUM (
-    'VAULT_ACCESS', 'VAULT_SHARE', 'DATA_EXPORT', 'DATA_DELETION',
-    'PROFILE_UPDATE', 'PASSWORD_CHANGE', 'ADMIN_ACTION'
+    'vault_access', 'vault_share', 'data_export', 'data_deletion',
+    'profile_update', 'password_change', 'admin_action'
 );
-CREATE TYPE jobtype AS ENUM ('FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP');
-CREATE TYPE jobstatus AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED');
-CREATE TYPE notificationtype AS ENUM ('APPLICATION', 'TRYOUT', 'MESSAGE', 'PAYMENT', 'SYSTEM');
-CREATE TYPE submissionstatus AS ENUM ('SUBMITTED', 'GRADING', 'GRADED', 'VERIFIED', 'FAILED');
-CREATE TYPE paymentstatus AS ENUM ('PENDING', 'ESCROWED', 'RELEASED', 'REFUNDED', 'FAILED');
-CREATE TYPE tryoutstatus AS ENUM ('ACTIVE', 'EXPIRED', 'CLOSED');
-CREATE TYPE vaultitemtype AS ENUM ('PROJECT', 'VERIFIED_SAMPLE', 'BADGE', 'CERTIFICATE', 'OTHER');
-CREATE TYPE companysize AS ENUM ('STARTUP', 'SMALL', 'MEDIUM', 'LARGE', 'ENTERPRISE');
-CREATE TYPE interviewtype AS ENUM ('VIDEO', 'PHONE', 'IN_PERSON', 'TECHNICAL', 'HR', 'FINAL');
-CREATE TYPE interviewstatus AS ENUM ('SCHEDULED', 'COMPLETED', 'CANCELLED', 'NO_SHOW');
+
+-- JobType.FULL_TIME.value = 'full_time', etc.
+CREATE TYPE jobtype AS ENUM ('full_time', 'part_time', 'contract', 'internship');
+
+-- JobStatus.DRAFT.value = 'draft', etc.
+CREATE TYPE jobstatus AS ENUM ('draft', 'active', 'closed', 'archived');
+
+-- NotificationType.APPLICATION.value = 'application', etc.
+CREATE TYPE notificationtype AS ENUM (
+    'application', 'tryout', 'message', 'payment', 'system'
+);
+
+-- SubmissionStatus has auto_graded and passed values
+CREATE TYPE submissionstatus AS ENUM (
+    'submitted', 'grading', 'auto_graded', 'graded', 'verified', 'passed', 'failed'
+);
+
+-- PaymentStatus.PENDING.value = 'pending', etc.
+CREATE TYPE paymentstatus AS ENUM ('pending', 'escrowed', 'released', 'refunded', 'failed');
+
+-- TryoutStatus has DRAFT value
+CREATE TYPE tryoutstatus AS ENUM ('draft', 'active', 'expired', 'closed');
+
+-- VaultItemType.PROJECT.value = 'project', etc.
+CREATE TYPE vaultitemtype AS ENUM (
+    'project', 'verified_sample', 'badge', 'certificate', 'other'
+);
+
+-- CompanySize uses size range strings (Python: STARTUP = "1-10")
+CREATE TYPE companysize AS ENUM ('1-10', '11-50', '51-200', '201-1000', '1000+');
+
+-- InterviewType.VIDEO.value = 'video', etc.
+CREATE TYPE interviewtype AS ENUM ('video', 'phone', 'in_person', 'technical', 'hr', 'final');
+
+-- InterviewStatus.SCHEDULED.value = 'scheduled', etc.
+CREATE TYPE interviewstatus AS ENUM ('scheduled', 'completed', 'cancelled', 'no_show');
 
 -- ============================================================
 -- TABLE: users
 -- ============================================================
 
 CREATE TABLE users (
-    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email           VARCHAR(255) NOT NULL UNIQUE,
-    password_hash   VARCHAR(255) NOT NULL,
-    role            userrole NOT NULL,
-    is_verified     BOOLEAN NOT NULL DEFAULT false,
-    is_active       BOOLEAN NOT NULL DEFAULT true,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at      TIMESTAMPTZ,
-    last_login_at   TIMESTAMPTZ,
+    id                          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email                       VARCHAR(255) NOT NULL UNIQUE,
+    password_hash               VARCHAR(255) NOT NULL,
+    role                        userrole NOT NULL,
+    is_verified                 BOOLEAN NOT NULL DEFAULT false,
+    is_active                   BOOLEAN NOT NULL DEFAULT true,
+    created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                  TIMESTAMPTZ,
+    last_login_at               TIMESTAMPTZ,
     verification_token          VARCHAR(255),
     verification_token_expires  TIMESTAMPTZ,
     reset_token                 VARCHAR(255),
     reset_token_expires         TIMESTAMPTZ
 );
 
--- email already UNIQUE (implicit index); add role index for fast filtering
-CREATE INDEX ix_users_role ON users (role);
+CREATE INDEX ix_users_role  ON users (role);
+CREATE INDEX ix_users_email ON users (email);
 
 -- ============================================================
 -- TABLE: user_profiles
--- Fix: FK on user_id → users(id) ON DELETE CASCADE
--- Note: phone stores plain display value; phone_encrypted stores
---       AES-encrypted version for PII compliance — both intentional.
 -- ============================================================
 
 CREATE TABLE user_profiles (
     user_id          UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     full_name        VARCHAR(255),
-    phone            VARCHAR(20),          -- plain display copy (optional)
+    phone            VARCHAR(20),
     location         VARCHAR(255),
     bio              VARCHAR(1000),
     avatar_url       VARCHAR(500),
     resume_url       VARCHAR(500),
-    skills           JSONB DEFAULT '[]',
+    skills           JSONB DEFAULT '[]'::jsonb,
     experience_years VARCHAR(20),
-    phone_encrypted  VARCHAR(500),         -- AES-encrypted for PII storage
+    phone_encrypted  VARCHAR(500),
     ssn_encrypted    VARCHAR(500),
-    social_links     JSONB DEFAULT '{}',
-    preferences      JSONB DEFAULT '{}',
+    social_links     JSONB DEFAULT '{}'::jsonb,
+    preferences      JSONB DEFAULT '{}'::jsonb,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ
 );
 
 -- ============================================================
 -- TABLE: refresh_tokens
--- Fix: FK on user_id → users(id) ON DELETE CASCADE
--- Fix: removed redundant ix_refresh_tokens_token (UNIQUE already creates index)
 -- ============================================================
 
 CREATE TABLE refresh_tokens (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id     UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token       VARCHAR(500) NOT NULL UNIQUE,   -- UNIQUE creates the index
+    token       VARCHAR(500) NOT NULL UNIQUE,
     expires_at  TIMESTAMPTZ NOT NULL,
     is_revoked  BOOLEAN NOT NULL DEFAULT false,
     ip_address  VARCHAR(45),
@@ -133,223 +160,7 @@ CREATE TABLE refresh_tokens (
 CREATE INDEX ix_refresh_tokens_user_id ON refresh_tokens (user_id);
 
 -- ============================================================
--- TABLE: jobs
--- Fix: FK on employer_id → users(id)
--- Fix: CHECK salary_min <= salary_max (nulls allowed)
--- ============================================================
-
-CREATE TABLE jobs (
-    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    employer_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    title               VARCHAR(255) NOT NULL,
-    description         TEXT NOT NULL,
-    requirements        TEXT,
-    company             VARCHAR(255) NOT NULL DEFAULT '',
-    location            VARCHAR(255),
-    remote_ok           BOOLEAN DEFAULT false,
-    job_type            jobtype NOT NULL,
-    salary_min          INTEGER,
-    salary_max          INTEGER,
-    salary_currency     VARCHAR(3) DEFAULT 'INR',
-    skills_required     JSONB DEFAULT '[]',
-    experience_required VARCHAR(50),
-    status              jobstatus NOT NULL DEFAULT 'DRAFT',
-    has_tryout          BOOLEAN NOT NULL DEFAULT false,
-    tryout_config       JSONB,
-    outcome_terms       JSONB,
-    custom_questions    JSONB,
-    views_count         INTEGER DEFAULT 0,
-    applications_count  INTEGER DEFAULT 0,
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at          TIMESTAMPTZ,
-    published_at        TIMESTAMPTZ,
-    expires_at          TIMESTAMPTZ,
-
-    CONSTRAINT chk_jobs_salary_range
-        CHECK (salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max)
-);
-
-CREATE INDEX ix_jobs_employer_id ON jobs (employer_id);
-CREATE INDEX ix_jobs_status ON jobs (status);
-
--- ============================================================
--- TABLE: applications
--- Fix: FKs on job_id → jobs(id) and candidate_id → users(id)
--- Fix: UNIQUE (job_id, candidate_id) — one application per candidate per job
--- ============================================================
-
-CREATE TABLE applications (
-    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    job_id            UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-    candidate_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    cover_letter      TEXT,
-    custom_answers    JSONB,
-    vault_share_token VARCHAR(500),
-    status            applicationstatus NOT NULL DEFAULT 'PENDING',
-    match_score       INTEGER,
-    match_explanation JSONB,
-    employer_notes    TEXT,
-    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at        TIMESTAMPTZ,
-
-    CONSTRAINT uq_applications_job_candidate UNIQUE (job_id, candidate_id)
-);
-
-CREATE INDEX ix_applications_job_id       ON applications (job_id);
-CREATE INDEX ix_applications_candidate_id ON applications (candidate_id);
-
--- ============================================================
--- TABLE: tryouts
--- Fix: FK on job_id → jobs(id)
--- Fix: CHECK duration_days > 0, CHECK passing_score >= 0
--- ============================================================
-
-CREATE TABLE tryouts (
-    id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    job_id           UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
-    task_description TEXT NOT NULL,
-    task_requirements JSONB,
-    test_cases       JSONB,
-    duration_days    INTEGER NOT NULL CHECK (duration_days > 0),
-    payment_amount   NUMERIC(10, 2) NOT NULL,
-    currency         VARCHAR(3) DEFAULT 'INR',
-    rubric           JSONB NOT NULL,
-    passing_score    INTEGER CHECK (passing_score >= 0),
-    status           tryoutstatus DEFAULT 'ACTIVE',
-    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
-    expires_at       TIMESTAMPTZ
-);
-
-CREATE INDEX ix_tryouts_job_id ON tryouts (job_id);
-
--- ============================================================
--- TABLE: tryout_submissions
--- Fix: FKs on tryout_id → tryouts(id) and candidate_id → users(id)
--- Fix: UNIQUE (tryout_id, candidate_id) — one submission per candidate per tryout
--- ============================================================
-
-CREATE TABLE tryout_submissions (
-    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    tryout_id               UUID NOT NULL REFERENCES tryouts(id) ON DELETE CASCADE,
-    candidate_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    submission_url          VARCHAR(500),
-    submission_data         JSONB,
-    submission_notes        TEXT,
-    auto_score              INTEGER,
-    manual_score            INTEGER,
-    final_score             INTEGER,
-    score_breakdown         JSONB,
-    feedback                TEXT,
-    status                  submissionstatus DEFAULT 'SUBMITTED',
-    payment_status          paymentstatus DEFAULT 'PENDING',
-    payment_transaction_id  VARCHAR(255),
-    submitted_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-    graded_at               TIMESTAMPTZ,
-    payment_released_at     TIMESTAMPTZ,
-
-    CONSTRAINT uq_tryout_submissions_tryout_candidate UNIQUE (tryout_id, candidate_id)
-);
-
-CREATE INDEX ix_tryout_submissions_tryout_id    ON tryout_submissions (tryout_id);
-CREATE INDEX ix_tryout_submissions_candidate_id ON tryout_submissions (candidate_id);
-
--- ============================================================
--- TABLE: talent_vault_items
--- Fix: FKs on candidate_id → users(id) and tryout_submission_id → tryout_submissions(id)
--- Fix: file_size_bytes changed from INTEGER to BIGINT (avoids 2 GB overflow)
--- ============================================================
-
-CREATE TABLE talent_vault_items (
-    id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    candidate_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type                 vaultitemtype NOT NULL,
-    title                VARCHAR(255) NOT NULL,
-    description          VARCHAR(1000),
-    file_url             VARCHAR(500),
-    file_type            VARCHAR(50),
-    file_size_bytes      BIGINT,                -- BIGINT: supports files > 2 GB
-    item_metadata        JSONB,
-    is_verified          BOOLEAN NOT NULL DEFAULT false,
-    verified_by          VARCHAR(50),
-    tryout_submission_id UUID REFERENCES tryout_submissions(id) ON DELETE SET NULL,
-    share_count          INTEGER DEFAULT 0,
-    view_count           INTEGER DEFAULT 0,
-    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at           TIMESTAMPTZ
-);
-
-CREATE INDEX ix_talent_vault_items_candidate_id ON talent_vault_items (candidate_id);
-
--- ============================================================
--- TABLE: vault_share_tokens
--- Fix: FK on vault_item_id → talent_vault_items(id) ON DELETE CASCADE
--- Fix: removed redundant ix_vault_share_tokens_token (UNIQUE already creates index)
--- ============================================================
-
-CREATE TABLE vault_share_tokens (
-    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    vault_item_id       UUID NOT NULL REFERENCES talent_vault_items(id) ON DELETE CASCADE,
-    token               UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),  -- UNIQUE creates index
-    expires_at          TIMESTAMPTZ,
-    max_views           INTEGER,
-    view_count          INTEGER DEFAULT 0,
-    is_revoked          BOOLEAN DEFAULT false,
-    shared_with_email   VARCHAR(255),
-    shared_with_company VARCHAR(255),
-    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_accessed_at    TIMESTAMPTZ
-);
-
-CREATE INDEX ix_vault_share_tokens_vault_item_id ON vault_share_tokens (vault_item_id);
-
--- ============================================================
--- TABLE: notifications
--- Fix: FK on user_id → users(id) ON DELETE CASCADE
--- Fix: composite index (user_id, is_read) for unread-notification queries
--- ============================================================
-
-CREATE TABLE notifications (
-    id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id               UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    type                  notificationtype NOT NULL,
-    title                 VARCHAR(255) NOT NULL,
-    message               VARCHAR(500) NOT NULL,
-    link                  VARCHAR(500),
-    notification_metadata JSONB,
-    is_read               BOOLEAN NOT NULL DEFAULT false,
-    created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
-    read_at               TIMESTAMPTZ
-);
-
--- Composite index covers "fetch unread for user" queries
-CREATE INDEX ix_notifications_user_id_is_read ON notifications (user_id, is_read);
-
--- ============================================================
--- TABLE: audit_logs
--- (user_id nullable intentionally — system actions have no user)
--- ============================================================
-
-CREATE TABLE audit_logs (
-    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id      UUID,                    -- nullable: system-level actions allowed
-    action       auditaction NOT NULL,
-    resource_type VARCHAR(50),
-    resource_id  UUID,
-    ip_address   VARCHAR(45),
-    user_agent   VARCHAR(500),
-    request_path VARCHAR(500),
-    details      JSONB,
-    timestamp    TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX ix_audit_logs_user_id   ON audit_logs (user_id);
-CREATE INDEX ix_audit_logs_action    ON audit_logs (action);
-CREATE INDEX ix_audit_logs_timestamp ON audit_logs (timestamp);
-
--- ============================================================
 -- TABLE: company_profiles
--- Fix: FK on employer_id → users(id)
--- Fix: removed redundant ix_company_profiles_employer_id (UNIQUE already creates index)
 -- ============================================================
 
 CREATE TABLE company_profiles (
@@ -370,22 +181,240 @@ CREATE TABLE company_profiles (
     address          VARCHAR(500),
     city             VARCHAR(100),
     country          VARCHAR(100),
-    social_links     JSONB DEFAULT '{}',
-    benefits         JSONB DEFAULT '[]',
-    tech_stack       JSONB DEFAULT '[]',
-    culture_tags     JSONB DEFAULT '[]',
+    social_links     JSONB DEFAULT '{}'::jsonb,
+    benefits         JSONB DEFAULT '[]'::jsonb,
+    tech_stack       JSONB DEFAULT '[]'::jsonb,
+    culture_tags     JSONB DEFAULT '[]'::jsonb,
     is_verified      BOOLEAN DEFAULT false,
     verified_at      TIMESTAMPTZ,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ
-    -- UNIQUE on employer_id already creates the index; no separate CREATE INDEX needed
 );
 
 -- ============================================================
+-- TABLE: jobs
+-- ============================================================
+
+CREATE TABLE jobs (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    employer_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title               VARCHAR(255) NOT NULL,
+    description         TEXT NOT NULL,
+    requirements        TEXT,
+    company             VARCHAR(255) NOT NULL DEFAULT '',
+    location            VARCHAR(255),
+    remote_ok           BOOLEAN DEFAULT false,
+    job_type            jobtype NOT NULL DEFAULT 'full_time',
+    salary_min          INTEGER,
+    salary_max          INTEGER,
+    salary_currency     VARCHAR(3) DEFAULT 'INR',
+    skills_required     JSONB DEFAULT '[]'::jsonb,
+    experience_required VARCHAR(50),
+    status              jobstatus NOT NULL DEFAULT 'draft',
+    has_tryout          BOOLEAN NOT NULL DEFAULT false,
+    tryout_config       JSONB,
+    outcome_terms       JSONB,
+    custom_questions    JSONB,
+    views_count         INTEGER DEFAULT 0,
+    applications_count  INTEGER DEFAULT 0,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ,
+    published_at        TIMESTAMPTZ,
+    expires_at          TIMESTAMPTZ,
+
+    CONSTRAINT chk_jobs_salary_range
+        CHECK (salary_min IS NULL OR salary_max IS NULL OR salary_min <= salary_max)
+);
+
+CREATE INDEX ix_jobs_employer_id ON jobs (employer_id);
+CREATE INDEX ix_jobs_status ON jobs (status);
+
+-- ============================================================
+-- TABLE: applications
+-- ============================================================
+
+CREATE TABLE applications (
+    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    job_id            UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    candidate_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    cover_letter      TEXT,
+    custom_answers    JSONB,
+    vault_share_token VARCHAR(500),
+    status            applicationstatus NOT NULL DEFAULT 'pending',
+    match_score       INTEGER,
+    match_explanation JSONB,
+    employer_notes    TEXT,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at        TIMESTAMPTZ,
+
+    CONSTRAINT uq_applications_job_candidate UNIQUE (job_id, candidate_id)
+);
+
+CREATE INDEX ix_applications_job_id       ON applications (job_id);
+CREATE INDEX ix_applications_candidate_id ON applications (candidate_id);
+
+-- ============================================================
+-- TABLE: tryouts
+-- Columns match SQLAlchemy model exactly:
+--   title, description, requirements (NOT task_description)
+--   payment_amount as INTEGER, both payment_currency AND currency
+--   both scoring_rubric AND rubric fields
+-- ============================================================
+
+CREATE TABLE tryouts (
+    id                        UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    job_id                    UUID NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+    title                     VARCHAR(255) NOT NULL,
+    description               TEXT NOT NULL,
+    requirements              TEXT,
+    task_requirements         JSONB,
+    test_cases                JSONB,
+    expected_deliverables     JSONB,
+    estimated_duration_hours  INTEGER NOT NULL DEFAULT 8,
+    duration_days             INTEGER NOT NULL DEFAULT 7 CHECK (duration_days > 0),
+    payment_amount            INTEGER DEFAULT 0,
+    payment_currency          VARCHAR(3) DEFAULT 'INR',
+    currency                  VARCHAR(3) DEFAULT 'INR',
+    scoring_rubric            JSONB NOT NULL DEFAULT '{}'::jsonb,
+    rubric                    JSONB,
+    passing_score             INTEGER CHECK (passing_score >= 0),
+    auto_grade_enabled        BOOLEAN DEFAULT false,
+    max_submissions           INTEGER DEFAULT 1,
+    submission_format         VARCHAR(100),
+    submissions_count         INTEGER DEFAULT 0,
+    status                    tryoutstatus DEFAULT 'active',
+    created_at                TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at                TIMESTAMPTZ,
+    expires_at                TIMESTAMPTZ
+);
+
+CREATE INDEX ix_tryouts_job_id ON tryouts (job_id);
+
+-- ============================================================
+-- TABLE: tryout_submissions
+-- Columns match SQLAlchemy model exactly:
+--   both notes AND submission_notes
+--   reviewed_by as VARCHAR(255) (not UUID FK)
+-- ============================================================
+
+CREATE TABLE tryout_submissions (
+    id                      UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    tryout_id               UUID NOT NULL REFERENCES tryouts(id) ON DELETE CASCADE,
+    candidate_id            UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    submission_url          VARCHAR(500),
+    submission_data         JSONB,
+    notes                   TEXT,
+    submission_notes        TEXT,
+    auto_score              INTEGER,
+    manual_score            INTEGER,
+    final_score             INTEGER,
+    score_breakdown         JSONB,
+    feedback                TEXT,
+    reviewed_by             VARCHAR(255),
+    reviewed_at             TIMESTAMPTZ,
+    status                  submissionstatus DEFAULT 'submitted',
+    payment_status          paymentstatus DEFAULT 'pending',
+    payment_transaction_id  VARCHAR(255),
+    submitted_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    graded_at               TIMESTAMPTZ,
+    payment_escrowed_at     TIMESTAMPTZ,
+    payment_released_at     TIMESTAMPTZ,
+    created_at              TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at              TIMESTAMPTZ,
+
+    CONSTRAINT uq_tryout_submissions_tryout_candidate UNIQUE (tryout_id, candidate_id)
+);
+
+CREATE INDEX ix_tryout_submissions_tryout_id    ON tryout_submissions (tryout_id);
+CREATE INDEX ix_tryout_submissions_candidate_id ON tryout_submissions (candidate_id);
+
+-- ============================================================
+-- TABLE: talent_vault_items
+-- ============================================================
+
+CREATE TABLE talent_vault_items (
+    id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    candidate_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type                 vaultitemtype NOT NULL DEFAULT 'project',
+    title                VARCHAR(255) NOT NULL,
+    description          VARCHAR(1000),
+    file_url             VARCHAR(500),
+    file_type            VARCHAR(50),
+    file_size_bytes      BIGINT,
+    item_metadata        JSONB,
+    is_verified          BOOLEAN NOT NULL DEFAULT false,
+    verified_by          VARCHAR(50),
+    tryout_submission_id UUID REFERENCES tryout_submissions(id) ON DELETE SET NULL,
+    share_count          INTEGER DEFAULT 0,
+    view_count           INTEGER DEFAULT 0,
+    created_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at           TIMESTAMPTZ
+);
+
+CREATE INDEX ix_talent_vault_items_candidate_id ON talent_vault_items (candidate_id);
+
+-- ============================================================
+-- TABLE: vault_share_tokens
+-- ============================================================
+
+CREATE TABLE vault_share_tokens (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    vault_item_id       UUID NOT NULL REFERENCES talent_vault_items(id) ON DELETE CASCADE,
+    token               UUID NOT NULL UNIQUE DEFAULT uuid_generate_v4(),
+    expires_at          TIMESTAMPTZ,
+    max_views           INTEGER,
+    view_count          INTEGER DEFAULT 0,
+    is_revoked          BOOLEAN DEFAULT false,
+    shared_with_email   VARCHAR(255),
+    shared_with_company VARCHAR(255),
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_accessed_at    TIMESTAMPTZ
+);
+
+CREATE INDEX ix_vault_share_tokens_vault_item_id ON vault_share_tokens (vault_item_id);
+
+-- ============================================================
+-- TABLE: notifications
+-- ============================================================
+
+CREATE TABLE notifications (
+    id                    UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id               UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type                  notificationtype NOT NULL DEFAULT 'system',
+    title                 VARCHAR(255) NOT NULL,
+    message               VARCHAR(500) NOT NULL,
+    link                  VARCHAR(500),
+    notification_metadata JSONB,
+    is_read               BOOLEAN NOT NULL DEFAULT false,
+    created_at            TIMESTAMPTZ NOT NULL DEFAULT now(),
+    read_at               TIMESTAMPTZ
+);
+
+CREATE INDEX ix_notifications_user_id_is_read ON notifications (user_id, is_read);
+
+-- ============================================================
+-- TABLE: audit_logs
+-- ============================================================
+
+CREATE TABLE audit_logs (
+    id            UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id       UUID,
+    action        auditaction NOT NULL DEFAULT 'admin_action',
+    resource_type VARCHAR(50),
+    resource_id   UUID,
+    ip_address    VARCHAR(45),
+    user_agent    VARCHAR(500),
+    request_path  VARCHAR(500),
+    details       JSONB,
+    timestamp     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX ix_audit_logs_user_id   ON audit_logs (user_id);
+CREATE INDEX ix_audit_logs_action    ON audit_logs (action);
+CREATE INDEX ix_audit_logs_timestamp ON audit_logs (timestamp);
+
+-- ============================================================
 -- TABLE: interviews
--- Fix: FKs on application_id → applications(id), employer_id → users(id),
---      candidate_id → users(id)
--- Fix: CHECK candidate_rating BETWEEN 1 AND 5
 -- ============================================================
 
 CREATE TABLE interviews (
@@ -393,10 +422,10 @@ CREATE TABLE interviews (
     application_id              UUID NOT NULL REFERENCES applications(id) ON DELETE CASCADE,
     employer_id                 UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     candidate_id                UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    interview_type              interviewtype,
-    title                       VARCHAR(255),
+    interview_type              interviewtype DEFAULT 'video',
+    title                       VARCHAR(255) DEFAULT 'Interview',
     scheduled_at                TIMESTAMPTZ NOT NULL,
-    duration_minutes            INTEGER,
+    duration_minutes            INTEGER DEFAULT 60,
     meeting_url                 VARCHAR(500),
     meeting_platform            VARCHAR(50),
     meeting_id                  VARCHAR(100),
@@ -407,7 +436,7 @@ CREATE TABLE interviews (
     internal_notes              TEXT,
     candidate_rating            INTEGER CHECK (candidate_rating BETWEEN 1 AND 5),
     interviewer_notes           TEXT,
-    status                      interviewstatus DEFAULT 'SCHEDULED',
+    status                      interviewstatus DEFAULT 'scheduled',
     reminder_sent               BOOLEAN DEFAULT false,
     candidate_confirmed         BOOLEAN DEFAULT false,
     created_at                  TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -420,7 +449,7 @@ CREATE INDEX ix_interviews_employer_id    ON interviews (employer_id);
 CREATE INDEX ix_interviews_candidate_id   ON interviews (candidate_id);
 
 -- ============================================================
--- Alembic version tracking (so Alembic knows migrations are done)
+-- TABLE: alembic_version
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS alembic_version (
@@ -428,13 +457,35 @@ CREATE TABLE IF NOT EXISTS alembic_version (
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
 
--- Insert the latest migration version so Alembic won't re-run migrations
 INSERT INTO alembic_version (version_num) VALUES ('71bc124d75eb');
 
 -- ============================================================
--- DONE! All 13 tables created.
--- Tables: users, user_profiles, refresh_tokens, jobs,
---         applications, tryouts, tryout_submissions,
---         talent_vault_items, vault_share_tokens,
---         notifications, audit_logs, company_profiles, interviews
+-- RLS: Enable Row Level Security
+-- Backend uses PostgreSQL direct connection (bypasses RLS).
+-- This blocks unauthenticated PostgREST/anon key access.
+-- ============================================================
+
+ALTER TABLE users              ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_profiles      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE refresh_tokens     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE company_profiles   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE jobs               ENABLE ROW LEVEL SECURITY;
+ALTER TABLE applications       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tryouts            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tryout_submissions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE talent_vault_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE vault_share_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE audit_logs         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE interviews         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE alembic_version    ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read of active jobs (for /jobs search page)
+CREATE POLICY "Public can view active jobs"
+    ON jobs FOR SELECT
+    USING (status = 'active');
+
+-- ============================================================
+-- DONE! 13 tables + alembic_version created.
+-- All enum values match Python SQLAlchemy model .value strings.
 -- ============================================================

@@ -34,7 +34,9 @@ class CompanyProfile(Base):
     tagline = Column(String(500))
     description = Column(Text)
     industry = Column(String(100))
-    company_size = Column(SQLEnum(CompanySize))
+    company_size = Column(
+        SQLEnum(CompanySize, values_callable=lambda x: [e.value for e in x])
+    )
     founded_year = Column(Integer)
 
     # Branding
@@ -103,7 +105,10 @@ class Interview(Base):
     candidate_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Interview details
-    interview_type = Column(SQLEnum(InterviewType), default=InterviewType.VIDEO)
+    interview_type = Column(
+        SQLEnum(InterviewType, values_callable=lambda x: [e.value for e in x]),
+        default=InterviewType.VIDEO,
+    )
     title = Column(String(255), default="Interview")
     scheduled_at = Column(DateTime(timezone=True), nullable=False)
     duration_minutes = Column(Integer, default=60)
@@ -127,7 +132,10 @@ class Interview(Base):
     interviewer_notes = Column(Text)
 
     # Status
-    status = Column(SQLEnum(InterviewStatus), default=InterviewStatus.SCHEDULED)
+    status = Column(
+        SQLEnum(InterviewStatus, values_callable=lambda x: [e.value for e in x]),
+        default=InterviewStatus.SCHEDULED,
+    )
 
     # Notifications
     reminder_sent = Column(Boolean, default=False)

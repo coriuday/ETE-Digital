@@ -30,7 +30,10 @@ class TalentVaultItem(Base):
     candidate_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Item details
-    type = Column(SQLEnum(VaultItemType), nullable=False)
+    type = Column(
+        SQLEnum(VaultItemType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     title = Column(String(255), nullable=False)
     description = Column(String(1000))
 

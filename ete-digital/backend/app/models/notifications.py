@@ -30,7 +30,10 @@ class Notification(Base):
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Notification content
-    type = Column(SQLEnum(NotificationType), nullable=False)
+    type = Column(
+        SQLEnum(NotificationType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
     title = Column(String(255), nullable=False)
     message = Column(String(500), nullable=False)
     link = Column(String(500))  # Link to related resource
@@ -72,7 +75,11 @@ class AuditLog(Base):
     user_id = Column(UUID(as_uuid=True), index=True)
 
     # Action details
-    action = Column(SQLEnum(AuditAction), nullable=False, index=True)
+    action = Column(
+        SQLEnum(AuditAction, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+        index=True,
+    )
     resource_type = Column(String(50))  # 'job', 'vault_item', 'user', etc.
     resource_id = Column(UUID(as_uuid=True))
 

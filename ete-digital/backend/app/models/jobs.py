@@ -54,7 +54,10 @@ class Job(Base):
     # Location and type
     location = Column(String(255))
     remote_ok = Column(Boolean, default=False)
-    job_type = Column(SQLEnum(JobType), nullable=False)
+    job_type = Column(
+        SQLEnum(JobType, values_callable=lambda x: [e.value for e in x]),
+        nullable=False,
+    )
 
     # Salary
     salary_min = Column(Integer, nullable=True)
@@ -67,7 +70,10 @@ class Job(Base):
 
     # Status
     status = Column(
-        SQLEnum(JobStatus), default=JobStatus.DRAFT, nullable=False, index=True
+        SQLEnum(JobStatus, values_callable=lambda x: [e.value for e in x]),
+        default=JobStatus.DRAFT,
+        nullable=False,
+        index=True,
     )
 
     # Tryout configuration
@@ -125,7 +131,9 @@ class Application(Base):
 
     # Status
     status = Column(
-        SQLEnum(ApplicationStatus), default=ApplicationStatus.PENDING, nullable=False
+        SQLEnum(ApplicationStatus, values_callable=lambda x: [e.value for e in x]),
+        default=ApplicationStatus.PENDING,
+        nullable=False,
     )
 
     # Matching score (if applicable)

@@ -1,0 +1,45 @@
+-- Migration: 001_initial_schema
+-- Applied: 2026-04-08
+-- Description: Initial schema rebuild with correct lowercase enum values
+--              matching Python SQLAlchemy model .value strings.
+--
+-- This is the canonical initial migration after the schema audit and fix.
+-- All previous ad-hoc schema changes have been consolidated here.
+--
+-- To apply: Run in Supabase Dashboard → SQL Editor
+-- Or use: supabase db push (if using Supabase CLI)
+
+-- See full schema in: backend/supabase_schema.sql
+-- The full idempotent (drop+create) version is in supabase_schema.sql.
+-- This file tracks only the migration delta.
+
+-- Key changes from original broken schema:
+--
+-- 1. userrole:      'CANDIDATE' → 'candidate' (etc.)
+-- 2. jobtype:       'FULL_TIME' → 'full_time' (etc.)
+-- 3. jobstatus:     'DRAFT' → 'draft' (etc.)
+-- 4. applicationstatus: 'PENDING' → 'pending' (etc.)
+-- 5. tryoutstatus:  Added 'draft'; changed to lowercase
+-- 6. submissionstatus: Added 'auto_graded', 'passed'; lowercase
+-- 7. paymentstatus: Lowercase values
+-- 8. notificationtype: Lowercase values
+-- 9. auditaction:   Lowercase with underscores
+-- 10. vaultitemtype: Lowercase values ('project', 'verified_sample', etc.)
+-- 11. companysize:  Changed from 'STARTUP' to '1-10' (matches Python model)
+-- 12. interviewtype: Lowercase ('video', 'phone', 'in_person', etc.)
+-- 13. interviewstatus: Lowercase ('scheduled', 'completed', etc.)
+--
+-- Tryouts table:
+--   - Renamed task_description → title + description + requirements
+--   - Added: expected_deliverables, estimated_duration_hours
+--   - Added: payment_currency (kept both payment_currency and currency)
+--   - Added: rubric (kept both rubric and scoring_rubric)
+--   - payment_amount: NUMERIC → INTEGER
+--
+-- Tryout submissions table:
+--   - Added: notes (kept both notes and submission_notes)
+--   - reviewed_by: Changed from UUID FK → VARCHAR(255)
+--   - Added: created_at, updated_at
+--
+-- RLS enabled on all tables.
+-- Policy: "Public can view active jobs" ON jobs WHERE status = 'active'

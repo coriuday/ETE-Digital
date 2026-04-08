@@ -21,7 +21,7 @@ from app.core.database import Base
 
 
 class TryoutStatus(str, enum.Enum):
-    """Tryout status enumeration"""
+    """Tryout status enumeration — matches DB tryoutstatus enum values"""
 
     DRAFT = "draft"
     ACTIVE = "active"
@@ -50,9 +50,9 @@ class Tryout(Base):
         Integer, nullable=False, default=4
     )  # Schema field
     duration_days = Column(Integer)  # Legacy field
-    payment_amount = Column(Integer, default=0)  # In cents
-    payment_currency = Column(String(3), default="USD")
-    currency = Column(String(3), default="INR")  # Legacy field
+    payment_amount = Column(Integer, default=0)  # In lowest currency unit
+    payment_currency = Column(String(3), default="INR")  # Legacy field
+    currency = Column(String(3), default="INR")  # Primary currency field
 
     # Scoring rubric — aligned with schema (scoring_rubric key)
     scoring_rubric = Column(JSONB, nullable=False)
@@ -67,7 +67,8 @@ class Tryout(Base):
 
     # Status
     status = Column(
-        SQLEnum(TryoutStatus, native_enum=False), default=TryoutStatus.ACTIVE
+        SQLEnum(TryoutStatus, native_enum=False, values_callable=lambda x: [e.value for e in x]),
+        default=TryoutStatus.ACTIVE,
     )
 
     # Timestamps
@@ -82,7 +83,7 @@ class Tryout(Base):
 
 
 class SubmissionStatus(str, enum.Enum):
-    """Submission status enumeration"""
+    """Submission status enumeration — matches DB submissionstatus enum values"""
 
     SUBMITTED = "submitted"
     GRADING = "grading"
@@ -115,8 +116,8 @@ class TryoutSubmission(Base):
     # Submission content
     submission_url = Column(String(500))
     submission_data = Column(JSONB)
-    notes = Column(Text)
-    submission_notes = Column(Text)  # Legacy field alias
+    notes = Column(Text)          # Primary notes field
+    submission_notes = Column(Text)   # Alias for API compatibility
 
     # Scoring
     auto_score = Column(Integer)
@@ -126,17 +127,19 @@ class TryoutSubmission(Base):
 
     # Feedback
     feedback = Column(Text)
-    reviewed_by = Column(String(255))
+    reviewed_by = Column(String(255))  # Reviewer email or name (String, not FK)
     reviewed_at = Column(DateTime(timezone=True))
 
     # Status
     status = Column(
-        SQLEnum(SubmissionStatus, native_enum=False), default=SubmissionStatus.SUBMITTED
+        SQLEnum(SubmissionStatus, native_enum=False, values_callable=lambda x: [e.value for e in x]),
+        default=SubmissionStatus.SUBMITTED,
     )
 
     # Payment
     payment_status = Column(
-        SQLEnum(PaymentStatus, native_enum=False), default=PaymentStatus.PENDING
+        SQLEnum(PaymentStatus, native_enum=False, values_callable=lambda x: [e.value for e in x]),
+        default=PaymentStatus.PENDING,
     )
     payment_transaction_id = Column(String(255))
 
