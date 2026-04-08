@@ -113,6 +113,11 @@ class Settings(BaseSettings):
     STRIPE_WEBHOOK_SECRET: Optional[str] = None
     STRIPE_CONNECT_ENABLED: bool = False
 
+    # AI Matching — Google Gemini (optional, free tier)
+    # Get a free key at https://aistudio.google.com/
+    # If not set, the matching engine will use template-based explanations.
+    GEMINI_API_KEY: Optional[str] = None
+
     # Monitoring
     SENTRY_DSN: Optional[str] = None
     LOG_LEVEL: str = "INFO"

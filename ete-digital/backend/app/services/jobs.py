@@ -3,11 +3,15 @@ Job posting and application service
 Business logic for job CRUD, search, and application management
 """
 
+import logging
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 import uuid
+
+logger = logging.getLogger(__name__)
 
 from app.models.jobs import Job, Application, JobStatus, ApplicationStatus
 from app.models.users import UserProfile
@@ -253,34 +257,37 @@ class ApplicationService:
                 detail="You have already applied to this job",
             )
 
-        # Compute skills-based match score (0–100)
-        candidate_skills: list = []
+        # Compute full match score via the AI matching engine (5-factor rules engine)
+        match_score = None
+        breakdown_dict = None
         try:
+            from app.services.matching import (  # noqa: PLC0415
+                compute_match_score,
+                job_snapshot_from_orm,
+                profile_from_orm,
+            )
+
             profile_result = await db.execute(
                 select(UserProfile).where(UserProfile.user_id == candidate_id)
             )
-            profile = profile_result.scalar_one_or_none()
-            if profile and profile.skills:
-                candidate_skills = [s.lower().strip() for s in profile.skills]
-        except Exception:
-            pass  # Match score is optional — never block an application
-
-        job_skills: list = [s.lower().strip() for s in (job.skills_required or [])]
-        if job_skills:
-            matched = len(set(candidate_skills) & set(job_skills))
-            match_score = min(100, round(matched / len(job_skills) * 100))
-        else:
-            # No job skills listed — score based on keyword overlap in title/description
-            import re
-
-            jd_words = set(re.findall(r"[a-zA-Z]{4,}", (job.description or "").lower()))
-            cv_words = set(re.findall(r"[a-zA-Z]{4,}", " ".join(candidate_skills)))
-            if jd_words:
-                match_score = min(
-                    100, round(len(cv_words & jd_words) / len(jd_words) * 100)
-                )
-            else:
-                match_score = None
+            profile_orm = profile_result.scalar_one_or_none()
+            candidate_profile = profile_from_orm(profile_orm, str(candidate_id))
+            job_snap = job_snapshot_from_orm(job)
+            breakdown = compute_match_score(candidate_profile, job_snap)
+            match_score = breakdown.total
+            breakdown_dict = {
+                "total": breakdown.total,
+                "skill_score": breakdown.skill_score,
+                "experience_score": breakdown.experience_score,
+                "location_score": breakdown.location_score,
+                "salary_score": breakdown.salary_score,
+                "freshness_score": breakdown.freshness_score,
+                "matched_skills": breakdown.matched_skills,
+                "missing_skills": breakdown.missing_skills,
+                "hint": breakdown.explanation_hint,
+            }
+        except Exception as exc:
+            logger.warning("Match scoring failed (non-blocking): %s", exc)
 
         # Create application
         application = Application(
@@ -288,6 +295,7 @@ class ApplicationService:
             **application_data,
             status=ApplicationStatus.PENDING,
             match_score=match_score,
+            match_explanation=breakdown_dict,
         )
         db.add(application)
 
@@ -398,10 +406,11 @@ class ApplicationService:
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
-        # Apply pagination
+        # Apply pagination — sort by match_score DESC by default (AI ranking)
+        # Applications without a score fall to the bottom (NULLS LAST)
         offset = (page - 1) * page_size
         query = (
-            query.order_by(Application.created_at.desc())
+            query.order_by(Application.match_score.desc().nullslast())
             .offset(offset)
             .limit(page_size)
         )

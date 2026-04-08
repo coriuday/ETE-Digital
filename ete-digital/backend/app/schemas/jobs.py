@@ -102,6 +102,10 @@ class JobResponse(BaseModel):
     published_at: Optional[datetime]
     expires_at: Optional[datetime]
 
+    # AI Matching fields — only present in personalized /feed responses
+    match_score: Optional[int] = None  # 0-100 score for this candidate ↔ job pair
+    match_hint: Optional[str] = None   # e.g. "8/10 skills matched · Remote OK"
+
     model_config = ConfigDict(from_attributes=True)
 
 

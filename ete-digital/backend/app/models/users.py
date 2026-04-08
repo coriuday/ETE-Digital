@@ -2,7 +2,7 @@
 User and Authentication Models
 """
 
-from sqlalchemy import Column, String, Boolean, DateTime, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -96,6 +96,12 @@ class UserProfile(Base):
 
     # Preferences (JSONB)
     preferences = Column(JSONB, default=dict)  # Job preferences, notification settings
+
+    # AI Matching fields — populated from Profile Settings page
+    salary_expectation_min = Column(Integer, nullable=True)  # Candidate's floor salary
+    salary_expectation_max = Column(Integer, nullable=True)  # Candidate's ceiling salary
+    preferred_job_types = Column(JSONB, default=list)  # ['full_time', 'contract']
+    preferred_locations = Column(JSONB, default=list)  # ['Mumbai', 'Remote', 'Bangalore']
 
     # Timestamps
     created_at = Column(

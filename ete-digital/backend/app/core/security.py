@@ -263,3 +263,37 @@ def require_role(*allowed_roles):
         }
 
     return _require_role
+
+
+# ========== Optional Authentication ==========
+
+
+security_optional = HTTPBearer(auto_error=False)
+
+
+def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
+) -> Optional[Dict[str, Any]]:
+    """
+    Dependency that returns the current user dict if a valid Bearer token is provided,
+    or None if the request is unauthenticated. Never raises an error.
+
+    Use this for endpoints that have different behavior for authenticated vs. anonymous
+    users (e.g., ranked vs. unranked job feeds).
+    """
+    if credentials is None:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+        if payload.get("type") != "access":
+            return None
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        return {
+            "user_id": user_id,
+            "email": payload.get("email"),
+            "role": payload.get("role", "").lower(),
+        }
+    except Exception:
+        return None

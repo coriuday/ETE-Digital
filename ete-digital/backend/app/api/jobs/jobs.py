@@ -2,7 +2,7 @@
 Job posting and application API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 import uuid
@@ -23,12 +23,152 @@ from app.schemas.jobs import (
 )
 from app.services.jobs import job_service, application_service
 from app.services.notification_service import notification_service
+from app.core.security import get_optional_current_user  # may be None for unauthenticated
 
 
 router = APIRouter()
 
 
+# --------------------------------------------------------------------------- #
+# Helper: convert Job ORM → JobResponse                                        #
+# --------------------------------------------------------------------------- #
+
+
+def _job_to_response(job, match_score: int = None, match_hint: str = None):
+    """Convert a Job ORM object to a JobResponse, optionally injecting match score."""
+    from app.schemas.jobs import JobResponse  # noqa: PLC0415 (avoid circular at module level)
+
+    base = JobResponse(
+        id=str(job.id),
+        employer_id=str(job.employer_id),
+        title=job.title,
+        company=job.company,
+        description=job.description,
+        requirements=job.requirements,
+        job_type=job.job_type,
+        location=job.location,
+        remote_ok=job.remote_ok,
+        salary_min=job.salary_min,
+        salary_max=job.salary_max,
+        salary_currency=job.salary_currency,
+        skills_required=job.skills_required or [],
+        experience_required=job.experience_required,
+        has_tryout=job.has_tryout,
+        tryout_config=job.tryout_config,
+        outcome_terms=job.outcome_terms,
+        custom_questions=job.custom_questions,
+        status=job.status,
+        views_count=job.views_count,
+        applications_count=job.applications_count,
+        created_at=job.created_at,
+        updated_at=job.updated_at,
+        published_at=job.published_at,
+        expires_at=job.expires_at,
+    )
+    # Inject match metadata when available
+    if match_score is not None:
+        base.match_score = match_score
+    if match_hint:
+        base.match_hint = match_hint
+    return base
+
+
 # ========== Job Posting Endpoints ==========
+
+
+@router.get("/feed", response_model=JobListResponse)
+async def get_ranked_job_feed(
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=50),
+    job_type: Optional[str] = None,
+    remote_ok: Optional[bool] = None,
+    location: Optional[str] = None,
+    has_tryout: Optional[bool] = None,
+    current_user: Optional[dict] = Depends(get_optional_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Personalized, AI-ranked job feed for candidates.
+
+    - Authenticated candidates: jobs sorted by their 5-factor match score (skills,
+      experience, location, salary, recency). Scores are Redis-cached for 6 hours.
+    - Anonymous / non-candidate users: returns jobs sorted by recency (same as /search).
+    """
+    from sqlalchemy import select as sa_select  # noqa: PLC0415
+    from app.models.jobs import Job, JobStatus  # noqa: PLC0415
+    from app.models.users import UserProfile  # noqa: PLC0415
+    from app.services.matching import (  # noqa: PLC0415
+        CandidateProfile,
+        JobSnapshot,
+        compute_match_score,
+        job_snapshot_from_orm,
+        profile_from_orm,
+        rank_jobs_for_candidate,
+    )
+
+    # --- Fetch jobs from DB (unranked; apply basic filters) ---
+    q = sa_select(Job).where(Job.status == JobStatus.ACTIVE)
+    if job_type:
+        q = q.where(Job.job_type == job_type)
+    if remote_ok is not None:
+        q = q.where(Job.remote_ok == remote_ok)
+    if location:
+        q = q.where(Job.location.ilike(f"%{location}%"))
+    if has_tryout is not None:
+        q = q.where(Job.has_tryout == has_tryout)
+
+    # For ranking we fetch a broader window (up to 200) then sort in Python
+    fetch_limit = min(200, page_size * 5)
+    result = await db.execute(q.order_by(Job.created_at.desc()).limit(fetch_limit))
+    all_jobs = result.scalars().all()
+
+    total = len(all_jobs)
+
+    # --- Personalized ranking (candidates only) ---
+    is_candidate = (
+        current_user is not None and current_user.get("role") == "candidate"
+    )
+
+    if is_candidate:
+        profile_result = await db.execute(
+            sa_select(UserProfile).where(
+                UserProfile.user_id == uuid.UUID(current_user["user_id"])
+            )
+        )
+        profile_orm = profile_result.scalar_one_or_none()
+        candidate_profile = profile_from_orm(profile_orm, current_user["user_id"])
+
+        job_snaps = [job_snapshot_from_orm(j) for j in all_jobs]
+        ranked = rank_jobs_for_candidate(candidate_profile, job_snaps)
+
+        # Build lookup: job_id → (score, hint)
+        score_map = {
+            r[0].job_id: (r[1].total, r[1].explanation_hint) for r in ranked
+        }
+        # Sort ORM objects by rank
+        sorted_jobs = sorted(
+            all_jobs,
+            key=lambda j: score_map.get(str(j.id), (0, ""))[0],
+            reverse=True,
+        )
+    else:
+        sorted_jobs = all_jobs
+        score_map = {}
+
+    # Apply pagination AFTER ranking
+    offset = (page - 1) * page_size
+    page_jobs = sorted_jobs[offset : offset + page_size]
+
+    def _to_resp(job):
+        score, hint = score_map.get(str(job.id), (None, None))
+        return _job_to_response(job, match_score=score, match_hint=hint)
+
+    return JobListResponse(
+        jobs=[_to_resp(j) for j in page_jobs],
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
 
 
 @router.post("/", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
@@ -516,6 +656,7 @@ async def delete_job(
 async def apply_to_job(
     job_id: str,
     application_data: ApplicationCreate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_role(UserRole.CANDIDATE)),
     db: AsyncSession = Depends(get_db),
 ):
@@ -527,6 +668,15 @@ async def apply_to_job(
         db=db,
         candidate_id=uuid.UUID(current_user["user_id"]),
         application_data=app_dict,
+    )
+
+    # Trigger Gemini LLM explanation as a background task (non-blocking)
+    # The explanation will be written to applications.match_explanation after response is sent.
+    background_tasks.add_task(
+        _generate_and_store_explanation,
+        application_id=str(application.id),
+        candidate_id=current_user["user_id"],
+        job_id=job_id,
     )
 
     return ApplicationResponse(
@@ -543,6 +693,84 @@ async def apply_to_job(
         created_at=application.created_at,
         updated_at=application.updated_at,
     )
+
+
+async def _generate_and_store_explanation(
+    application_id: str, candidate_id: str, job_id: str
+) -> None:
+    """
+    BackgroundTask: Calls Gemini to generate a natural language match explanation
+    and stores it in applications.match_explanation['llm_summary'].
+
+    Runs AFTER the response is returned to the client — never blocks the hot path.
+    """
+    import logging as _log  # noqa: PLC0415
+
+    _logger = _log.getLogger(__name__)
+    try:
+        from sqlalchemy import select as _sel  # noqa: PLC0415
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.jobs import Application, Job  # noqa: PLC0415
+        from app.models.users import UserProfile  # noqa: PLC0415
+        from app.services.matching import (  # noqa: PLC0415
+            compute_match_score,
+            generate_llm_explanation,
+            job_snapshot_from_orm,
+            profile_from_orm,
+        )
+
+        async with AsyncSessionLocal() as session:
+            # Fetch fresh objects in a new session
+            app_row = (
+                await session.execute(
+                    _sel(Application).where(
+                        Application.id == uuid.UUID(application_id)
+                    )
+                )
+            ).scalar_one_or_none()
+
+            if not app_row:
+                return
+
+            job_row = (
+                await session.execute(
+                    _sel(Job).where(Job.id == uuid.UUID(job_id))
+                )
+            ).scalar_one_or_none()
+
+            profile_row = (
+                await session.execute(
+                    _sel(UserProfile).where(
+                        UserProfile.user_id == uuid.UUID(candidate_id)
+                    )
+                )
+            ).scalar_one_or_none()
+
+            if not job_row:
+                return
+
+            candidate_profile = profile_from_orm(profile_row, candidate_id)
+            job_snap = job_snapshot_from_orm(job_row)
+            breakdown = compute_match_score(candidate_profile, job_snap)
+
+            explanation = await generate_llm_explanation(
+                candidate_profile, job_snap, breakdown
+            )
+
+            # Merge with existing match_explanation JSONB
+            existing = app_row.match_explanation or {}
+            existing["llm_summary"] = explanation
+            app_row.match_explanation = existing
+
+            await session.commit()
+            _logger.info(
+                "LLM explanation stored for application %s", application_id
+            )
+
+    except Exception as exc:
+        _logger.warning(
+            "Background LLM explanation failed for %s: %s", application_id, exc
+        )
 
 
 @router.get("/{job_id}/applications", response_model=ApplicationListResponse)
