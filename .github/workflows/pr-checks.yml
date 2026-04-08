@@ -1,0 +1,82 @@
+name: PR Quality Checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches: [main, develop]
+
+jobs:
+  pr-title:
+    name: Validate PR Title (Conventional Commits)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR title format
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = context.payload.pull_request.title;
+            const pattern = /^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\(.+\))?!?: .{1,100}$/;
+
+            if (!pattern.test(title)) {
+              core.setFailed(
+                `❌ PR title does not follow Conventional Commits format.\n\n` +
+                `  Got:      "${title}"\n\n` +
+                `  Expected: <type>(<scope>): <description>\n\n` +
+                `  Valid types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert\n\n` +
+                `  Examples:\n` +
+                `    feat(auth): add OAuth2 login\n` +
+                `    fix(jobs): resolve pagination offset bug\n` +
+                `    chore: update dependencies`
+              );
+            } else {
+              console.log(`✅ PR title is valid: "${title}"`);
+            }
+
+  pr-size:
+    name: PR Size Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check PR size
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { additions, deletions, changed_files } = context.payload.pull_request;
+            const total = additions + deletions;
+            const MAX_LINES = 800;
+            const MAX_FILES = 30;
+
+            console.log(`PR stats: +${additions} -${deletions} lines across ${changed_files} files`);
+
+            if (total > MAX_LINES) {
+              core.warning(`⚠️ Large PR: ${total} lines changed (threshold: ${MAX_LINES}). Consider splitting.`);
+            }
+            if (changed_files > MAX_FILES) {
+              core.warning(`⚠️ Many files changed: ${changed_files} files (threshold: ${MAX_FILES}). Consider splitting.`);
+            }
+
+            if (total <= MAX_LINES && changed_files <= MAX_FILES) {
+              console.log(`✅ PR size is within acceptable limits.`);
+            }
+
+  branch-name:
+    name: Validate Branch Name
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check branch name
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const branch = context.payload.pull_request.head.ref;
+            const pattern = /^(feature|feat|fix|hotfix|bugfix|chore|docs|refactor|perf|test|ci|release|revert)\/.+|^(develop|main)$/;
+
+            if (!pattern.test(branch)) {
+              core.warning(
+                `⚠️ Branch "${branch}" does not follow naming convention.\n` +
+                `Recommended: <type>/<description> e.g. feature/add-oauth, fix/pagination-bug`
+              );
+            } else {
+              console.log(`✅ Branch name is valid: "${branch}"`);
+            }
