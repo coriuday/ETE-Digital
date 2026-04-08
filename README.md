@@ -1,8 +1,8 @@
-# ETE Digital — Open-Source Job & Talent Platform
+# Jobrows — Open-Source Job & Talent Platform
 
 > **Outcome-driven hiring meets verifiable skill signals**
 
-ETE Digital is a production-grade, open-source job platform that revolutionizes hiring through **Job Tryouts** (trial tasks), a candidate-owned **Talent Vault**, and **explainable matching**. Built with a modern, security-first stack and deployed on Vercel + Render + Supabase.
+Jobrows is a production-grade, open-source job platform that revolutionizes hiring through **Job Tryouts** (trial tasks), a candidate-owned **Talent Vault**, and **explainable matching**. Built with a modern, security-first stack and deployed on Vercel + Render + Supabase.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
@@ -296,7 +296,7 @@ This project is licensed under the **MIT License** — see the [`LICENSE`](LICEN
 
 - **Issues:** [GitHub Issues](https://github.com/coriuday/ETE-Digital/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/coriuday/ETE-Digital/discussions)
-- **Email:** [support@etedigital.com](mailto:support@etedigital.com)
+- **Email:** [support@jobrows.com](mailto:support@jobrows.com)
 
 ---
 

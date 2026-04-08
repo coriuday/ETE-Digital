@@ -1,6 +1,6 @@
-# Contributing to ETE Digital
+# Contributing to Jobrows
 
-Thank you for your interest in contributing to **ETE Digital**! 🎉
+Thank you for your interest in contributing to **Jobrows**! 🎉
 
 We're building an open, fair job platform — every contribution, big or small, helps us get there. This guide will walk you through everything you need to know to get started.
 
@@ -331,8 +331,8 @@ alembic upgrade head      # re-apply
 
 - **GitHub Issues** — Bug reports & feature requests
 - **GitHub Discussions** — General questions and ideas
-- **Email** — [support@etedigital.com](mailto:support@etedigital.com)
+- **Email** — [support@jobrows.com](mailto:support@jobrows.com)
 
 ---
 
-Thank you for helping make ETE Digital better! 💙
+Thank you for helping make Jobrows better! 💙

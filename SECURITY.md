@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-The following versions of ETE Digital currently receive security updates:
+The following versions of Jobrows currently receive security updates:
 
 | Version | Supported |
 |---------|-----------|
@@ -22,7 +22,7 @@ We strongly recommend always running the latest version from the `main` branch o
 
 Send a **private** disclosure to:
 
-📧 **security@etedigital.com**
+📧 **security@jobrows.com**
 
 If you prefer, you may also use [GitHub's private vulnerability reporting](https://github.com/coriuday/ETE-Digital/security/advisories/new) feature directly on the repository.
 
@@ -80,9 +80,9 @@ We follow responsible **Coordinated Vulnerability Disclosure (CVD)**:
 
 ---
 
-## Security Features in ETE Digital
+## Security Features in Jobrows
 
-ETE Digital is built with security as a first-class concern across the entire stack:
+Jobrows is built with security as a first-class concern across the entire stack:
 
 ### Authentication & Authorization
 - **Argon2id** password hashing (OWASP recommended)
@@ -114,7 +114,7 @@ ETE Digital is built with security as a first-class concern across the entire st
 
 ## Security Best Practices for Self-Hosting
 
-If you are deploying ETE Digital yourself, follow these hardening steps:
+If you are deploying Jobrows yourself, follow these hardening steps:
 
 ### Required Before Going Live
 
@@ -175,11 +175,11 @@ We do not currently operate a formal bug bounty program. However, we deeply valu
 
 | Purpose | Contact |
 |---------|---------|
-| Security vulnerabilities | [security@etedigital.com](mailto:security@etedigital.com) |
-| Code of conduct violations | [conduct@etedigital.com](mailto:conduct@etedigital.com) |
-| General support | [support@etedigital.com](mailto:support@etedigital.com) |
+| Security vulnerabilities | [security@jobrows.com](mailto:security@jobrows.com) |
+| Code of conduct violations | [conduct@jobrows.com](mailto:conduct@jobrows.com) |
+| General support | [support@jobrows.com](mailto:support@jobrows.com) |
 | Community discussions | [GitHub Discussions](https://github.com/coriuday/ETE-Digital/discussions) |
 
 ---
 
-**Thank you for helping keep ETE Digital and its users safe.** 🔐
+**Thank you for helping keep Jobrows and its users safe.** 🔐
