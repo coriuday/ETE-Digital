@@ -32,6 +32,17 @@ from sqlalchemy.dialects.postgresql import JSONB
 def compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
+import asyncio
+import pytest
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Force the pytest-asyncio event loop to be session-scoped."""
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    yield loop
+    loop.close()
+
 # ---------------------------------------------------------------------------
 
 # Provide safe fallback env vars so that Settings() doesn't raise when
