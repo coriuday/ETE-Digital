@@ -21,9 +21,7 @@ from fastapi import HTTPException, status
 class JobService:
     """Job posting service"""
 
-    async def create_job(
-        self, db: AsyncSession, employer_id: uuid.UUID, job_data: dict
-    ) -> Job:
+    async def create_job(self, db: AsyncSession, employer_id: uuid.UUID, job_data: dict) -> Job:
         """Create a new job posting"""
         job = Job(
             employer_id=employer_id,
@@ -52,9 +50,7 @@ class JobService:
         job = await self.get_job(db, job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
         if job.employer_id != employer_id:
             raise HTTPException(
@@ -70,16 +66,12 @@ class JobService:
         await db.refresh(job)
         return job
 
-    async def delete_job(
-        self, db: AsyncSession, job_id: uuid.UUID, employer_id: uuid.UUID
-    ) -> bool:
+    async def delete_job(self, db: AsyncSession, job_id: uuid.UUID, employer_id: uuid.UUID) -> bool:
         """Delete job posting (soft delete by marking as closed)"""
         job = await self.get_job(db, job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
         if job.employer_id != employer_id:
             raise HTTPException(
@@ -91,16 +83,12 @@ class JobService:
         await db.commit()
         return True
 
-    async def publish_job(
-        self, db: AsyncSession, job_id: uuid.UUID, employer_id: uuid.UUID
-    ) -> Job:
+    async def publish_job(self, db: AsyncSession, job_id: uuid.UUID, employer_id: uuid.UUID) -> Job:
         """Publish a draft job"""
         job = await self.get_job(db, job_id)
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
         if job.employer_id != employer_id:
             raise HTTPException(
@@ -120,9 +108,7 @@ class JobService:
         await db.refresh(job)
         return job
 
-    async def search_jobs(
-        self, db: AsyncSession, filters: dict, page: int = 1, page_size: int = 20
-    ) -> Tuple[List[Job], int]:
+    async def search_jobs(self, db: AsyncSession, filters: dict, page: int = 1, page_size: int = 20) -> Tuple[List[Job], int]:
         """Search jobs with filters"""
         query = select(Job).where(Job.status == JobStatus.ACTIVE)
 
@@ -210,20 +196,14 @@ class JobService:
         """Increment job view count using a direct SQL UPDATE to avoid session expunge issues."""
         from sqlalchemy import update as sql_update
 
-        await db.execute(
-            sql_update(Job)
-            .where(Job.id == job_id)
-            .values(views_count=Job.views_count + 1)
-        )
+        await db.execute(sql_update(Job).where(Job.id == job_id).values(views_count=Job.views_count + 1))
         await db.commit()
 
 
 class ApplicationService:
     """Job application service"""
 
-    async def create_application(
-        self, db: AsyncSession, candidate_id: uuid.UUID, application_data: dict
-    ) -> Application:
+    async def create_application(self, db: AsyncSession, candidate_id: uuid.UUID, application_data: dict) -> Application:
         """Create a job application"""
         job_id = application_data.get("job_id")
 
@@ -232,9 +212,7 @@ class ApplicationService:
         job = job_result.scalar_one_or_none()
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
         if job.status != JobStatus.ACTIVE:
             raise HTTPException(
@@ -267,9 +245,7 @@ class ApplicationService:
                 profile_from_orm,
             )
 
-            profile_result = await db.execute(
-                select(UserProfile).where(UserProfile.user_id == candidate_id)
-            )
+            profile_result = await db.execute(select(UserProfile).where(UserProfile.user_id == candidate_id))
             profile_orm = profile_result.scalar_one_or_none()
             candidate_profile = profile_from_orm(profile_orm, str(candidate_id))
             job_snap = job_snapshot_from_orm(job)
@@ -306,13 +282,9 @@ class ApplicationService:
         await db.refresh(application)
         return application
 
-    async def get_application(
-        self, db: AsyncSession, application_id: uuid.UUID
-    ) -> Optional[Application]:
+    async def get_application(self, db: AsyncSession, application_id: uuid.UUID) -> Optional[Application]:
         """Get application by ID"""
-        result = await db.execute(
-            select(Application).where(Application.id == application_id)
-        )
+        result = await db.execute(select(Application).where(Application.id == application_id))
         return result.scalar_one_or_none()
 
     async def update_application_status(
@@ -327,9 +299,7 @@ class ApplicationService:
         application = await self.get_application(db, application_id)
 
         if not application:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Application not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
         # Verify employer owns the job
         job_result = await db.execute(select(Job).where(Job.id == application.job_id))
@@ -360,19 +330,13 @@ class ApplicationService:
         query = select(Application).where(Application.candidate_id == candidate_id)
 
         # Get total count
-        count_query = select(func.count()).where(
-            Application.candidate_id == candidate_id
-        )
+        count_query = select(func.count()).where(Application.candidate_id == candidate_id)
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
         # Apply pagination
         offset = (page - 1) * page_size
-        query = (
-            query.order_by(Application.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        query = query.order_by(Application.created_at.desc()).offset(offset).limit(page_size)
 
         # Execute query
         result = await db.execute(query)

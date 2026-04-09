@@ -23,9 +23,7 @@ from fastapi import HTTPException, status
 class TryoutService:
     """Tryout service"""
 
-    async def create_tryout(
-        self, db: AsyncSession, employer_id: uuid.UUID, tryout_data: dict
-    ) -> Tryout:
+    async def create_tryout(self, db: AsyncSession, employer_id: uuid.UUID, tryout_data: dict) -> Tryout:
         """Create a new tryout for a job"""
         job_id = tryout_data.get("job_id")
 
@@ -34,9 +32,7 @@ class TryoutService:
         job = job_result.scalar_one_or_none()
 
         if not job:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
         if job.employer_id != employer_id:
             raise HTTPException(
@@ -55,16 +51,12 @@ class TryoutService:
         await db.refresh(tryout)
         return tryout
 
-    async def get_tryout(
-        self, db: AsyncSession, tryout_id: uuid.UUID
-    ) -> Optional[Tryout]:
+    async def get_tryout(self, db: AsyncSession, tryout_id: uuid.UUID) -> Optional[Tryout]:
         """Get tryout by ID"""
         result = await db.execute(select(Tryout).where(Tryout.id == tryout_id))
         return result.scalar_one_or_none()
 
-    async def get_tryout_by_job(
-        self, db: AsyncSession, job_id: uuid.UUID
-    ) -> Optional[Tryout]:
+    async def get_tryout_by_job(self, db: AsyncSession, job_id: uuid.UUID) -> Optional[Tryout]:
         """Get tryout for a job"""
         result = await db.execute(select(Tryout).where(Tryout.job_id == job_id))
         return result.scalar_one_or_none()
@@ -80,9 +72,7 @@ class TryoutService:
         tryout = await self.get_tryout(db, tryout_id)
 
         if not tryout:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found")
 
         # Verify employer owns the job
         job_result = await db.execute(select(Job).where(Job.id == tryout.job_id))
@@ -102,16 +92,12 @@ class TryoutService:
         await db.refresh(tryout)
         return tryout
 
-    async def activate_tryout(
-        self, db: AsyncSession, tryout_id: uuid.UUID, employer_id: uuid.UUID
-    ) -> Tryout:
+    async def activate_tryout(self, db: AsyncSession, tryout_id: uuid.UUID, employer_id: uuid.UUID) -> Tryout:
         """Activate a draft tryout"""
         tryout = await self.get_tryout(db, tryout_id)
 
         if not tryout:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found")
 
         # Verify employer owns the job
         job_result = await db.execute(select(Job).where(Job.id == tryout.job_id))
@@ -138,9 +124,7 @@ class TryoutService:
 class SubmissionService:
     """Tryout submission service"""
 
-    async def create_submission(
-        self, db: AsyncSession, candidate_id: uuid.UUID, submission_data: dict
-    ) -> TryoutSubmission:
+    async def create_submission(self, db: AsyncSession, candidate_id: uuid.UUID, submission_data: dict) -> TryoutSubmission:
         """Create a tryout submission"""
         tryout_id = submission_data.get("tryout_id")
 
@@ -149,9 +133,7 @@ class SubmissionService:
         tryout = tryout_result.scalar_one_or_none()
 
         if not tryout:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found")
 
         if tryout.status != TryoutStatus.ACTIVE:
             raise HTTPException(
@@ -202,18 +184,12 @@ class SubmissionService:
 
         return submission
 
-    async def get_submission(
-        self, db: AsyncSession, submission_id: uuid.UUID
-    ) -> Optional[TryoutSubmission]:
+    async def get_submission(self, db: AsyncSession, submission_id: uuid.UUID) -> Optional[TryoutSubmission]:
         """Get submission by ID"""
-        result = await db.execute(
-            select(TryoutSubmission).where(TryoutSubmission.id == submission_id)
-        )
+        result = await db.execute(select(TryoutSubmission).where(TryoutSubmission.id == submission_id))
         return result.scalar_one_or_none()
 
-    async def auto_grade_submission(
-        self, db: AsyncSession, submission_id: uuid.UUID
-    ) -> Dict:
+    async def auto_grade_submission(self, db: AsyncSession, submission_id: uuid.UUID) -> Dict:
         """
         Auto-grade submission based on test cases
 
@@ -226,14 +202,10 @@ class SubmissionService:
         submission = await self.get_submission(db, submission_id)
 
         if not submission:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
 
         # Get tryout
-        tryout_result = await db.execute(
-            select(Tryout).where(Tryout.id == submission.tryout_id)
-        )
+        tryout_result = await db.execute(select(Tryout).where(Tryout.id == submission.tryout_id))
         tryout = tryout_result.scalar_one_or_none()
 
         # Rubric-based scoring: each key in scoring_rubric is a criterion with max points.
@@ -249,9 +221,7 @@ class SubmissionService:
             """Lower-case word tokens from text, 3+ chars only."""
             return {w for w in re.findall(r"[a-zA-Z]{3,}", (text or "").lower())}
 
-        requirement_tokens = _tokenise(
-            (tryout.requirements or "") + " " + (tryout.description or "")
-        )
+        requirement_tokens = _tokenise((tryout.requirements or "") + " " + (tryout.description or ""))
 
         # Submission evidence: notes + submission_url text
         submission_text = (
@@ -268,12 +238,8 @@ class SubmissionService:
         # If no rubric defined, fall back to keyword-hit ratio × 100
         if not rubric or total_rubric_points == 0:
             if requirement_tokens:
-                hit_ratio = len(submission_tokens & requirement_tokens) / max(
-                    len(requirement_tokens), 1
-                )
-                auto_score = min(
-                    100, int(50 + hit_ratio * 50)
-                )  # baseline 50, up to 100
+                hit_ratio = len(submission_tokens & requirement_tokens) / max(len(requirement_tokens), 1)
+                auto_score = min(100, int(50 + hit_ratio * 50))  # baseline 50, up to 100
             else:
                 auto_score = 70  # neutral default when tryout has no requirements text
             score_breakdown = {"overall": auto_score}
@@ -285,9 +251,7 @@ class SubmissionService:
                 crit_tokens = _tokenise(criterion)
                 crit_hit = bool(crit_tokens & submission_tokens)
                 # Base per-criterion estimate from overall keyword overlap
-                hit_ratio = len(submission_tokens & requirement_tokens) / max(
-                    len(requirement_tokens), 1
-                )
+                hit_ratio = len(submission_tokens & requirement_tokens) / max(len(requirement_tokens), 1)
                 # Boost slightly if criterion keyword appears in submission
                 criterion_ratio = min(1.0, hit_ratio + (0.15 if crit_hit else 0.0))
                 earned = round(max_pts * criterion_ratio)
@@ -327,14 +291,10 @@ class SubmissionService:
         submission = await self.get_submission(db, submission_id)
 
         if not submission:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
 
         # Verify employer owns the tryout
-        tryout_result = await db.execute(
-            select(Tryout).where(Tryout.id == submission.tryout_id)
-        )
+        tryout_result = await db.execute(select(Tryout).where(Tryout.id == submission.tryout_id))
         tryout = tryout_result.scalar_one_or_none()
 
         job_result = await db.execute(select(Job).where(Job.id == tryout.job_id))
@@ -363,20 +323,14 @@ class SubmissionService:
             submission.status = SubmissionStatus.PASSED
 
             # Release payment if applicable
-            if (
-                tryout.payment_amount > 0
-                and submission.payment_status == PaymentStatus.ESCROWED
-            ):
+            if tryout.payment_amount > 0 and submission.payment_status == PaymentStatus.ESCROWED:
                 submission.payment_status = PaymentStatus.RELEASED
                 submission.payment_released_at = datetime.now(timezone.utc)
         else:
             submission.status = SubmissionStatus.FAILED
 
             # Refund payment if applicable
-            if (
-                tryout.payment_amount > 0
-                and submission.payment_status == PaymentStatus.ESCROWED
-            ):
+            if tryout.payment_amount > 0 and submission.payment_status == PaymentStatus.ESCROWED:
                 submission.payment_status = PaymentStatus.REFUNDED
 
         await db.commit()
@@ -391,24 +345,16 @@ class SubmissionService:
         page_size: int = 20,
     ) -> Tuple[List[TryoutSubmission], int]:
         """Get all submissions for a candidate"""
-        query = select(TryoutSubmission).where(
-            TryoutSubmission.candidate_id == candidate_id
-        )
+        query = select(TryoutSubmission).where(TryoutSubmission.candidate_id == candidate_id)
 
         # Get total count
-        count_query = select(func.count()).where(
-            TryoutSubmission.candidate_id == candidate_id
-        )
+        count_query = select(func.count()).where(TryoutSubmission.candidate_id == candidate_id)
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
         # Apply pagination
         offset = (page - 1) * page_size
-        query = (
-            query.order_by(TryoutSubmission.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        query = query.order_by(TryoutSubmission.created_at.desc()).offset(offset).limit(page_size)
 
         # Execute query
         result = await db.execute(query)
@@ -441,19 +387,13 @@ class SubmissionService:
         query = select(TryoutSubmission).where(TryoutSubmission.tryout_id == tryout_id)
 
         # Get total count
-        count_query = select(func.count()).where(
-            TryoutSubmission.tryout_id == tryout_id
-        )
+        count_query = select(func.count()).where(TryoutSubmission.tryout_id == tryout_id)
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
         # Apply pagination
         offset = (page - 1) * page_size
-        query = (
-            query.order_by(TryoutSubmission.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        query = query.order_by(TryoutSubmission.created_at.desc()).offset(offset).limit(page_size)
 
         # Execute query
         result = await db.execute(query)

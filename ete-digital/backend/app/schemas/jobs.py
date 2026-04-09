@@ -40,14 +40,14 @@ class JobCreate(BaseModel):
     # Custom questions for application
     custom_questions: Optional[Dict] = None
 
-    @model_validator(mode='after')
-    def _validate_salary_range(self) -> 'JobCreate':
+    @model_validator(mode="after")
+    def _validate_salary_range(self) -> "JobCreate":
         """Ensure salary_min <= salary_max when both are provided."""
         if self.salary_min is not None and self.salary_max is not None:
             if self.salary_min > self.salary_max:
                 raise ValueError(
-                    f'Minimum salary ({self.salary_min}) cannot be greater than '
-                    f'maximum salary ({self.salary_max}). Please check your salary range.'
+                    f"Minimum salary ({self.salary_min}) cannot be greater than "
+                    f"maximum salary ({self.salary_max}). Please check your salary range."
                 )
         return self
 
@@ -74,14 +74,14 @@ class JobUpdate(BaseModel):
     outcome_terms: Optional[Dict] = None
     custom_questions: Optional[Dict] = None
 
-    @model_validator(mode='after')
-    def _validate_salary_range(self) -> 'JobUpdate':
+    @model_validator(mode="after")
+    def _validate_salary_range(self) -> "JobUpdate":
         """Ensure salary_min <= salary_max when both are provided."""
         if self.salary_min is not None and self.salary_max is not None:
             if self.salary_min > self.salary_max:
                 raise ValueError(
-                    f'Minimum salary ({self.salary_min}) cannot be greater than '
-                    f'maximum salary ({self.salary_max}). Please check your salary range.'
+                    f"Minimum salary ({self.salary_min}) cannot be greater than "
+                    f"maximum salary ({self.salary_max}). Please check your salary range."
                 )
         return self
 
@@ -126,7 +126,7 @@ class JobResponse(BaseModel):
 
     # AI Matching fields — only present in personalized /feed responses
     match_score: Optional[int] = None  # 0-100 score for this candidate ↔ job pair
-    match_hint: Optional[str] = None   # e.g. "8/10 skills matched · Remote OK"
+    match_hint: Optional[str] = None  # e.g. "8/10 skills matched · Remote OK"
 
     model_config = ConfigDict(from_attributes=True)
 

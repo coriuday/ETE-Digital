@@ -53,9 +53,7 @@ def item_to_response(item):
         item_metadata=item.item_metadata,
         is_verified=item.is_verified,
         verified_by=item.verified_by,
-        tryout_submission_id=(
-            str(item.tryout_submission_id) if item.tryout_submission_id else None
-        ),
+        tryout_submission_id=(str(item.tryout_submission_id) if item.tryout_submission_id else None),
         share_count=item.share_count,
         view_count=item.view_count,
         created_at=item.created_at,
@@ -83,9 +81,7 @@ def token_to_response(token, frontend_url):
 # ========== Vault Item Endpoints ==========
 
 
-@router.post(
-    "/items", response_model=VaultItemResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/items", response_model=VaultItemResponse, status_code=status.HTTP_201_CREATED)
 async def create_vault_item(
     item_data: VaultItemCreate,
     current_user: dict = Depends(require_role(UserRole.CANDIDATE)),
@@ -125,9 +121,7 @@ async def upload_vault_file(
     content_type = file.content_type or "application/octet-stream"
 
     # Build storage path
-    file_path = storage_service.get_file_path(
-        "vault", user_id, file.filename or "upload"
-    )
+    file_path = storage_service.get_file_path("vault", user_id, file.filename or "upload")
 
     # Upload to MinIO
     url = storage_service.upload_file(
@@ -191,9 +185,7 @@ async def get_vault_item(
     """Get vault item details"""
     item = await vault_service.get_vault_item(db, uuid.UUID(item_id))
     if not item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found")
     if item.candidate_id != uuid.UUID(current_user["user_id"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -240,9 +232,7 @@ async def get_vault_stats(
     db: AsyncSession = Depends(get_db),
 ):
     """Get vault statistics"""
-    stats = await vault_service.get_vault_stats(
-        db=db, candidate_id=uuid.UUID(current_user["user_id"])
-    )
+    stats = await vault_service.get_vault_stats(db=db, candidate_id=uuid.UUID(current_user["user_id"]))
     return VaultStatsResponse(**stats)
 
 
@@ -270,9 +260,7 @@ async def create_share_tokens(
         shared_with_email=share_data.shared_with_email,
         shared_with_company=share_data.shared_with_company,
     )
-    frontend_url = (
-        settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
-    )
+    frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
     return [token_to_response(t, frontend_url) for t in tokens]
 
 
@@ -290,9 +278,7 @@ async def get_my_share_tokens(
         page=page,
         page_size=page_size,
     )
-    frontend_url = (
-        settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
-    )
+    frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
     return ShareTokenListResponse(
         tokens=[token_to_response(t, frontend_url) for t in tokens],
         total=total,
@@ -319,9 +305,7 @@ async def revoke_share_token(
 @router.get("/shared/{token}", response_model=VaultAccessResponse)
 async def access_shared_vault(token: str, db: AsyncSession = Depends(get_db)):
     """Access vault item via share token (Public endpoint)"""
-    item, share_token = await share_token_service.access_vault_via_token(
-        db=db, token_str=token
-    )
+    item, share_token = await share_token_service.access_vault_via_token(db=db, token_str=token)
     remaining_views = None
     if share_token.max_views:
         remaining_views = share_token.max_views - share_token.view_count

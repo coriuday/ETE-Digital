@@ -64,18 +64,12 @@ async def get_notifications(
         query = query.where(Notification.is_read == False)  # noqa: E712
     query = query.order_by(Notification.created_at.desc())
 
-    count_query = select(func.count()).select_from(
-        select(Notification).where(Notification.user_id == user_id).subquery()
-    )
+    count_query = select(func.count()).select_from(select(Notification).where(Notification.user_id == user_id).subquery())
     total_result = await db.execute(count_query)
     total = total_result.scalar() or 0
 
     unread_query = select(func.count()).select_from(
-        select(Notification)
-        .where(
-            Notification.user_id == user_id, Notification.is_read == False  # noqa: E712
-        )
-        .subquery()
+        select(Notification).where(Notification.user_id == user_id, Notification.is_read == False).subquery()  # noqa: E712
     )
     unread_result = await db.execute(unread_query)
     unread_count = unread_result.scalar() or 0
@@ -113,17 +107,11 @@ async def mark_notification_read(
     user_id = uuid.UUID(current_user["user_id"])
     notif_id = uuid.UUID(notification_id)
 
-    result = await db.execute(
-        select(Notification).where(
-            Notification.id == notif_id, Notification.user_id == user_id
-        )
-    )
+    result = await db.execute(select(Notification).where(Notification.id == notif_id, Notification.user_id == user_id))
     notification = result.scalar_one_or_none()
 
     if not notification:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
 
     notification.is_read = True
     notification.read_at = datetime.now(timezone.utc)
@@ -133,17 +121,13 @@ async def mark_notification_read(
 
 
 @router.patch("/read-all", response_model=dict)
-async def mark_all_notifications_read(
-    current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)
-):
+async def mark_all_notifications_read(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Mark all notifications as read for current user"""
     user_id = uuid.UUID(current_user["user_id"])
 
     await db.execute(
         update(Notification)
-        .where(
-            Notification.user_id == user_id, Notification.is_read == False  # noqa: E712
-        )
+        .where(Notification.user_id == user_id, Notification.is_read == False)  # noqa: E712
         .values(is_read=True, read_at=datetime.now(timezone.utc))
     )
     await db.commit()
@@ -161,17 +145,11 @@ async def delete_notification(
     user_id = uuid.UUID(current_user["user_id"])
     notif_id = uuid.UUID(notification_id)
 
-    result = await db.execute(
-        select(Notification).where(
-            Notification.id == notif_id, Notification.user_id == user_id
-        )
-    )
+    result = await db.execute(select(Notification).where(Notification.id == notif_id, Notification.user_id == user_id))
     notification = result.scalar_one_or_none()
 
     if not notification:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notification not found")
 
     await db.delete(notification)
     await db.commit()

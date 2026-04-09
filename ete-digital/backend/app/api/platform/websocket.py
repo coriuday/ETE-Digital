@@ -14,6 +14,7 @@ NOTE on multi-worker scaling (audit issue #4):
     - `send_to_user` publishes to that channel; the worker holding the socket delivers it.
   REDIS_URL is now a required production setting (enforced in config.py).
 """
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from typing import Dict, Optional
 import asyncio
@@ -90,9 +91,7 @@ async def websocket_endpoint(
 
     # ---- Auth gate: wait for the client to send the token as the first message ----
     try:
-        raw = await asyncio.wait_for(
-            websocket.receive_text(), timeout=AUTH_TIMEOUT_SECONDS
-        )
+        raw = await asyncio.wait_for(websocket.receive_text(), timeout=AUTH_TIMEOUT_SECONDS)
         msg = json.loads(raw)
     except asyncio.TimeoutError:
         logger.warning(f"[WS] Auth timeout for user_id={user_id}")
@@ -118,9 +117,7 @@ async def websocket_endpoint(
     # ---- Authenticated: register the connection ----
     await ws_manager.connect(user_id, websocket)
 
-    await ws_manager.send_to_user(
-        user_id, {"type": "connected", "message": "Real-time notifications active"}
-    )
+    await ws_manager.send_to_user(user_id, {"type": "connected", "message": "Real-time notifications active"})
 
     try:
         while True:

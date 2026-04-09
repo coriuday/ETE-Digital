@@ -46,9 +46,7 @@ class Tryout(Base):
     expected_deliverables = Column(JSONB)  # List of deliverables
 
     # Duration and payment
-    estimated_duration_hours = Column(
-        Integer, nullable=False, default=4
-    )  # Schema field
+    estimated_duration_hours = Column(Integer, nullable=False, default=4)  # Schema field
     duration_days = Column(Integer)  # Legacy field
     payment_amount = Column(Integer, default=0)  # In lowest currency unit
     payment_currency = Column(String(3), default="INR")  # Legacy field
@@ -72,9 +70,7 @@ class Tryout(Base):
     )
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     expires_at = Column(DateTime(timezone=True))
 
@@ -116,8 +112,8 @@ class TryoutSubmission(Base):
     # Submission content
     submission_url = Column(String(500))
     submission_data = Column(JSONB)
-    notes = Column(Text)          # Primary notes field
-    submission_notes = Column(Text)   # Alias for API compatibility
+    notes = Column(Text)  # Primary notes field
+    submission_notes = Column(Text)  # Alias for API compatibility
 
     # Scoring
     auto_score = Column(Integer)
@@ -144,9 +140,7 @@ class TryoutSubmission(Base):
     payment_transaction_id = Column(String(255))
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     submitted_at = Column(DateTime(timezone=True), server_default=func.now())
     graded_at = Column(DateTime(timezone=True))

@@ -45,9 +45,7 @@ class Notification(Base):
     is_read = Column(Boolean, default=False, nullable=False)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     read_at = Column(DateTime(timezone=True))
 
     def __repr__(self):
@@ -92,9 +90,7 @@ class AuditLog(Base):
     details = Column(JSONB)
 
     # Timestamp
-    timestamp = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
-    )
+    timestamp = Column(DateTime(timezone=True), server_default=func.now(), nullable=False, index=True)
 
     def __repr__(self):
         return f"<AuditLog {self.action} by {self.user_id}>"

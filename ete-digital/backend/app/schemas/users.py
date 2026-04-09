@@ -24,9 +24,7 @@ class UserRegister(BaseModel):
         from app.core.security import validate_password_strength
 
         if not validate_password_strength(v):
-            raise ValueError(
-                "Password must contain uppercase, lowercase, digit, and special character"
-            )
+            raise ValueError("Password must contain uppercase, lowercase, digit, and special character")
         return v
 
 
@@ -75,9 +73,7 @@ class PasswordResetConfirm(BaseModel):
         from app.core.security import validate_password_strength
 
         if not validate_password_strength(v):
-            raise ValueError(
-                "Password must contain uppercase, lowercase, digit, and special character"
-            )
+            raise ValueError("Password must contain uppercase, lowercase, digit, and special character")
         return v
 
 

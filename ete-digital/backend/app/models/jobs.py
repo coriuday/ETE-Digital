@@ -78,9 +78,7 @@ class Job(Base):
 
     # Tryout configuration
     has_tryout = Column(Boolean, default=False, nullable=False)
-    tryout_config = Column(
-        JSONB
-    )  # {'duration_days': 3, 'payment': 5000, 'rubric': {...}}
+    tryout_config = Column(JSONB)  # {'duration_days': 3, 'payment': 5000, 'rubric': {...}}
 
     # Outcome-based pricing (optional)
     outcome_terms = Column(JSONB)
@@ -91,9 +89,7 @@ class Job(Base):
     applications_count = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     published_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True))
@@ -144,9 +140,7 @@ class Application(Base):
     employer_notes = Column(Text)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     def __repr__(self):

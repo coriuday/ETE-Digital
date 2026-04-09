@@ -109,9 +109,7 @@ async def get_tryout(tryout_id: str, db: AsyncSession = Depends(get_db)):
     """Get tryout details by ID"""
     tryout = await tryout_service.get_tryout(db, uuid.UUID(tryout_id))
     if not tryout:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found")
     return tryout_to_response(tryout)
 
 
@@ -248,18 +246,14 @@ async def review_submission(
     return submission_to_response(submission)
 
 
-@router.post(
-    "/submissions/{submission_id}/auto-grade", response_model=SubmissionGradeResponse
-)
+@router.post("/submissions/{submission_id}/auto-grade", response_model=SubmissionGradeResponse)
 async def auto_grade_submission(
     submission_id: str,
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Trigger auto-grading for a submission"""
-    result = await submission_service.auto_grade_submission(
-        db=db, submission_id=uuid.UUID(submission_id)
-    )
+    result = await submission_service.auto_grade_submission(db=db, submission_id=uuid.UUID(submission_id))
     return SubmissionGradeResponse(
         auto_score=result["auto_score"],
         score_breakdown=result["score_breakdown"],

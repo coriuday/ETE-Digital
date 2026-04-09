@@ -34,8 +34,7 @@ class EmailService:
         """Print email to console when SMTP is not available (dev mode)."""
         separator = "=" * 70
         logger.warning(
-            "\n%s\n📧 EMAIL (console fallback — SMTP unavailable)\n"
-            "To: %s\nSubject: %s\n%s\n%s\n%s",
+            "\n%s\n📧 EMAIL (console fallback — SMTP unavailable)\n" "To: %s\nSubject: %s\n%s\n%s\n%s",
             separator,
             to_email,
             subject,
@@ -166,9 +165,7 @@ class EmailService:
 
         return self.send_email(to_email, subject, html_content, text_content)
 
-    def send_application_notification(
-        self, to_email: str, candidate_name: str, job_title: str, company: str
-    ) -> bool:
+    def send_application_notification(self, to_email: str, candidate_name: str, job_title: str, company: str) -> bool:
         """Notify employer of a new job application."""
         subject = f"New application: {job_title} — {candidate_name}"
         html_content = f"""

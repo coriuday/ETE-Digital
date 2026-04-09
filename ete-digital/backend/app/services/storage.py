@@ -74,9 +74,7 @@ class StorageService:
                 content_type=content_type,
             )
             protocol = "https" if settings.MINIO_SECURE else "http"
-            return (
-                f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket_name}/{file_path}"
-            )
+            return f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket_name}/{file_path}"
         except Exception as e:
             print(f"Failed to upload file: {e}")
             return None
@@ -102,9 +100,7 @@ class StorageService:
             print(f"Failed to delete file: {e}")
             return False
 
-    def get_presigned_url(
-        self, file_path: str, expires_seconds: int = 3600
-    ) -> Optional[str]:
+    def get_presigned_url(self, file_path: str, expires_seconds: int = 3600) -> Optional[str]:
         """
         Get a temporary presigned URL for a file.
 

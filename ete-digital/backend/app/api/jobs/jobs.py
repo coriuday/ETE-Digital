@@ -125,15 +125,11 @@ async def get_ranked_job_feed(
     total = len(all_jobs)
 
     # --- Personalized ranking (candidates only) ---
-    is_candidate = (
-        current_user is not None and current_user.get("role") == "candidate"
-    )
+    is_candidate = current_user is not None and current_user.get("role") == "candidate"
 
     if is_candidate:
         profile_result = await db.execute(
-            sa_select(UserProfile).where(
-                UserProfile.user_id == uuid.UUID(current_user["user_id"])
-            )
+            sa_select(UserProfile).where(UserProfile.user_id == uuid.UUID(current_user["user_id"]))
         )
         profile_orm = profile_result.scalar_one_or_none()
         candidate_profile = profile_from_orm(profile_orm, current_user["user_id"])
@@ -142,9 +138,7 @@ async def get_ranked_job_feed(
         ranked = rank_jobs_for_candidate(candidate_profile, job_snaps)
 
         # Build lookup: job_id → (score, hint)
-        score_map = {
-            r[0].job_id: (r[1].total, r[1].explanation_hint) for r in ranked
-        }
+        score_map = {r[0].job_id: (r[1].total, r[1].explanation_hint) for r in ranked}
         # Sort ORM objects by rank
         sorted_jobs = sorted(
             all_jobs,
@@ -245,9 +239,7 @@ async def search_jobs(
         "sort_order": sort_order,
     }
 
-    jobs, total = await job_service.search_jobs(
-        db=db, filters=filters, page=page, page_size=page_size
-    )
+    jobs, total = await job_service.search_jobs(db=db, filters=filters, page=page, page_size=page_size)
 
     def to_response(job):
         return JobResponse(
@@ -278,9 +270,7 @@ async def search_jobs(
             expires_at=job.expires_at,
         )
 
-    return JobListResponse(
-        jobs=[to_response(j) for j in jobs], total=total, page=page, page_size=page_size
-    )
+    return JobListResponse(jobs=[to_response(j) for j in jobs], total=total, page=page, page_size=page_size)
 
 
 @router.get("/my-jobs", response_model=JobListResponse)
@@ -327,9 +317,7 @@ async def get_my_jobs(
             expires_at=job.expires_at,
         )
 
-    return JobListResponse(
-        jobs=[to_response(j) for j in jobs], total=total, page=page, page_size=page_size
-    )
+    return JobListResponse(jobs=[to_response(j) for j in jobs], total=total, page=page, page_size=page_size)
 
 
 # ========== Candidate Application Routes (must come before /{job_id} dynamic routes) ==========
@@ -362,9 +350,7 @@ async def get_my_applications(
     from sqlalchemy import func
 
     count_stmt = (
-        sa_select(func.count())
-        .select_from(Application)
-        .where(Application.candidate_id == uuid.UUID(current_user["user_id"]))
+        sa_select(func.count()).select_from(Application).where(Application.candidate_id == uuid.UUID(current_user["user_id"]))
     )
     total = (await db.execute(count_stmt)).scalar_one()
 
@@ -416,28 +402,18 @@ async def get_application_detail(
     row = result.first()
 
     if not row:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Application not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
     app, job_title, candidate_email, candidate_name = row
 
     # Verify this employer owns the job
     if str(app.job_id) not in [
         str(j.id)
-        for j in (
-            await db.execute(
-                sa_select(Job).where(
-                    Job.employer_id == uuid.UUID(current_user["user_id"])
-                )
-            )
-        )
+        for j in (await db.execute(sa_select(Job).where(Job.employer_id == uuid.UUID(current_user["user_id"]))))
         .scalars()
         .all()
     ]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Access denied"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     return ApplicationDetailResponse(
         id=str(app.id),
@@ -506,9 +482,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     job = await job_service.get_job(db, uuid.UUID(job_id))
 
     if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
     # Build the response BEFORE calling increment_view_count.
     # increment_view_count commits, which expires all ORM objects in the session.
@@ -598,9 +572,7 @@ async def publish_job(
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a draft job (make it active and visible to candidates)"""
-    job = await job_service.publish_job(
-        db=db, job_id=uuid.UUID(job_id), employer_id=uuid.UUID(current_user["user_id"])
-    )
+    job = await job_service.publish_job(db=db, job_id=uuid.UUID(job_id), employer_id=uuid.UUID(current_user["user_id"]))
 
     return JobResponse(
         id=str(job.id),
@@ -638,9 +610,7 @@ async def delete_job(
     db: AsyncSession = Depends(get_db),
 ):
     """Delete job posting (soft delete - marks as CLOSED)"""
-    await job_service.delete_job(
-        db=db, job_id=uuid.UUID(job_id), employer_id=uuid.UUID(current_user["user_id"])
-    )
+    await job_service.delete_job(db=db, job_id=uuid.UUID(job_id), employer_id=uuid.UUID(current_user["user_id"]))
 
     return {"message": "Job closed successfully"}
 
@@ -695,9 +665,7 @@ async def apply_to_job(
     )
 
 
-async def _generate_and_store_explanation(
-    application_id: str, candidate_id: str, job_id: str
-) -> None:
+async def _generate_and_store_explanation(application_id: str, candidate_id: str, job_id: str) -> None:
     """
     BackgroundTask: Calls Gemini to generate a natural language match explanation
     and stores it in applications.match_explanation['llm_summary'].
@@ -722,28 +690,16 @@ async def _generate_and_store_explanation(
         async with AsyncSessionLocal() as session:
             # Fetch fresh objects in a new session
             app_row = (
-                await session.execute(
-                    _sel(Application).where(
-                        Application.id == uuid.UUID(application_id)
-                    )
-                )
+                await session.execute(_sel(Application).where(Application.id == uuid.UUID(application_id)))
             ).scalar_one_or_none()
 
             if not app_row:
                 return
 
-            job_row = (
-                await session.execute(
-                    _sel(Job).where(Job.id == uuid.UUID(job_id))
-                )
-            ).scalar_one_or_none()
+            job_row = (await session.execute(_sel(Job).where(Job.id == uuid.UUID(job_id)))).scalar_one_or_none()
 
             profile_row = (
-                await session.execute(
-                    _sel(UserProfile).where(
-                        UserProfile.user_id == uuid.UUID(candidate_id)
-                    )
-                )
+                await session.execute(_sel(UserProfile).where(UserProfile.user_id == uuid.UUID(candidate_id)))
             ).scalar_one_or_none()
 
             if not job_row:
@@ -753,9 +709,7 @@ async def _generate_and_store_explanation(
             job_snap = job_snapshot_from_orm(job_row)
             breakdown = compute_match_score(candidate_profile, job_snap)
 
-            explanation = await generate_llm_explanation(
-                candidate_profile, job_snap, breakdown
-            )
+            explanation = await generate_llm_explanation(candidate_profile, job_snap, breakdown)
 
             # Merge with existing match_explanation JSONB
             existing = app_row.match_explanation or {}
@@ -763,14 +717,10 @@ async def _generate_and_store_explanation(
             app_row.match_explanation = existing
 
             await session.commit()
-            _logger.info(
-                "LLM explanation stored for application %s", application_id
-            )
+            _logger.info("LLM explanation stored for application %s", application_id)
 
     except Exception as exc:
-        _logger.warning(
-            "Background LLM explanation failed for %s: %s", application_id, exc
-        )
+        _logger.warning("Background LLM explanation failed for %s: %s", application_id, exc)
 
 
 @router.get("/{job_id}/applications", response_model=ApplicationListResponse)

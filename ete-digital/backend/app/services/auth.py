@@ -62,9 +62,7 @@ class AuthService:
             role=role,
             is_verified=is_dev,  # True in dev, False in production
             verification_token=None if is_dev else secrets.token_urlsafe(32),
-            verification_token_expires=(
-                None if is_dev else (datetime.now(timezone.utc) + timedelta(hours=24))
-            ),
+            verification_token_expires=(None if is_dev else (datetime.now(timezone.utc) + timedelta(hours=24))),
         )
         db.add(user)
         await db.flush()
@@ -83,12 +81,8 @@ class AuthService:
 
         # Only send verification email in production
         if not is_dev:
-            verification_url = (
-                f"{settings.FRONTEND_URL}/verify-email?token={user.verification_token}"
-            )
-            await asyncio.to_thread(
-                email_service.send_verification_email, user.email, verification_url
-            )
+            verification_url = f"{settings.FRONTEND_URL}/verify-email?token={user.verification_token}"
+            await asyncio.to_thread(email_service.send_verification_email, user.email, verification_url)
 
         return user
 
@@ -136,9 +130,7 @@ class AuthService:
             )
 
         if not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
 
         # if not user.is_verified:
         #     raise HTTPException(
@@ -163,8 +155,7 @@ class AuthService:
         refresh_token = RefreshToken(
             user_id=user.id,
             token=refresh_token_str,
-            expires_at=datetime.now(timezone.utc)
-            + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
             ip_address=ip_address,
             user_agent=user_agent,
         )
@@ -173,9 +164,7 @@ class AuthService:
 
         return access_token, refresh_token_str, user
 
-    async def refresh_access_token(
-        self, db: AsyncSession, refresh_token_str: str
-    ) -> Tuple[str, str]:
+    async def refresh_access_token(self, db: AsyncSession, refresh_token_str: str) -> Tuple[str, str]:
         """Refresh access token using refresh token"""
         # Find refresh token
         result = await db.execute(
@@ -220,8 +209,7 @@ class AuthService:
         new_refresh = RefreshToken(
             user_id=user.id,
             token=new_refresh_token,
-            expires_at=datetime.now(timezone.utc)
-            + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+            expires_at=datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
             ip_address=refresh_token.ip_address,
             user_agent=refresh_token.user_agent,
         )
@@ -246,15 +234,11 @@ class AuthService:
 
         # Send reset email
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={user.reset_token}"
-        await asyncio.to_thread(
-            email_service.send_password_reset_email, user.email, reset_url
-        )
+        await asyncio.to_thread(email_service.send_password_reset_email, user.email, reset_url)
 
         return True
 
-    async def reset_password(
-        self, db: AsyncSession, token: str, new_password: str
-    ) -> User:
+    async def reset_password(self, db: AsyncSession, token: str, new_password: str) -> User:
         """Reset password with token"""
         result = await db.execute(
             select(User).where(
@@ -283,11 +267,7 @@ class AuthService:
         user.reset_token_expires = None
 
         # Revoke all refresh tokens for security
-        await db.execute(
-            update(RefreshToken)
-            .where(RefreshToken.user_id == user.id)
-            .values(is_revoked=True)
-        )
+        await db.execute(update(RefreshToken).where(RefreshToken.user_id == user.id).values(is_revoked=True))
 
         await db.commit()
         await db.refresh(user)
@@ -296,9 +276,7 @@ class AuthService:
 
     async def logout(self, db: AsyncSession, refresh_token_str: str) -> bool:
         """Logout user by revoking refresh token"""
-        result = await db.execute(
-            select(RefreshToken).where(RefreshToken.token == refresh_token_str)
-        )
+        result = await db.execute(select(RefreshToken).where(RefreshToken.token == refresh_token_str))
         refresh_token = result.scalar_one_or_none()
 
         if refresh_token:

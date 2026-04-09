@@ -20,6 +20,7 @@ from app.core.config import settings
 
 import secrets as _secrets  # local alias to avoid shadowing any future module-level var
 
+
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Add security headers to every response.
 
@@ -34,30 +35,25 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         nonce = _secrets.token_urlsafe(16)
-        request.state.csp_nonce = nonce          # available to route handlers / templates
+        request.state.csp_nonce = nonce  # available to route handlers / templates
 
         response: Response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Permissions-Policy"] = (
-            "geolocation=(), microphone=(), camera=()"
-        )
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
-            f"script-src 'self' 'nonce-{nonce}'; "   # nonce replaces 'unsafe-inline'
+            f"script-src 'self' 'nonce-{nonce}'; "  # nonce replaces 'unsafe-inline'
             f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             f"font-src 'self' https://fonts.gstatic.com; "
             f"img-src 'self' data: https:; "
             f"connect-src 'self' ws: wss: https://ete-digital-backend.onrender.com https://*.supabase.co;"
         )
         if settings.ENVIRONMENT == "production":
-            response.headers["Strict-Transport-Security"] = (
-                "max-age=31536000; includeSubDomains"
-            )
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
-
 
 
 # ---- Application Lifespan (startup / shutdown) ----
@@ -129,9 +125,7 @@ async def root():
     return {
         "message": f"Welcome to {settings.APP_NAME} API",
         "version": settings.APP_VERSION,
-        "docs": (
-            "/api/docs" if settings.DEBUG else "Documentation disabled in production"
-        ),
+        "docs": ("/api/docs" if settings.DEBUG else "Documentation disabled in production"),
     }
 
 
@@ -147,16 +141,12 @@ app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])
 app.include_router(vault.router, prefix="/api/vault", tags=["Talent Vault"])
-app.include_router(
-    notifications.router, prefix="/api/notifications", tags=["Notifications"]
-)
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
 
 # Serve uploaded files (resumes, avatars)
-_uploads_dir = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads"
-)
+_uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
 os.makedirs(_uploads_dir, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")

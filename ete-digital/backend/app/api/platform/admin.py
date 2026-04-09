@@ -93,25 +93,11 @@ async def get_platform_stats(
 ):
     """Get platform-wide statistics (Admin only)"""
     total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
-    total_candidates = (
-        await db.execute(
-            select(func.count(User.id)).where(User.role == UserRole.CANDIDATE)
-        )
-    ).scalar() or 0
-    total_employers = (
-        await db.execute(
-            select(func.count(User.id)).where(User.role == UserRole.EMPLOYER)
-        )
-    ).scalar() or 0
+    total_candidates = (await db.execute(select(func.count(User.id)).where(User.role == UserRole.CANDIDATE))).scalar() or 0
+    total_employers = (await db.execute(select(func.count(User.id)).where(User.role == UserRole.EMPLOYER))).scalar() or 0
     total_jobs = (await db.execute(select(func.count(Job.id)))).scalar() or 0
-    active_jobs = (
-        await db.execute(
-            select(func.count(Job.id)).where(Job.status == JobStatus.ACTIVE)
-        )
-    ).scalar() or 0
-    total_applications = (
-        await db.execute(select(func.count(Application.id)))
-    ).scalar() or 0
+    active_jobs = (await db.execute(select(func.count(Job.id)).where(Job.status == JobStatus.ACTIVE))).scalar() or 0
+    total_applications = (await db.execute(select(func.count(Application.id)))).scalar() or 0
 
     return PlatformStats(
         total_users=total_users,
@@ -138,26 +124,16 @@ async def list_users(
         try:
             query = query.where(User.role == UserRole(role))
         except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid role: {role}"
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Invalid role: {role}")
     if search:
         query = query.where(User.email.ilike(f"%{search}%"))
 
-    total = (
-        await db.execute(select(func.count()).select_from(query.subquery()))
-    ).scalar() or 0
-    result = await db.execute(
-        query.order_by(User.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+    result = await db.execute(query.order_by(User.created_at.desc()).offset((page - 1) * page_size).limit(page_size))
     users = result.scalars().all()
 
     user_ids = [u.id for u in users]
-    profiles_result = await db.execute(
-        select(UserProfile).where(UserProfile.user_id.in_(user_ids))
-    )
+    profiles_result = await db.execute(select(UserProfile).where(UserProfile.user_id.in_(user_ids)))
     profiles = {p.user_id: p for p in profiles_result.scalars().all()}
 
     return AdminUserListResponse(
@@ -187,9 +163,7 @@ async def toggle_user_active(
     result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
     user = result.scalar_one_or_none()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
     if str(user.id) == current_user["user_id"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -223,18 +197,10 @@ async def list_all_jobs(
                 detail=f"Invalid status: {status_filter}",
             )
     if search:
-        query = query.where(
-            Job.title.ilike(f"%{search}%") | Job.company.ilike(f"%{search}%")
-        )
+        query = query.where(Job.title.ilike(f"%{search}%") | Job.company.ilike(f"%{search}%"))
 
-    total = (
-        await db.execute(select(func.count()).select_from(query.subquery()))
-    ).scalar() or 0
-    result = await db.execute(
-        query.order_by(Job.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+    result = await db.execute(query.order_by(Job.created_at.desc()).offset((page - 1) * page_size).limit(page_size))
     jobs = result.scalars().all()
 
     return AdminJobListResponse(
@@ -268,9 +234,7 @@ async def moderate_job(
     result = await db.execute(select(Job).where(Job.id == uuid.UUID(job_id)))
     job = result.scalar_one_or_none()
     if not job:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Job not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
     job.status = JobStatus.CLOSED if action == "close" else JobStatus.ACTIVE
     await db.commit()
     return {"message": f"Job {action}d successfully", "status": job.status.value}
@@ -295,41 +259,19 @@ async def list_all_applications(
                 detail=f"Invalid status: {status_filter}",
             )
 
-    total = (
-        await db.execute(select(func.count()).select_from(query.subquery()))
-    ).scalar() or 0
-    result = await db.execute(
-        query.order_by(Application.created_at.desc())
-        .offset((page - 1) * page_size)
-        .limit(page_size)
-    )
+    total = (await db.execute(select(func.count()).select_from(query.subquery()))).scalar() or 0
+    result = await db.execute(query.order_by(Application.created_at.desc()).offset((page - 1) * page_size).limit(page_size))
     applications = result.scalars().all()
 
     candidate_ids = [a.candidate_id for a in applications]
     job_ids_list = [a.job_id for a in applications]
 
-    users_map = {
-        u.id: u
-        for u in (await db.execute(select(User).where(User.id.in_(candidate_ids))))
-        .scalars()
-        .all()
-    }
+    users_map = {u.id: u for u in (await db.execute(select(User).where(User.id.in_(candidate_ids)))).scalars().all()}
     profiles_map = {
         p.user_id: p
-        for p in (
-            await db.execute(
-                select(UserProfile).where(UserProfile.user_id.in_(candidate_ids))
-            )
-        )
-        .scalars()
-        .all()
+        for p in (await db.execute(select(UserProfile).where(UserProfile.user_id.in_(candidate_ids)))).scalars().all()
     }
-    jobs_map = {
-        j.id: j
-        for j in (await db.execute(select(Job).where(Job.id.in_(job_ids_list))))
-        .scalars()
-        .all()
-    }
+    jobs_map = {j.id: j for j in (await db.execute(select(Job).where(Job.id.in_(job_ids_list)))).scalars().all()}
 
     return AdminApplicationListResponse(
         applications=[
@@ -337,10 +279,8 @@ async def list_all_applications(
                 id=str(a.id),
                 job_id=str(a.job_id),
                 candidate_id=str(a.candidate_id),
-                candidate_email=users_map.get(a.candidate_id, None)
-                and users_map[a.candidate_id].email,
-                candidate_name=profiles_map.get(a.candidate_id, None)
-                and profiles_map[a.candidate_id].full_name,
+                candidate_email=users_map.get(a.candidate_id, None) and users_map[a.candidate_id].email,
+                candidate_name=profiles_map.get(a.candidate_id, None) and profiles_map[a.candidate_id].full_name,
                 job_title=jobs_map.get(a.job_id, None) and jobs_map[a.job_id].title,
                 company=jobs_map.get(a.job_id, None) and jobs_map[a.job_id].company,
                 status=a.status.value,

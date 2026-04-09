@@ -37,9 +37,7 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login_at = Column(DateTime(timezone=True))
 
@@ -58,9 +56,7 @@ class User(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
-    refresh_tokens = relationship(
-        "RefreshToken", back_populates="user", cascade="all, delete-orphan"
-    )
+    refresh_tokens = relationship("RefreshToken", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"
@@ -71,9 +67,7 @@ class UserProfile(Base):
 
     __tablename__ = "user_profiles"
 
-    user_id = Column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
-    )
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
 
     # Basic info
     full_name = Column(String(255))
@@ -104,9 +98,7 @@ class UserProfile(Base):
     preferred_locations = Column(JSONB, default=list)  # ['Mumbai', 'Remote', 'Bangalore']
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # ORM inverse relationship
@@ -136,9 +128,7 @@ class RefreshToken(Base):
     ip_address = Column(String(45))
     user_agent = Column(String(500))
 
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
 
     # ORM inverse relationship
     user = relationship("User", back_populates="refresh_tokens")

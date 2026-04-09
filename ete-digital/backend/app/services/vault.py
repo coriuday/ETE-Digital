@@ -18,9 +18,7 @@ from fastapi import HTTPException, status
 class VaultService:
     """Talent vault service"""
 
-    async def create_vault_item(
-        self, db: AsyncSession, candidate_id: uuid.UUID, item_data: dict
-    ) -> TalentVaultItem:
+    async def create_vault_item(self, db: AsyncSession, candidate_id: uuid.UUID, item_data: dict) -> TalentVaultItem:
         """Create a new vault item"""
         # Encrypt file URL if provided
         if item_data.get("file_url"):
@@ -60,13 +58,9 @@ class VaultService:
 
         return item
 
-    async def get_vault_item(
-        self, db: AsyncSession, item_id: uuid.UUID, decrypt: bool = True
-    ) -> Optional[TalentVaultItem]:
+    async def get_vault_item(self, db: AsyncSession, item_id: uuid.UUID, decrypt: bool = True) -> Optional[TalentVaultItem]:
         """Get vault item by ID"""
-        result = await db.execute(
-            select(TalentVaultItem).where(TalentVaultItem.id == item_id)
-        )
+        result = await db.execute(select(TalentVaultItem).where(TalentVaultItem.id == item_id))
         item = result.scalar_one_or_none()
 
         if item and decrypt and item.file_url:
@@ -85,9 +79,7 @@ class VaultService:
         item = await self.get_vault_item(db, item_id, decrypt=False)
 
         if not item:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found")
 
         if item.candidate_id != candidate_id:
             raise HTTPException(
@@ -112,16 +104,12 @@ class VaultService:
 
         return item
 
-    async def delete_vault_item(
-        self, db: AsyncSession, item_id: uuid.UUID, candidate_id: uuid.UUID
-    ) -> bool:
+    async def delete_vault_item(self, db: AsyncSession, item_id: uuid.UUID, candidate_id: uuid.UUID) -> bool:
         """Delete vault item"""
         item = await self.get_vault_item(db, item_id, decrypt=False)
 
         if not item:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found")
 
         if item.candidate_id != candidate_id:
             raise HTTPException(
@@ -142,17 +130,13 @@ class VaultService:
         item_type: Optional[VaultItemType] = None,
     ) -> Tuple[List[TalentVaultItem], int]:
         """Get all vault items for a candidate"""
-        query = select(TalentVaultItem).where(
-            TalentVaultItem.candidate_id == candidate_id
-        )
+        query = select(TalentVaultItem).where(TalentVaultItem.candidate_id == candidate_id)
 
         if item_type:
             query = query.where(TalentVaultItem.type == item_type)
 
         # Get total count
-        count_query = select(func.count()).where(
-            TalentVaultItem.candidate_id == candidate_id
-        )
+        count_query = select(func.count()).where(TalentVaultItem.candidate_id == candidate_id)
         if item_type:
             count_query = count_query.where(TalentVaultItem.type == item_type)
 
@@ -161,11 +145,7 @@ class VaultService:
 
         # Apply pagination
         offset = (page - 1) * page_size
-        query = (
-            query.order_by(TalentVaultItem.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        query = query.order_by(TalentVaultItem.created_at.desc()).offset(offset).limit(page_size)
 
         # Execute query
         result = await db.execute(query)
@@ -181,9 +161,7 @@ class VaultService:
     async def get_vault_stats(self, db: AsyncSession, candidate_id: uuid.UUID) -> Dict:
         """Get vault statistics"""
         # Total items
-        total_result = await db.execute(
-            select(func.count()).where(TalentVaultItem.candidate_id == candidate_id)
-        )
+        total_result = await db.execute(select(func.count()).where(TalentVaultItem.candidate_id == candidate_id))
         total_items = total_result.scalar()
 
         # Verified items
@@ -283,29 +261,21 @@ class ShareTokenService:
 
         return tokens
 
-    async def get_share_token(
-        self, db: AsyncSession, token_str: str
-    ) -> Optional[VaultShareToken]:
+    async def get_share_token(self, db: AsyncSession, token_str: str) -> Optional[VaultShareToken]:
         """Get share token by token string"""
         try:
             token_uuid = uuid.UUID(token_str)
         except (ValueError, AttributeError):
             return None
-        result = await db.execute(
-            select(VaultShareToken).where(VaultShareToken.token == token_uuid)
-        )
+        result = await db.execute(select(VaultShareToken).where(VaultShareToken.token == token_uuid))
         return result.scalar_one_or_none()
 
-    async def access_vault_via_token(
-        self, db: AsyncSession, token_str: str
-    ) -> Tuple[TalentVaultItem, VaultShareToken]:
+    async def access_vault_via_token(self, db: AsyncSession, token_str: str) -> Tuple[TalentVaultItem, VaultShareToken]:
         """Access vault item via share token"""
         token = await self.get_share_token(db, token_str)
 
         if not token:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Share token not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share token not found")
 
         # Check if revoked
         if token.is_revoked:
@@ -316,9 +286,7 @@ class ShareTokenService:
 
         # Check if expired
         if token.expires_at and token.expires_at < datetime.now(timezone.utc):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Share token has expired"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Share token has expired")
 
         # Check view limit
         if token.max_views and token.view_count >= token.max_views:
@@ -328,15 +296,11 @@ class ShareTokenService:
             )
 
         # Get vault item
-        item_result = await db.execute(
-            select(TalentVaultItem).where(TalentVaultItem.id == token.vault_item_id)
-        )
+        item_result = await db.execute(select(TalentVaultItem).where(TalentVaultItem.id == token.vault_item_id))
         item = item_result.scalar_one_or_none()
 
         if not item:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Vault item not found")
 
         # Increment view counts
         token.view_count += 1
@@ -353,24 +317,16 @@ class ShareTokenService:
 
         return item, token
 
-    async def revoke_share_token(
-        self, db: AsyncSession, token_id: uuid.UUID, candidate_id: uuid.UUID
-    ) -> bool:
+    async def revoke_share_token(self, db: AsyncSession, token_id: uuid.UUID, candidate_id: uuid.UUID) -> bool:
         """Revoke a share token"""
-        result = await db.execute(
-            select(VaultShareToken).where(VaultShareToken.id == token_id)
-        )
+        result = await db.execute(select(VaultShareToken).where(VaultShareToken.id == token_id))
         token = result.scalar_one_or_none()
 
         if not token:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="Share token not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Share token not found")
 
         # Verify ownership via vault item
-        item_result = await db.execute(
-            select(TalentVaultItem).where(TalentVaultItem.id == token.vault_item_id)
-        )
+        item_result = await db.execute(select(TalentVaultItem).where(TalentVaultItem.id == token.vault_item_id))
         item = item_result.scalar_one_or_none()
 
         if not item or item.candidate_id != candidate_id:
@@ -392,34 +348,22 @@ class ShareTokenService:
     ) -> Tuple[List[VaultShareToken], int]:
         """Get all share tokens for candidate's vault items"""
         # Get all vault item IDs for candidate
-        items_result = await db.execute(
-            select(TalentVaultItem.id).where(
-                TalentVaultItem.candidate_id == candidate_id
-            )
-        )
+        items_result = await db.execute(select(TalentVaultItem.id).where(TalentVaultItem.candidate_id == candidate_id))
         item_ids = [row[0] for row in items_result.all()]
 
         if not item_ids:
             return [], 0
 
-        query = select(VaultShareToken).where(
-            VaultShareToken.vault_item_id.in_(item_ids)
-        )
+        query = select(VaultShareToken).where(VaultShareToken.vault_item_id.in_(item_ids))
 
         # Get total count
-        count_query = select(func.count()).where(
-            VaultShareToken.vault_item_id.in_(item_ids)
-        )
+        count_query = select(func.count()).where(VaultShareToken.vault_item_id.in_(item_ids))
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
         # Apply pagination
         offset = (page - 1) * page_size
-        query = (
-            query.order_by(VaultShareToken.created_at.desc())
-            .offset(offset)
-            .limit(page_size)
-        )
+        query = query.order_by(VaultShareToken.created_at.desc()).offset(offset).limit(page_size)
 
         # Execute query
         result = await db.execute(query)

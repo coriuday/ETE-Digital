@@ -32,13 +32,9 @@ class OptionalRefreshRequest(BaseModel):
     refresh_token: Optional[str] = None
 
 
-@router.post(
-    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
-)
+@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
-async def register(
-    request: Request, user_data: UserRegister, db: AsyncSession = Depends(get_db)
-):
+async def register(request: Request, user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     """
     Register a new user
 
@@ -66,9 +62,7 @@ async def register(
 
 
 @router.post("/verify-email", response_model=dict)
-async def verify_email(
-    verification_data: EmailVerificationRequest, db: AsyncSession = Depends(get_db)
-):
+async def verify_email(verification_data: EmailVerificationRequest, db: AsyncSession = Depends(get_db)):
     """
     Verify email address with token sent to email
     """
@@ -78,9 +72,7 @@ async def verify_email(
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/minute")
-async def login(
-    request: Request, login_data: UserLogin, db: AsyncSession = Depends(get_db)
-):
+async def login(request: Request, login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     """
     Login with email and password
 
@@ -105,15 +97,11 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(
-    refresh_data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)
-):
+async def refresh_token(refresh_data: RefreshTokenRequest, db: AsyncSession = Depends(get_db)):
     """
     Refresh access token using refresh token
     """
-    access_token, refresh_token = await auth_service.refresh_access_token(
-        db=db, refresh_token_str=refresh_data.refresh_token
-    )
+    access_token, refresh_token = await auth_service.refresh_access_token(db=db, refresh_token_str=refresh_data.refresh_token)
 
     return TokenResponse(
         access_token=access_token,
@@ -137,15 +125,11 @@ async def forgot_password(
 
 
 @router.post("/reset-password", response_model=dict)
-async def reset_password(
-    reset_data: PasswordResetConfirm, db: AsyncSession = Depends(get_db)
-):
+async def reset_password(reset_data: PasswordResetConfirm, db: AsyncSession = Depends(get_db)):
     """
     Reset password with token from email
     """
-    await auth_service.reset_password(
-        db=db, token=reset_data.token, new_password=reset_data.new_password
-    )
+    await auth_service.reset_password(db=db, token=reset_data.token, new_password=reset_data.new_password)
     return {"message": "Password reset successfully"}
 
 

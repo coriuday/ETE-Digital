@@ -75,9 +75,7 @@ async def get_analytics_summary(
     prev_period_start = period_start - timedelta(days=days)
 
     jobs_result = await db.execute(
-        select(Job.id, Job.title, Job.views_count, Job.applications_count).where(
-            Job.employer_id == employer_id
-        )
+        select(Job.id, Job.title, Job.views_count, Job.applications_count).where(Job.employer_id == employer_id)
     )
     employer_jobs = jobs_result.all()
     job_ids = [row.id for row in employer_jobs]
@@ -86,9 +84,7 @@ async def get_analytics_summary(
         return AnalyticsSummary(
             kpis=[
                 KPICard(label="Total Jobs", value=0, change_pct=0.0, is_positive=True),
-                KPICard(
-                    label="Applications", value=0, change_pct=0.0, is_positive=True
-                ),
+                KPICard(label="Applications", value=0, change_pct=0.0, is_positive=True),
                 KPICard(label="Shortlisted", value=0, change_pct=0.0, is_positive=True),
                 KPICard(label="Hired", value=0, change_pct=0.0, is_positive=True),
             ],
@@ -100,11 +96,7 @@ async def get_analytics_summary(
 
     # ---- KPIs ----
     curr_apps_result = await db.execute(
-        select(func.count(Application.id)).where(
-            and_(
-                Application.job_id.in_(job_ids), Application.created_at >= period_start
-            )
-        )
+        select(func.count(Application.id)).where(and_(Application.job_id.in_(job_ids), Application.created_at >= period_start))
     )
     curr_apps = curr_apps_result.scalar() or 0
 
@@ -145,18 +137,14 @@ async def get_analytics_summary(
     hired = hired_result.scalar() or 0
 
     kpis = [
-        KPICard(
-            label="Total Jobs", value=len(job_ids), change_pct=0.0, is_positive=True
-        ),
+        KPICard(label="Total Jobs", value=len(job_ids), change_pct=0.0, is_positive=True),
         KPICard(
             label="Applications",
             value=curr_apps,
             change_pct=calc_change(curr_apps, prev_apps),
             is_positive=curr_apps >= prev_apps,
         ),
-        KPICard(
-            label="Shortlisted", value=shortlisted, change_pct=0.0, is_positive=True
-        ),
+        KPICard(label="Shortlisted", value=shortlisted, change_pct=0.0, is_positive=True),
         KPICard(label="Hired", value=hired, change_pct=0.0, is_positive=True),
     ]
 
@@ -175,9 +163,7 @@ async def get_analytics_summary(
             )
         )
         count = day_result.scalar() or 0
-        apps_over_time.append(
-            TimeSeriesPoint(date=day_start.strftime("%Y-%m-%d"), value=count)
-        )
+        apps_over_time.append(TimeSeriesPoint(date=day_start.strftime("%Y-%m-%d"), value=count))
 
     # ---- Top jobs ----
     top_jobs = [
@@ -187,15 +173,11 @@ async def get_analytics_summary(
             applications=row.applications_count or 0,
             views=row.views_count or 0,
         )
-        for row in sorted(
-            employer_jobs, key=lambda r: r.applications_count or 0, reverse=True
-        )[:5]
+        for row in sorted(employer_jobs, key=lambda r: r.applications_count or 0, reverse=True)[:5]
     ]
 
     # ---- Application funnel ----
-    total_apps_result = await db.execute(
-        select(func.count(Application.id)).where(Application.job_id.in_(job_ids))
-    )
+    total_apps_result = await db.execute(select(func.count(Application.id)).where(Application.job_id.in_(job_ids)))
     total_apps = total_apps_result.scalar() or 1
 
     funnel_stages = [
@@ -208,11 +190,7 @@ async def get_analytics_summary(
     funnel = []
     for stage_name, stage_status in funnel_stages:
         stage_result = await db.execute(
-            select(func.count(Application.id)).where(
-                and_(
-                    Application.job_id.in_(job_ids), Application.status == stage_status
-                )
-            )
+            select(func.count(Application.id)).where(and_(Application.job_id.in_(job_ids), Application.status == stage_status))
         )
         stage_count = stage_result.scalar() or 0
         funnel.append(

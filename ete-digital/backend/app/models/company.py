@@ -34,9 +34,7 @@ class CompanyProfile(Base):
     tagline = Column(String(500))
     description = Column(Text)
     industry = Column(String(100))
-    company_size = Column(
-        SQLEnum(CompanySize, values_callable=lambda x: [e.value for e in x])
-    )
+    company_size = Column(SQLEnum(CompanySize, values_callable=lambda x: [e.value for e in x]))
     founded_year = Column(Integer)
 
     # Branding
@@ -65,9 +63,7 @@ class CompanyProfile(Base):
     verified_at = Column(DateTime(timezone=True))
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     def __repr__(self):
@@ -142,9 +138,7 @@ class Interview(Base):
     candidate_confirmed = Column(Boolean, default=False)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     completed_at = Column(DateTime(timezone=True))
 

@@ -56,9 +56,7 @@ class TalentVaultItem(Base):
     view_count = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     def __repr__(self):
@@ -74,9 +72,7 @@ class VaultShareToken(Base):
     vault_item_id = Column(UUID(as_uuid=True), nullable=False, index=True)
 
     # Token
-    token = Column(
-        UUID(as_uuid=True), unique=True, nullable=False, index=True, default=uuid.uuid4
-    )
+    token = Column(UUID(as_uuid=True), unique=True, nullable=False, index=True, default=uuid.uuid4)
 
     # Access control
     expires_at = Column(DateTime(timezone=True))
@@ -89,9 +85,7 @@ class VaultShareToken(Base):
     shared_with_company = Column(String(255))
 
     # Timestamps
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     last_accessed_at = Column(DateTime(timezone=True))
 
     def __repr__(self):

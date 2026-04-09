@@ -85,9 +85,7 @@ class PaymentService:
             print(f"Stripe capture failed: {e}")
             return False
 
-    def refund_payment(
-        self, payment_intent_id: str, reason: str = "requested_by_customer"
-    ) -> bool:
+    def refund_payment(self, payment_intent_id: str, reason: str = "requested_by_customer") -> bool:
         """
         Refund a PaymentIntent back to employer.
         Used when tryout is rejected or expired.
@@ -130,17 +128,19 @@ class PaymentService:
 
             session = stripe.checkout.Session.create(
                 payment_method_types=["card"],
-                line_items=[{
-                    "price_data": {
-                        "currency": currency,
-                        "unit_amount": amount_minor_units,
-                        "product_data": {
-                            "name": "Job Tryout Payment",
-                            "description": "Payment for completing a job tryout task",
+                line_items=[
+                    {
+                        "price_data": {
+                            "currency": currency,
+                            "unit_amount": amount_minor_units,
+                            "product_data": {
+                                "name": "Job Tryout Payment",
+                                "description": "Payment for completing a job tryout task",
+                            },
                         },
-                    },
-                    "quantity": 1,
-                }],
+                        "quantity": 1,
+                    }
+                ],
                 mode="payment",
                 success_url=success_url,
                 cancel_url=cancel_url,
@@ -172,9 +172,7 @@ class PaymentService:
         try:
             import stripe
 
-            event = stripe.Webhook.construct_event(
-                payload, sig_header, settings.STRIPE_WEBHOOK_SECRET
-            )
+            event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
             return event
         except Exception as e:
             print(f"Stripe webhook verification failed: {e}")

@@ -287,9 +287,7 @@ async def _get_cached(redis_client: Any, user_id: str, job_id: str) -> Optional[
         return None
 
 
-async def _set_cached(
-    redis_client: Any, user_id: str, job_id: str, score: int, ttl: int = 21600
-) -> None:
+async def _set_cached(redis_client: Any, user_id: str, job_id: str, score: int, ttl: int = 21600) -> None:
     """Store score in Redis with a 6-hour TTL."""
     try:
         await redis_client.setex(_cache_key(user_id, job_id), ttl, score)
@@ -363,9 +361,7 @@ def rank_candidates_for_job(
 
 
 _FALLBACK_TEMPLATE = (
-    "You match {score}% for this role. "
-    "You have {matched_count} of {required_count} required skills. "
-    "{missing_note}"
+    "You match {score}% for this role. " "You have {matched_count} of {required_count} required skills. " "{missing_note}"
 )
 
 
@@ -384,6 +380,7 @@ async def generate_llm_explanation(
     """
     try:
         from app.core.config import settings  # noqa: PLC0415
+
         api_key = getattr(settings, "GEMINI_API_KEY", None)
         if not api_key:
             raise ValueError("GEMINI_API_KEY not configured — using template fallback")
@@ -466,12 +463,8 @@ def profile_from_orm(profile_orm: Any, user_id: str) -> CandidateProfile:
         experience_years=profile_orm.experience_years if profile_orm else None,
         location=profile_orm.location if profile_orm else None,
         remote_preferred=prefs.get("remote_preferred", False),
-        salary_expectation_min=getattr(profile_orm, "salary_expectation_min", None)
-        if profile_orm
-        else None,
-        salary_expectation_max=getattr(profile_orm, "salary_expectation_max", None)
-        if profile_orm
-        else None,
+        salary_expectation_min=getattr(profile_orm, "salary_expectation_min", None) if profile_orm else None,
+        salary_expectation_max=getattr(profile_orm, "salary_expectation_max", None) if profile_orm else None,
         preferred_job_types=prefs.get("preferred_job_types", []),
         preferred_locations=prefs.get("preferred_locations", []),
     )
