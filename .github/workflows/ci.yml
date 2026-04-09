@@ -165,7 +165,12 @@ jobs:
           MINIO_ACCESS_KEY: minioadmin
           MINIO_SECRET_KEY: minioadmin123
           MINIO_SECURE: "false"
-        run: pytest tests/ -x --cov=app --cov-report=xml --cov-report=term-missing -q
+        run: |
+          if [ -z "$TEST_DATABASE_URL" ]; then
+            echo "SUPABASE_TEST_DATABASE_URL secret is not set — skipping integration tests"
+            exit 0
+          fi
+          pytest tests/ -x --cov=app --cov-report=xml --cov-report=term-missing -q
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
