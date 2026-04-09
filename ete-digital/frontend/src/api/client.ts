@@ -4,13 +4,24 @@
  *
  * Tokens are read from the in-memory store (authStore) rather than
  * localStorage to prevent XSS attacks from stealing JWT tokens.
+ *
+ * IMPORTANT — circular dependency note:
+ *   client.ts → authStore.ts → api/auth.ts → client.ts
+ *
+ *   `getAccessToken`, `getRefreshToken`, and `setAccessToken` are safe to
+ *   import statically because they are simple closures over module-level
+ *   variables with no transitive imports that loop back to client.ts.
+ *
+ *   `useAuthStore` MUST remain a dynamic import inside the response
+ *   interceptor. A static import would trigger the full circular chain at
+ *   module evaluation time and cause `api` to be undefined when `auth.ts`
+ *   first accesses it — breaking login entirely.
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import {
     getAccessToken,
     getRefreshToken,
     setAccessToken,
-    useAuthStore,
 } from '../stores/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -83,7 +94,8 @@ api.interceptors.response.use(
 
                 const { access_token } = response.data;
 
-                // Update in-memory token so ALL subsequent requests use the new token
+                // Update in-memory token so ALL subsequent requests use the new token.
+                // setAccessToken is safe to call statically — no circular dep.
                 setAccessToken(access_token);
 
                 // Retry original request with new token
@@ -92,7 +104,9 @@ api.interceptors.response.use(
                 }
                 return api(originalRequest);
             } catch (refreshError) {
-                // Refresh failed — log out and redirect
+                // Refresh failed — dynamic import to avoid the circular dep chain:
+                // useAuthStore → authStore.ts → api/auth.ts → client.ts (this file)
+                const { useAuthStore } = await import('../stores/authStore');
                 await useAuthStore.getState().logout();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
