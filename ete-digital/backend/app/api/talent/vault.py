@@ -36,7 +36,6 @@ from app.schemas.vault import (
 from app.services.vault import vault_service, share_token_service
 from app.services.storage import storage_service
 
-
 router = APIRouter()
 
 

@@ -25,7 +25,6 @@ from app.services.jobs import job_service, application_service
 from app.services.notification_service import notification_service
 from app.core.security import get_optional_current_user  # may be None for unauthenticated
 
-
 router = APIRouter()
 
 

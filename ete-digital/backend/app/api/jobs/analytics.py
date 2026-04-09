@@ -15,7 +15,6 @@ from app.models.users import UserRole
 from app.models.jobs import Job, Application, ApplicationStatus
 from pydantic import BaseModel
 
-
 router = APIRouter()
 
 

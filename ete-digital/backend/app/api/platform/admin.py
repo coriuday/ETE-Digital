@@ -15,7 +15,6 @@ from app.models.jobs import Job, JobStatus, Application, ApplicationStatus
 from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
-
 router = APIRouter()
 
 

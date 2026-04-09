@@ -15,7 +15,6 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.core.limiter import limiter
 from app.core.config import settings
 
-
 # ---- Security Headers Middleware ----
 
 import secrets as _secrets  # local alias to avoid shadowing any future module-level var

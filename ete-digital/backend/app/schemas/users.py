@@ -7,7 +7,6 @@ from typing import Optional, List
 from datetime import datetime
 from app.models.users import UserRole
 
-
 # ========== Registration & Authentication ==========
 
 

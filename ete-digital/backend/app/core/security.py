@@ -19,7 +19,6 @@ import hashlib
 
 from app.core.config import settings
 
-
 # Password hashing with Argon2
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 

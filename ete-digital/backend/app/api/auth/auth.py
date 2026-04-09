@@ -22,7 +22,6 @@ from app.services.auth import auth_service
 from app.core.limiter import limiter
 from pydantic import BaseModel
 
-
 router = APIRouter()
 
 

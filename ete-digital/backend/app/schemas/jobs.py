@@ -7,7 +7,6 @@ from typing import Optional, List, Dict
 from datetime import datetime
 from app.models.jobs import JobType, JobStatus, ApplicationStatus
 
-
 # ========== Job Posting ==========
 
 

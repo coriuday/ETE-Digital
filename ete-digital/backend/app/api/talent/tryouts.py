@@ -22,7 +22,6 @@ from app.schemas.tryouts import (
 from app.services.tryouts import tryout_service, submission_service
 from app.services.notification_service import notification_service
 
-
 router = APIRouter()
 
 

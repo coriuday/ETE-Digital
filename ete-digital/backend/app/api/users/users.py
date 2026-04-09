@@ -11,7 +11,6 @@ from app.core.security import get_current_user
 from app.models.users import User, UserProfile
 from app.schemas.users import UserProfileUpdate, UserProfileResponse, UserResponse
 
-
 router = APIRouter()
 
 

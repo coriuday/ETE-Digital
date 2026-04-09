@@ -7,7 +7,6 @@ from typing import Optional, List, Dict
 from datetime import datetime
 from app.models.vault import VaultItemType
 
-
 # ========== Vault Item ==========
 
 
