@@ -38,7 +38,10 @@ export default function EmployerJobsPage() {
         if (!confirm('Are you sure you want to close this job?')) return;
         try {
             await jobsApi.deleteJob(jobId);
-            setJobs(jobs.filter(j => j.id !== jobId));
+            // Backend soft-deletes (status → CLOSED). Mirror that in local state
+            // instead of removing the row so the badge updates to "Closed" rather
+            // than the job disappearing and reappearing on the next refresh.
+            setJobs(jobs.map(j => j.id === jobId ? { ...j, status: 'closed' } : j));
             toast.success('Job closed successfully');
         } catch {
             toast.error('Failed to close job. Please try again.');

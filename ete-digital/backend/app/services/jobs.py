@@ -406,11 +406,16 @@ class ApplicationService:
         total_result = await db.execute(count_query)
         total = total_result.scalar()
 
-        # Apply pagination — sort by match_score DESC by default (AI ranking)
-        # Applications without a score fall to the bottom (NULLS LAST)
+        # Apply pagination — sort by match_score DESC by default (AI ranking).
+        # Applications without a score fall to the bottom (NULLS LAST).
+        # Secondary sort on created_at ensures stable ordering across pages
+        # (PostgreSQL gives non-deterministic results for ties/NULLs without it).
         offset = (page - 1) * page_size
         query = (
-            query.order_by(Application.match_score.desc().nullslast())
+            query.order_by(
+                Application.match_score.desc().nullslast(),
+                Application.created_at.desc(),
+            )
             .offset(offset)
             .limit(page_size)
         )

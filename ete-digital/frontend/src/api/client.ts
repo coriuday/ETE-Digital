@@ -52,12 +52,12 @@ api.interceptors.request.use(
  * React when detail is an array of ValidationError objects (422 responses).
  */
 function normaliseErrorDetail(error: AxiosError): AxiosError {
-    const data = error.response?.data as any;
+    const data = error.response?.data as Record<string, unknown> | undefined;
     if (!data) return error;
 
     if (Array.isArray(data.detail)) {
         // Pydantic v2 validation errors → flatten to one readable message
-        data.detail = (data.detail as any[])
+        data.detail = (data.detail as Array<{ loc?: unknown; msg: string }>)
             .map((e) => {
                 const field = Array.isArray(e.loc) ? e.loc.join('.') : String(e.loc ?? '');
                 return field ? `${field}: ${e.msg}` : e.msg;
@@ -67,6 +67,36 @@ function normaliseErrorDetail(error: AxiosError): AxiosError {
         data.detail = JSON.stringify(data.detail);
     }
     return error;
+}
+
+/**
+ * Refresh-token mutex.
+ *
+ * Problem: On a hard page refresh, multiple components mount and fire
+ * authenticated requests concurrently. All of them receive a 401 (access
+ * token expired) and each tries to call /api/auth/refresh independently.
+ * The first one succeeds and the backend rotates (revokes + creates) the
+ * refresh token. Every subsequent call uses the now-revoked token → another
+ * 401 → the interceptor calls logout() → the user is kicked out.
+ *
+ * Solution: Only one refresh is ever in-flight at a time. Any additional
+ * 401 responses that arrive while a refresh is in progress are queued as
+ * pending promises. Once the refresh resolves (success or failure), every
+ * queued request is either retried with the new token or rejected.
+ */
+let isRefreshing = false;
+type QueueEntry = { resolve: (token: string) => void; reject: (err: unknown) => void };
+let failedQueue: QueueEntry[] = [];
+
+function processQueue(error: unknown, token: string | null): void {
+    failedQueue.forEach((entry) => {
+        if (error) {
+            entry.reject(error);
+        } else {
+            entry.resolve(token as string);
+        }
+    });
+    failedQueue = [];
 }
 
 // Response interceptor - Handle token refresh + error normalisation
@@ -80,7 +110,21 @@ api.interceptors.response.use(
 
         // If 401 and not already retried, try to refresh token
         if (error.response?.status === 401 && !originalRequest._retry) {
+
+            // If a refresh is already in flight, queue this request and wait
+            if (isRefreshing) {
+                return new Promise<string>((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                }).then((token) => {
+                    if (originalRequest.headers) {
+                        originalRequest.headers.Authorization = `Bearer ${token}`;
+                    }
+                    return api(originalRequest);
+                }).catch((err) => Promise.reject(err));
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
 
             try {
                 const refreshToken = getRefreshToken();
@@ -92,11 +136,17 @@ api.interceptors.response.use(
                     refresh_token: refreshToken,
                 });
 
-                const { access_token, refresh_token } = response.data;
+                const { access_token, refresh_token } = response.data as {
+                    access_token: string;
+                    refresh_token: string;
+                };
 
                 // Update in-memory token so ALL subsequent requests use the new token.
                 // setTokens is safe to call statically — no circular dep.
                 setTokens(access_token, refresh_token);
+
+                // Resolve all queued requests with the new token
+                processQueue(null, access_token);
 
                 // Retry original request with new token
                 if (originalRequest.headers) {
@@ -104,12 +154,17 @@ api.interceptors.response.use(
                 }
                 return api(originalRequest);
             } catch (refreshError) {
+                // Refresh failed — reject all queued requests first
+                processQueue(refreshError, null);
+
                 // Refresh failed — dynamic import to avoid the circular dep chain:
                 // useAuthStore → authStore.ts → api/auth.ts → client.ts (this file)
                 const { useAuthStore } = await import('../stores/authStore');
                 await useAuthStore.getState().logout();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
             }
         }
 

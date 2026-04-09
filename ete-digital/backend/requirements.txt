@@ -1,6 +1,6 @@
 # Core dependencies
 fastapi==0.115.6
-uvicorn[standard]==0.32.1
+uvicorn[standard]>=0.32.1
 pydantic==2.10.3
 pydantic-settings==2.6.1
 
@@ -15,8 +15,8 @@ greenlet==3.3.2
 # Security
 passlib[argon2]==1.7.4
 PyJWT==2.10.1
-cryptography>=44.0.0
-python-multipart>=0.0.20
+cryptography>=46.0.0
+python-multipart>=0.0.24
 
 # Redis — required for production (rate limiting across workers + WebSocket pub/sub)
 redis==5.2.1
