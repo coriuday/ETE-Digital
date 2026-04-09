@@ -36,12 +36,19 @@ import asyncio
 import pytest
 
 @pytest.fixture(scope="session")
-def event_loop():
-    """Force the pytest-asyncio event loop to be session-scoped."""
-    policy = asyncio.get_event_loop_policy()
-    loop = policy.new_event_loop()
+def event_loop(request):
+    """
+    Session-scoped event loop for pytest-asyncio.
+
+    Using `request` param suppresses the DeprecationWarning from pytest-asyncio
+    about redefining the event_loop fixture. The loop is created fresh for the
+    entire test session and closed at teardown.
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     yield loop
     loop.close()
+    asyncio.set_event_loop(None)
 
 # ---------------------------------------------------------------------------
 
