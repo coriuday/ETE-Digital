@@ -42,19 +42,24 @@ export default function CreateJobPage() {
         setLoading(true);
 
         try {
-            const jobData = {
+            const jobData: any = {
                 ...formData,
                 salary_min: formData.salary_min ? parseInt(formData.salary_min) : null,
                 salary_max: formData.salary_max ? parseInt(formData.salary_max) : null,
                 skills_required: formData.skills_required.split(',').map(s => s.trim()).filter(Boolean),
             };
 
+            // Set optional empty strings to null to ensure proper backend validation validation
+            if (!jobData.location || jobData.location.trim() === '') jobData.location = null;
+            if (!jobData.experience_required || jobData.experience_required.trim() === '') jobData.experience_required = null;
+
             await jobsApi.createJob(jobData);
             alert('Job posted successfully!');
             navigate('/employer/jobs');
-        } catch (error) {
+        } catch (error: any) {
             console.error('Failed to create job:', error);
-            alert('Failed to post job. Please try again.');
+            const msg = error.response?.data?.detail || error.message || 'Failed to post job. Please try again.';
+            alert(`Error: ${msg}`);
         } finally {
             setLoading(false);
         }

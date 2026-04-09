@@ -39,6 +39,7 @@ interface AuthState {
     user: User | null;
     isAuthenticated: boolean;
     isLoading: boolean;
+    isInitialized: boolean;
     error: string | null;
 
     // Actions
@@ -57,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
             user: null,
             isAuthenticated: false,
             isLoading: false,
+            isInitialized: false,
             error: null,
 
             login: async (email: string, password: string) => {
@@ -164,6 +166,7 @@ export const useAuthStore = create<AuthState>()(
                 if (_accessToken) {
                     const state = useAuthStore.getState();
                     await state.fetchUser();
+                    set({ isInitialized: true });
                     return;
                 }
 
@@ -176,7 +179,10 @@ export const useAuthStore = create<AuthState>()(
                     ? JSON.parse(stored)?.state?.isAuthenticated === true
                     : false;
 
-                if (!wasAuthenticated) return;
+                if (!wasAuthenticated) {
+                    set({ isInitialized: true });
+                    return;
+                }
 
                 set({ isLoading: true });
                 try {
@@ -196,13 +202,13 @@ export const useAuthStore = create<AuthState>()(
                     if (refresh_token) _refreshToken = refresh_token;
 
                     const user = await authApi.getCurrentUser();
-                    set({ user, isAuthenticated: true, isLoading: false });
+                    set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
                 } catch {
                     // Silent failure — do NOT redirect, just clear stale state.
                     // The user will see the public (unauthenticated) UI immediately.
                     _accessToken = null;
                     _refreshToken = null;
-                    set({ user: null, isAuthenticated: false, isLoading: false });
+                    set({ user: null, isAuthenticated: false, isLoading: false, isInitialized: true });
                 }
             },
 

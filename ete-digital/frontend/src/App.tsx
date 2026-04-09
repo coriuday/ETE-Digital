@@ -7,14 +7,25 @@ import { Toaster } from 'react-hot-toast'
 import { useAuthStore } from './stores/authStore'
 
 function App() {
-    const initializeAuth = useAuthStore((s) => s.initializeAuth)
+    const { initializeAuth, isInitialized } = useAuthStore((s) => ({
+        initializeAuth: s.initializeAuth,
+        isInitialized: s.isInitialized
+    }))
 
     // On first mount, attempt a silent token refresh if the user was previously
     // logged in (isAuthenticated persisted in localStorage but access token is
     // gone because it lives only in memory). Prevents the flash-then-logout UX.
     useEffect(() => {
         initializeAuth()
-    }, [])
+    }, [initializeAuth])
+
+    if (!isInitialized) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+            </div>
+        )
+    }
 
     return (
         <ErrorBoundary>
