@@ -285,8 +285,12 @@ class ShareTokenService:
             )
 
         # Check if expired
-        if token.expires_at and token.expires_at < datetime.now(timezone.utc):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Share token has expired")
+        if token.expires_at:
+            expires_at = token.expires_at
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            if expires_at < datetime.now(timezone.utc):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Share token has expired")
 
         # Check view limit
         if token.max_views and token.view_count >= token.max_views:

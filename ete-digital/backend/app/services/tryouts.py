@@ -26,6 +26,9 @@ class TryoutService:
     async def create_tryout(self, db: AsyncSession, employer_id: uuid.UUID, tryout_data: dict) -> Tryout:
         """Create a new tryout for a job"""
         job_id = tryout_data.get("job_id")
+        if isinstance(job_id, str):
+            job_id = uuid.UUID(job_id)
+            tryout_data["job_id"] = job_id
 
         # Verify job exists and employer owns it
         job_result = await db.execute(select(Job).where(Job.id == job_id))
@@ -127,6 +130,9 @@ class SubmissionService:
     async def create_submission(self, db: AsyncSession, candidate_id: uuid.UUID, submission_data: dict) -> TryoutSubmission:
         """Create a tryout submission"""
         tryout_id = submission_data.get("tryout_id")
+        if isinstance(tryout_id, str):
+            tryout_id = uuid.UUID(tryout_id)
+            submission_data["tryout_id"] = tryout_id
 
         # Get tryout
         tryout_result = await db.execute(select(Tryout).where(Tryout.id == tryout_id))

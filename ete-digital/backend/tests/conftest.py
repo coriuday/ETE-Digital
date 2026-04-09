@@ -25,8 +25,15 @@ from sqlalchemy.ext.asyncio import (
     async_sessionmaker,
 )
 from sqlalchemy.pool import StaticPool
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.dialects.postgresql import JSONB
+
+@compiles(JSONB, "sqlite")
+def compile_jsonb_sqlite(type_, compiler, **kw):
+    return "JSON"
 
 # ---------------------------------------------------------------------------
+
 # Provide safe fallback env vars so that Settings() doesn't raise when
 # no .env is present (e.g. local runs without a Postgres instance).
 # ---------------------------------------------------------------------------
