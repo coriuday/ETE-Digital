@@ -1,30 +1,41 @@
 """
 Pytest shared fixtures for ETE Digital backend tests.
 
-Uses the real FastAPI app via ASGI (ASGITransport + httpx).
-The app connects to the Supabase DB defined in .env (DATABASE_URL).
+Strategy:
+  - If TEST_DATABASE_URL or DATABASE_URL is set in the environment AND
+    points to a real PostgreSQL instance (CI provides one as a service),
+    we use that directly — giving us full JSONB support.
+  - If no env var is set (or they point nowhere reachable), we fall back
+    to an in-memory SQLite database so that developers can run the test
+    suite locally without any external services.
 
-Tests use unique random identifiers to avoid data collisions.
-No mocking of the DB layer — tests verify real end-to-end behaviour.
+IMPORTANT: We do NOT call load_dotenv() here. In CI the env vars are
+injected by GitHub Actions and must NOT be overridden by a local .env
+file (which would point at the production Supabase instance).
 """
 
 import os
 import uuid as _uuid
 
 import pytest_asyncio
-from dotenv import load_dotenv
 from httpx import AsyncClient, ASGITransport
-
-load_dotenv()
-
-from app.core.security import create_access_token, hash_password  # noqa: E402
-from app.main import app  # noqa: E402
-from app.models.users import User, UserRole  # noqa: E402
-from app.core.database import get_db  # noqa: E402
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker  # noqa: E402
+from sqlalchemy.ext.asyncio import (
+    create_async_engine,
+    AsyncSession,
+    async_sessionmaker,
+)
+from sqlalchemy.pool import StaticPool
 
 # ---------------------------------------------------------------------------
-# Database URL helpers
+# Provide safe fallback env vars so that Settings() doesn't raise when
+# no .env is present (e.g. local runs without a Postgres instance).
+# ---------------------------------------------------------------------------
+os.environ.setdefault("DATABASE_URL", "postgresql://localhost/placeholder")
+os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
+os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
+
+# ---------------------------------------------------------------------------
+# Decide which engine to use
 # ---------------------------------------------------------------------------
 
 def _make_asyncpg_url(url: str) -> str:
@@ -35,21 +46,86 @@ def _make_asyncpg_url(url: str) -> str:
 
 
 _raw = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
-if not _raw:
-    raise RuntimeError("No database URL found. Set DATABASE_URL in .env")
+_use_sqlite = not _raw or "localhost/placeholder" in _raw
 
-TEST_DB_URL = _make_asyncpg_url(_raw)
+if _use_sqlite:
+    _TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+    _engine_kwargs: dict = dict(
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+        echo=False,
+    )
+else:
+    _TEST_DB_URL = _make_asyncpg_url(_raw)
+    _engine_kwargs = dict(
+        echo=False,
+        connect_args={"statement_cache_size": 0},
+    )
 
 # ---------------------------------------------------------------------------
-# HTTP client — each test gets a fresh client against the real app+DB
+# Imports that trigger the app (after env vars are set)
+# ---------------------------------------------------------------------------
+
+from app.core.security import create_access_token, hash_password  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.users import User, UserRole  # noqa: E402
+from app.core.database import Base, get_db  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# Engine + session factory
+# ---------------------------------------------------------------------------
+
+_engine = create_async_engine(_TEST_DB_URL, **_engine_kwargs)
+
+_TestingSessionLocal = async_sessionmaker(
+    _engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+    autocommit=False,
+    autoflush=False,
+)
+
+
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def _create_tables():
+    """Create all ORM tables before the session and drop them after."""
+    if _use_sqlite:
+        # SQLite: create tables ourselves (no Alembic migration needed)
+        async with _engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    # For Postgres CI: Alembic migrations run as a separate CI step, tables exist.
+    yield
+    if _use_sqlite:
+        async with _engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+
+
+# ---------------------------------------------------------------------------
+# Override get_db so the app uses the same test engine
+# ---------------------------------------------------------------------------
+
+async def _override_get_db():
+    async with _TestingSessionLocal() as session:
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()
+
+
+app.dependency_overrides[get_db] = _override_get_db
+
+
+# ---------------------------------------------------------------------------
+# HTTP client
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture(scope="function")
 async def client():
-    """
-    Thin ASGI client that talks to the real FastAPI app.
-    The app uses its own DB pool (Supabase) — no DB mocking needed.
-    """
+    """ASGI test client wired to the test database."""
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://test"
     ) as ac:
@@ -57,30 +133,21 @@ async def client():
 
 
 # ---------------------------------------------------------------------------
-# db_session — used ONLY by user creation fixtures (not injected into tests)
+# Internal DB session for fixture user creation
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture(scope="function")
 async def _db():
-    """Internal DB session for creating fixture users directly."""
-    eng = create_async_engine(
-        TEST_DB_URL,
-        echo=False,
-        future=True,
-        connect_args={"statement_cache_size": 0},
-    )
-    factory = async_sessionmaker(eng, expire_on_commit=False, class_=AsyncSession)
-    async with factory() as session:
+    async with _TestingSessionLocal() as session:
         yield session
-    await eng.dispose()
 
 
 # ---------------------------------------------------------------------------
-# User fixtures  (write directly to DB, tagged with unique suffix)
+# User fixtures
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture
-async def candidate_user(_db):
+async def candidate_user(_db: AsyncSession):
     uid = _uuid.uuid4().hex[:8]
     user = User(
         email=f"candidate_{uid}@test.com",
@@ -96,7 +163,7 @@ async def candidate_user(_db):
 
 
 @pytest_asyncio.fixture
-async def employer_user(_db):
+async def employer_user(_db: AsyncSession):
     uid = _uuid.uuid4().hex[:8]
     user = User(
         email=f"employer_{uid}@test.com",
@@ -112,7 +179,7 @@ async def employer_user(_db):
 
 
 @pytest_asyncio.fixture
-async def admin_user(_db):
+async def admin_user(_db: AsyncSession):
     uid = _uuid.uuid4().hex[:8]
     user = User(
         email=f"admin_{uid}@test.com",
@@ -132,21 +199,21 @@ async def admin_user(_db):
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture
-async def candidate_token(candidate_user):
+async def candidate_token(candidate_user: User) -> str:
     return create_access_token(
-        {"sub": str(candidate_user.id), "role": "candidate", "email": candidate_user.email}
+        {"sub": str(candidate_user.id), "role": "candidate", "email": str(candidate_user.email)}
     )
 
 
 @pytest_asyncio.fixture
-async def employer_token(employer_user):
+async def employer_token(employer_user: User) -> str:
     return create_access_token(
-        {"sub": str(employer_user.id), "role": "employer", "email": employer_user.email}
+        {"sub": str(employer_user.id), "role": "employer", "email": str(employer_user.email)}
     )
 
 
 @pytest_asyncio.fixture
-async def admin_token(admin_user):
+async def admin_token(admin_user: User) -> str:
     return create_access_token(
-        {"sub": str(admin_user.id), "role": "admin", "email": admin_user.email}
+        {"sub": str(admin_user.id), "role": "admin", "email": str(admin_user.email)}
     )
