@@ -9,7 +9,8 @@ Security utilities for ETE Digital
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from passlib.context import CryptContext
-from jose import JWTError, jwt
+import jwt
+from jwt import PyJWTError as JWTError
 from cryptography.fernet import Fernet
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
