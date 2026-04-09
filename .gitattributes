@@ -1,0 +1,32 @@
+# Normalize line endings: all text files use LF in the repo
+# This prevents Windows CRLF from breaking black --check on Linux CI
+* text=auto eol=lf
+
+# Explicitly LF for source code
+*.py    eol=lf
+*.ts    eol=lf
+*.tsx   eol=lf
+*.js    eol=lf
+*.jsx   eol=lf
+*.json  eol=lf
+*.yml   eol=lf
+*.yaml  eol=lf
+*.md    eol=lf
+*.toml  eol=lf
+*.cfg   eol=lf
+*.ini   eol=lf
+*.txt   eol=lf
+*.sh    eol=lf
+*.css   eol=lf
+*.html  eol=lf
+
+# Binary files — never convert
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
