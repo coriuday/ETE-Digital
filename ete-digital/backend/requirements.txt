@@ -15,8 +15,8 @@ greenlet==3.3.2
 # Security
 passlib[argon2]==1.7.4
 python-jose[cryptography]==3.3.0
-cryptography==43.0.3
-python-multipart==0.0.18
+cryptography>=44.0.0
+python-multipart>=0.0.20
 
 # Redis — required for production (rate limiting across workers + WebSocket pub/sub)
 redis==5.2.1
@@ -45,7 +45,7 @@ pytest-cov==6.0.0
 aiosqlite==0.20.0
 
 # Development
-black==24.10.0
+black>=25.1.0
 flake8==7.1.1
 mypy==1.13.0
 

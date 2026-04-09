@@ -11,6 +11,8 @@ import {
 } from 'lucide-react';
 import { jobsApi, Job, JobSearchParams } from '../../api/jobs';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useAuthStore } from '../../stores/authStore';
+import AppShell from '../../components/layout/AppShell';
 
 // ── Filter Sidebar ────────────────────────────────────────────────────────────
 
@@ -272,6 +274,7 @@ function JobCard({ job, view, isDark }: { job: Job; view: 'grid' | 'list'; isDar
 export default function JobSearchPage() {
     const { theme } = useTheme();
     const isDark = theme === 'dark';
+    const { isAuthenticated } = useAuthStore();
 
     const [query, setQuery] = useState('');
     const [location, setLocation] = useState('');
@@ -315,7 +318,7 @@ export default function JobSearchPage() {
         load();
     };
 
-    return (
+    const content = (
         <div className={`min-h-screen font-sans selection:bg-violet-500/30 transition-colors duration-300
             ${isDark ? 'bg-slate-950 text-slate-50' : 'bg-gray-50 text-slate-900'}`}>
 
@@ -500,4 +503,10 @@ export default function JobSearchPage() {
             </div>
         </div>
     );
+
+    return isAuthenticated ? (
+        <AppShell>
+            {content}
+        </AppShell>
+    ) : content;
 }
