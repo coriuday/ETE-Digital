@@ -27,7 +27,13 @@ class TryoutService:
         """Create a new tryout for a job"""
         job_id = tryout_data.get("job_id")
         if isinstance(job_id, str):
-            job_id = uuid.UUID(job_id)
+            try:
+                job_id = uuid.UUID(job_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Invalid job_id: '{job_id}' is not a valid UUID",
+                )
             tryout_data["job_id"] = job_id
 
         # Verify job exists and employer owns it
@@ -131,7 +137,13 @@ class SubmissionService:
         """Create a tryout submission"""
         tryout_id = submission_data.get("tryout_id")
         if isinstance(tryout_id, str):
-            tryout_id = uuid.UUID(tryout_id)
+            try:
+                tryout_id = uuid.UUID(tryout_id)
+            except ValueError:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Invalid tryout_id: '{tryout_id}' is not a valid UUID",
+                )
             submission_data["tryout_id"] = tryout_id
 
         # Get tryout
