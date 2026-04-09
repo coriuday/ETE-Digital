@@ -2,7 +2,7 @@
 Job-related Pydantic schemas
 """
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 from typing import Optional, List, Dict
 from datetime import datetime
 from app.models.jobs import JobType, JobStatus, ApplicationStatus
@@ -40,6 +40,17 @@ class JobCreate(BaseModel):
     # Custom questions for application
     custom_questions: Optional[Dict] = None
 
+    @model_validator(mode='after')
+    def _validate_salary_range(self) -> 'JobCreate':
+        """Ensure salary_min <= salary_max when both are provided."""
+        if self.salary_min is not None and self.salary_max is not None:
+            if self.salary_min > self.salary_max:
+                raise ValueError(
+                    f'Minimum salary ({self.salary_min}) cannot be greater than '
+                    f'maximum salary ({self.salary_max}). Please check your salary range.'
+                )
+        return self
+
 
 class JobUpdate(BaseModel):
     """Update job posting"""
@@ -62,6 +73,17 @@ class JobUpdate(BaseModel):
     tryout_config: Optional[Dict] = None
     outcome_terms: Optional[Dict] = None
     custom_questions: Optional[Dict] = None
+
+    @model_validator(mode='after')
+    def _validate_salary_range(self) -> 'JobUpdate':
+        """Ensure salary_min <= salary_max when both are provided."""
+        if self.salary_min is not None and self.salary_max is not None:
+            if self.salary_min > self.salary_max:
+                raise ValueError(
+                    f'Minimum salary ({self.salary_min}) cannot be greater than '
+                    f'maximum salary ({self.salary_max}). Please check your salary range.'
+                )
+        return self
 
     status: Optional[JobStatus] = None
 

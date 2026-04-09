@@ -6,7 +6,12 @@
  * localStorage to prevent XSS attacks from stealing JWT tokens.
  */
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { getAccessToken, getRefreshToken } from '../stores/authStore';
+import {
+    getAccessToken,
+    getRefreshToken,
+    setAccessToken,
+    useAuthStore,
+} from '../stores/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -78,10 +83,7 @@ api.interceptors.response.use(
 
                 const { access_token } = response.data;
 
-                // CRITICAL FIX (audit issue #5):
-                // Update the module-level _accessToken so ALL subsequent requests
-                // use the new token — not just the manually patched retry below.
-                const { setAccessToken } = await import('../stores/authStore');
+                // Update in-memory token so ALL subsequent requests use the new token
                 setAccessToken(access_token);
 
                 // Retry original request with new token
@@ -91,7 +93,6 @@ api.interceptors.response.use(
                 return api(originalRequest);
             } catch (refreshError) {
                 // Refresh failed — log out and redirect
-                const { useAuthStore } = await import('../stores/authStore');
                 await useAuthStore.getState().logout();
                 window.location.href = '/login';
                 return Promise.reject(refreshError);

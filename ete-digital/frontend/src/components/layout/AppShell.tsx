@@ -32,7 +32,7 @@ const candidateNav: NavItem[] = [
 ];
 
 const employerNav: NavItem[] = [
-    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/dashboard' },
+    { label: 'Dashboard', icon: <LayoutDashboard size={20} />, href: '/employer/dashboard' },
     { label: 'My Jobs', icon: <Briefcase size={20} />, href: '/employer/jobs' },
     { label: 'Post a Job', icon: <PlusCircle size={20} />, href: '/employer/jobs/create' },
     { label: 'Applications', icon: <ClipboardList size={20} />, href: '/employer/applications' },
@@ -60,6 +60,12 @@ function getRoleLabel(role?: string) {
     return 'Candidate';
 }
 
+function getRoleHome(role?: string) {
+    if (role === 'employer') return '/employer/dashboard';
+    if (role === 'admin') return '/admin';
+    return '/dashboard';
+}
+
 function getRoleColor(role?: string) {
     if (role === 'employer') return 'from-violet-600 to-purple-700';
     if (role === 'admin') return 'from-red-600 to-rose-700';
@@ -85,6 +91,7 @@ export default function AppShell({ children }: AppShellProps) {
 
     const nav = getNav(user?.role);
     const roleLabel = getRoleLabel(user?.role);
+    const roleHome = getRoleHome(user?.role);
     const roleColor = getRoleColor(user?.role);
 
     const handleLogout = async () => {
@@ -113,9 +120,13 @@ export default function AppShell({ children }: AppShellProps) {
             className={`flex flex-col h-full bg-gray-900 text-white transition-all duration-300
         ${mobile ? 'w-72' : collapsed ? 'w-20' : 'w-64'}`}
         >
-            {/* Logo — Jobsrow */}
-            <div className={`flex items-center gap-3 px-4 py-5 border-b border-white/10
-        ${collapsed && !mobile ? 'justify-center' : ''}`}>
+            {/* Logo — clickable, navigates to role dashboard */}
+            <Link
+                to={roleHome}
+                onClick={() => setMobileOpen(false)}
+                className={`flex items-center gap-3 px-4 py-5 border-b border-white/10 hover:bg-white/5 transition-colors
+        ${collapsed && !mobile ? 'justify-center' : ''}`}
+            >
                 <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
                     {user?.role === 'admin' ? <ShieldCheck size={18} /> : <LayoutGrid size={18} />}
                 </div>
@@ -128,7 +139,7 @@ export default function AppShell({ children }: AppShellProps) {
                         <p className="text-xs text-gray-400">{roleLabel} Panel</p>
                     </div>
                 )}
-            </div>
+            </Link>
 
             {/* User Info */}
             {(!collapsed || mobile) && (
@@ -157,7 +168,7 @@ export default function AppShell({ children }: AppShellProps) {
                             title={collapsed && !mobile ? item.label : undefined}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                 ${active
-                                    ? 'bg-white/15 text-white'
+                                    ? 'bg-white/15 text-white shadow-sm'
                                     : 'text-gray-400 hover:bg-white/8 hover:text-white'}
                 ${collapsed && !mobile ? 'justify-center' : ''}`}
                         >
@@ -247,14 +258,14 @@ export default function AppShell({ children }: AppShellProps) {
                         {isDark ? <Sun size={18} /> : <Moon size={18} />}
                     </button>
 
-
-
                     {/* Notification Bell */}
                     <div className="relative" ref={notifRef}>
                         <button
                             id="notification-bell"
                             onClick={() => setNotifOpen((o) => !o)}
-                            className="relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors"
+                            className={`relative p-2 rounded-lg transition-colors ${
+                                isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'
+                            }`}
                             aria-label="Notifications"
                         >
                             <Bell size={20} />
@@ -265,15 +276,17 @@ export default function AppShell({ children }: AppShellProps) {
                             )}
                         </button>
 
-                        {/* Notification Dropdown */}
+                        {/* Notification Dropdown — theme-aware */}
                         {notifOpen && (
-                            <div className="absolute right-0 top-12 w-80 bg-white rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden">
-                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
-                                    <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
+                            <div className={`absolute right-0 top-12 w-80 rounded-xl shadow-xl border z-50 overflow-hidden ${
+                                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
+                            }`}>
+                                <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                                    <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
                                     {unreadCount > 0 && (
                                         <button
                                             onClick={() => markAllRead()}
-                                            className="flex items-center gap-1 text-xs text-blue-500 hover:text-blue-700"
+                                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
                                         >
                                             <CheckCheck size={13} />
                                             Mark all read
@@ -281,14 +294,18 @@ export default function AppShell({ children }: AppShellProps) {
                                     )}
                                 </div>
 
-                                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                                <div className={`max-h-72 overflow-y-auto divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-50'}`}>
                                     {notifications.length === 0 ? (
-                                        <p className="text-center text-sm text-gray-400 py-8">No notifications yet</p>
+                                        <p className={`text-center text-sm py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No notifications yet</p>
                                     ) : (
                                         notifications.slice(0, 10).map((n) => (
                                             <div
                                                 key={n.id}
-                                                className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${!n.is_read ? 'bg-blue-50/50' : ''}`}
+                                                className={`px-4 py-3 cursor-pointer transition-colors ${
+                                                    !n.is_read
+                                                        ? isDark ? 'bg-blue-900/20 hover:bg-blue-900/30' : 'bg-blue-50/50 hover:bg-blue-50'
+                                                        : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                                                }`}
                                                 onClick={() => {
                                                     markRead(n.id);
                                                     if (n.link) navigate(n.link);
@@ -300,9 +317,9 @@ export default function AppShell({ children }: AppShellProps) {
                                                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                                                     )}
                                                     <div className={!n.is_read ? '' : 'ml-3.5'}>
-                                                        <p className="text-xs font-semibold text-gray-800">{n.title}</p>
-                                                        <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{n.message}</p>
-                                                        <p className="text-[10px] text-gray-400 mt-1">
+                                                        <p className={`text-xs font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{n.title}</p>
+                                                        <p className={`text-xs mt-0.5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{n.message}</p>
+                                                        <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
                                                             {new Date(n.created_at).toLocaleString()}
                                                         </p>
                                                     </div>
@@ -312,11 +329,11 @@ export default function AppShell({ children }: AppShellProps) {
                                     )}
                                 </div>
 
-                                <div className="border-t border-gray-100 px-4 py-2 text-center">
+                                <div className={`border-t px-4 py-2 text-center ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
                                     <Link
                                         to="/settings/notifications"
                                         onClick={() => setNotifOpen(false)}
-                                        className="text-xs text-blue-500 hover:text-blue-700"
+                                        className="text-xs text-blue-400 hover:text-blue-300"
                                     >
                                         Notification Settings
                                     </Link>

@@ -1,22 +1,32 @@
 /**
- * Manage Share Tokens Page
+ * Share Management Page — Candidate: manage vault share tokens
+ * Redesigned with AppShell, dark mode, premium cards, proper UX
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import AppShell from '../../components/layout/AppShell';
 import { vaultApi, ShareToken, VaultItem } from '../../api/vault';
+import { useTheme } from '../../contexts/ThemeContext';
+import {
+    Share2, Copy, Trash2, Plus, Loader2, Eye, CheckCircle,
+    AlertCircle, Clock, X, ChevronLeft,
+} from 'lucide-react';
 
 export default function ShareManagementPage() {
     const [tokens, setTokens] = useState<ShareToken[]>([]);
     const [items, setItems] = useState<VaultItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+    const { theme } = useTheme();
+    const isDark = theme === 'dark';
 
-    useEffect(() => {
-        loadData();
-    }, []);
+    useEffect(() => { loadData(); }, []);
 
     const loadData = async () => {
         setLoading(true);
+        setError('');
         try {
             const [tokensData, itemsData] = await Promise.all([
                 vaultApi.getShareTokens(),
@@ -24,142 +34,185 @@ export default function ShareManagementPage() {
             ]);
             setTokens(tokensData);
             setItems(itemsData);
-        } catch (error) {
-            console.error('Failed to load data:', error);
+        } catch {
+            setError('Failed to load share data. Please try again.');
         } finally {
             setLoading(false);
         }
     };
 
     const handleRevoke = async (tokenId: string) => {
-        if (!confirm('Are you sure you want to revoke this share token?')) return;
-
+        if (!confirm('Are you sure you want to revoke this share link? Anyone using it will lose access immediately.')) return;
         try {
             await vaultApi.revokeShareToken(tokenId);
-            setTokens(tokens.filter(t => t.id !== tokenId));
-        } catch (error) {
-            alert('Failed to revoke token');
+            setTokens(prev => prev.filter(t => t.id !== tokenId));
+        } catch {
+            alert('Failed to revoke share token. Please try again.');
         }
     };
 
-    const copyShareLink = (token: string) => {
+    const copyShareLink = async (token: string, tokenId: string) => {
         const url = `${window.location.origin}/shared/${token}`;
-        navigator.clipboard.writeText(url);
-        alert('Share link copied to clipboard!');
+        await navigator.clipboard.writeText(url);
+        setCopiedId(tokenId);
+        setTimeout(() => setCopiedId(null), 2000);
     };
 
+    const bg = isDark ? 'bg-gray-900' : 'bg-gray-50';
+    const cardBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+    const textPrimary = isDark ? 'text-white' : 'text-gray-900';
+    const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
+
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
-            <header className="bg-white shadow">
-                <div className="container mx-auto px-4 py-6">
-                    <div className="flex justify-between items-center">
-                        <div>
-                            <Link to="/vault" className="text-primary-600 hover:text-primary-700 font-medium mb-2 block">
-                                ← Back to vault
+        <AppShell>
+            <div className={`min-h-full ${bg}`}>
+                {/* Header */}
+                <div className={`border-b px-6 py-5 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                    <div className="max-w-4xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Link to="/vault" className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+                                <ChevronLeft size={18} />
                             </Link>
-                            <h1 className="text-3xl font-bold text-gray-900">Share Management</h1>
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                                <Share2 size={18} className="text-white" />
+                            </div>
+                            <div>
+                                <h1 className={`text-xl font-bold ${textPrimary}`}>Share Manager</h1>
+                                <p className={`text-sm ${textMuted}`}>Control who sees your Talent Vault</p>
+                            </div>
                         </div>
                         <button
                             onClick={() => setShowCreateForm(!showCreateForm)}
-                            className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold"
+                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
                         >
-                            {showCreateForm ? 'Cancel' : '+ Create Share'}
+                            {showCreateForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> New Share</>}
                         </button>
                     </div>
                 </div>
-            </header>
 
-            <main className="container mx-auto px-4 py-8">
-                {/* Create Form */}
-                {showCreateForm && (
-                    <CreateShareForm
-                        items={items}
-                        onSuccess={(newToken) => {
-                            setTokens([newToken, ...tokens]);
-                            setShowCreateForm(false);
-                        }}
-                    />
-                )}
+                <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
+                    {/* Error */}
+                    {error && (
+                        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                            <AlertCircle size={18} className="flex-shrink-0" />
+                            <p>{error}</p>
+                        </div>
+                    )}
 
-                {/* Share Tokens List */}
-                {loading ? (
-                    <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-                    </div>
-                ) : tokens.length === 0 ? (
-                    <div className="bg-white rounded-lg shadow p-8 text-center">
-                        <p className="text-gray-600 mb-4">No share tokens yet. Create one to share your work!</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {tokens.map((token) => (
-                            <div key={token.id} className="bg-white rounded-lg shadow p-6">
-                                <div className="flex justify-between items-start mb-4">
-                                    <div>
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${token.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
-                                                }`}>
-                                                {token.is_active ? 'Active' : 'Inactive'}
-                                            </span>
-                                            {token.expires_at && (
-                                                <span className="text-sm text-gray-600">
-                                                    Expires: {new Date(token.expires_at).toLocaleDateString()}
-                                                </span>
-                                            )}
+                    {/* Create Form inline */}
+                    {showCreateForm && (
+                        <CreateShareForm
+                            items={items}
+                            isDark={isDark}
+                            onSuccess={(newToken) => {
+                                setTokens(prev => [newToken, ...prev]);
+                                setShowCreateForm(false);
+                            }}
+                        />
+                    )}
+
+                    {/* Tokens List */}
+                    {loading ? (
+                        <div className="space-y-4">
+                            {[1, 2].map(i => (
+                                <div key={i} className={`h-36 rounded-2xl animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                            ))}
+                        </div>
+                    ) : tokens.length === 0 ? (
+                        <div className={`flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+                            <Share2 size={48} className="mb-4 opacity-20" />
+                            <h3 className={`font-bold text-lg mb-1 ${textPrimary}`}>No share links yet</h3>
+                            <p className={`text-sm mb-6 max-w-xs ${textMuted}`}>
+                                Create a share link to send specific portfolio items directly to employers — with optional expiry and view limits.
+                            </p>
+                            <button
+                                onClick={() => setShowCreateForm(true)}
+                                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
+                            >
+                                <Plus size={15} /> Create First Share Link
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {tokens.map(token => (
+                                <div key={token.id} className={`rounded-2xl border overflow-hidden transition-all hover:shadow-md ${cardBg}`}>
+                                    <div className={`h-1 w-full ${token.is_active ? 'bg-gradient-to-r from-emerald-400 to-teal-400' : 'bg-gray-300'}`} />
+                                    <div className="p-5">
+                                        <div className="flex items-start justify-between gap-4 mb-3">
+                                            <div>
+                                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                    <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                                                        token.is_active
+                                                            ? isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
+                                                            : isDark ? 'bg-gray-700 text-gray-500' : 'bg-gray-100 text-gray-500'
+                                                    }`}>
+                                                        {token.is_active ? <CheckCircle size={10} /> : <X size={10} />}
+                                                        {token.is_active ? 'Active' : 'Inactive'}
+                                                    </span>
+                                                    {token.expires_at && (
+                                                        <span className={`flex items-center gap-1 text-xs ${textMuted}`}>
+                                                            <Clock size={11} />
+                                                            Expires {new Date(token.expires_at).toLocaleDateString()}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                {token.shared_with_company && (
+                                                    <p className={`text-sm font-semibold ${textPrimary}`}>{token.shared_with_company}</p>
+                                                )}
+                                                {token.shared_with_email && (
+                                                    <p className={`text-xs ${textMuted}`}>{token.shared_with_email}</p>
+                                                )}
+                                            </div>
+                                            <div className="text-right flex-shrink-0">
+                                                <p className={`text-2xl font-extrabold ${textPrimary}`}>
+                                                    {token.current_views}{token.max_views ? `/${token.max_views}` : ''}
+                                                </p>
+                                                <p className={`text-xs ${textMuted} flex items-center gap-1 justify-end`}>
+                                                    <Eye size={10} /> views
+                                                </p>
+                                            </div>
                                         </div>
-                                        {token.shared_with_company && (
-                                            <p className="text-sm text-gray-900">
-                                                <strong>Company:</strong> {token.shared_with_company}
-                                            </p>
-                                        )}
-                                        {token.shared_with_email && (
-                                            <p className="text-sm text-gray-900">
-                                                <strong>Email:</strong> {token.shared_with_email}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-gray-600">Views</p>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {token.current_views}
-                                            {token.max_views && ` / ${token.max_views}`}
+
+                                        <p className={`text-xs mb-4 ${textMuted}`}>
+                                            {token.vault_item_ids.length} vault item{token.vault_item_ids.length !== 1 ? 's' : ''} shared
                                         </p>
+
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => copyShareLink(token.token, token.id)}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                                                    copiedId === token.id
+                                                        ? 'bg-emerald-500 text-white'
+                                                        : isDark
+                                                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
+                                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                                }`}
+                                            >
+                                                {copiedId === token.id ? <><CheckCircle size={14} /> Copied!</> : <><Copy size={14} /> Copy Link</>}
+                                            </button>
+                                            <button
+                                                onClick={() => handleRevoke(token.id)}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                                                    isDark ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-red-50 text-red-600 hover:bg-red-100'
+                                                }`}
+                                            >
+                                                <Trash2 size={14} /> Revoke
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-
-                                {/* Items Count */}
-                                <p className="text-sm text-gray-600 mb-4">
-                                    {token.vault_item_ids.length} item(s) shared
-                                </p>
-
-                                {/* Actions */}
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => copyShareLink(token.token)}
-                                        className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
-                                    >
-                                        📋 Copy Link
-                                    </button>
-                                    <button
-                                        onClick={() => handleRevoke(token.id)}
-                                        className="px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 text-sm"
-                                    >
-                                        Revoke
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </main>
-        </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </AppShell>
     );
 }
 
-// Create Share Form Component
-function CreateShareForm({ items, onSuccess }: {
+function CreateShareForm({ items, isDark, onSuccess }: {
     items: VaultItem[];
+    isDark: boolean;
     onSuccess: (token: ShareToken) => void;
 }) {
     const [submitting, setSubmitting] = useState(false);
@@ -171,139 +224,98 @@ function CreateShareForm({ items, onSuccess }: {
         max_views: '',
     });
 
+    const cardBg = isDark ? 'bg-gray-800/80 border-gray-700' : 'bg-white border-gray-200';
+    const inputCls = `w-full px-3.5 py-2.5 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 ${
+        isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900'
+    }`;
+    const labelCls = `block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (formData.vault_item_ids.length === 0) {
-            alert('Please select at least one item to share');
+            alert('Please select at least one item to share.');
             return;
         }
-
         setSubmitting(true);
         try {
-            const data: any = {
+            const data = {
                 vault_item_ids: formData.vault_item_ids,
+                ...(formData.shared_with_company ? { shared_with_company: formData.shared_with_company } : {}),
+                ...(formData.shared_with_email ? { shared_with_email: formData.shared_with_email } : {}),
+                ...(formData.expires_hours ? { expires_hours: parseInt(formData.expires_hours) } : {}),
+                ...(formData.max_views ? { max_views: parseInt(formData.max_views) } : {}),
             };
-
-            if (formData.shared_with_company) data.shared_with_company = formData.shared_with_company;
-            if (formData.shared_with_email) data.shared_with_email = formData.shared_with_email;
-            if (formData.expires_hours) data.expires_hours = parseInt(formData.expires_hours);
-            if (formData.max_views) data.max_views = parseInt(formData.max_views);
-
             const token = await vaultApi.createShareToken(data);
             onSuccess(token);
-        } catch (error: any) {
-            alert(error.response?.data?.detail || 'Failed to create share');
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Failed to create share link. Please try again.');
         } finally {
             setSubmitting(false);
         }
     };
 
-    const toggleItem = (itemId: string) => {
-        setFormData({
-            ...formData,
-            vault_item_ids: formData.vault_item_ids.includes(itemId)
-                ? formData.vault_item_ids.filter(id => id !== itemId)
-                : [...formData.vault_item_ids, itemId],
-        });
+    const toggleItem = (id: string) => {
+        setFormData(prev => ({
+            ...prev,
+            vault_item_ids: prev.vault_item_ids.includes(id)
+                ? prev.vault_item_ids.filter(i => i !== id)
+                : [...prev.vault_item_ids, id],
+        }));
     };
 
     return (
-        <div className="bg-white rounded-lg shadow p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Create Share Link</h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Select Items */}
+        <div className={`rounded-2xl border p-6 ${cardBg}`}>
+            <h2 className={`text-base font-bold mb-5 ${isDark ? 'text-white' : 'text-gray-900'}`}>Create New Share Link</h2>
+            <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Select Items to Share *
-                    </label>
-                    <div className="border border-gray-300 rounded-lg p-4 max-h-60 overflow-y-auto">
+                    <label className={labelCls}>Select Items to Share <span className="text-red-500">*</span></label>
+                    <div className={`border rounded-xl p-3 max-h-48 overflow-y-auto space-y-1 ${isDark ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200 bg-gray-50'}`}>
                         {items.length === 0 ? (
-                            <p className="text-gray-500 text-sm">No items available</p>
-                        ) : (
-                            items.map((item) => (
-                                <label key={item.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.vault_item_ids.includes(item.id)}
-                                        onChange={() => toggleItem(item.id)}
-                                    />
-                                    <span className="text-sm">{item.title}</span>
-                                </label>
-                            ))
-                        )}
+                            <p className={`text-sm text-center py-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                                No vault items yet. <Link to="/vault/add" className="text-indigo-400 hover:underline">Add items</Link>
+                            </p>
+                        ) : items.map(item => (
+                            <label key={item.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
+                                formData.vault_item_ids.includes(item.id)
+                                    ? isDark ? 'bg-violet-900/30' : 'bg-violet-50'
+                                    : isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-100'
+                            }`}>
+                                <input type="checkbox" checked={formData.vault_item_ids.includes(item.id)} onChange={() => toggleItem(item.id)} className="accent-violet-500 w-4 h-4" />
+                                <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{item.title}</span>
+                            </label>
+                        ))}
                     </div>
                 </div>
 
-                {/* Company */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Company (optional)
-                    </label>
-                    <input
-                        type="text"
-                        value={formData.shared_with_company}
-                        onChange={(e) => setFormData({ ...formData, shared_with_company: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        placeholder="Company name"
-                    />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className={labelCls}>Company (optional)</label>
+                        <input type="text" value={formData.shared_with_company} onChange={e => setFormData(p => ({ ...p, shared_with_company: e.target.value }))} className={inputCls} placeholder="Company name" />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Recipient Email (optional)</label>
+                        <input type="email" value={formData.shared_with_email} onChange={e => setFormData(p => ({ ...p, shared_with_email: e.target.value }))} className={inputCls} placeholder="hr@company.com" />
+                    </div>
+                    <div>
+                        <label className={labelCls}>Expires In</label>
+                        <select value={formData.expires_hours} onChange={e => setFormData(p => ({ ...p, expires_hours: e.target.value }))} className={inputCls}>
+                            <option value="24">24 hours</option>
+                            <option value="48">48 hours</option>
+                            <option value="168">1 week</option>
+                            <option value="720">30 days</option>
+                            <option value="">Never</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className={labelCls}>Max Views (optional)</label>
+                        <input type="number" value={formData.max_views} onChange={e => setFormData(p => ({ ...p, max_views: e.target.value }))} className={inputCls} placeholder="Unlimited" min="1" />
+                    </div>
                 </div>
 
-                {/* Email */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Email (optional)
-                    </label>
-                    <input
-                        type="email"
-                        value={formData.shared_with_email}
-                        onChange={(e) => setFormData({ ...formData, shared_with_email: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        placeholder="recipient@example.com"
-                    />
-                </div>
-
-                {/* Expiration */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Expires in (hours)
-                    </label>
-                    <select
-                        value={formData.expires_hours}
-                        onChange={(e) => setFormData({ ...formData, expires_hours: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                    >
-                        <option value="24">24 hours</option>
-                        <option value="48">48 hours</option>
-                        <option value="168">1 week</option>
-                        <option value="720">30 days</option>
-                        <option value="">Never</option>
-                    </select>
-                </div>
-
-                {/* Max Views */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Max Views (optional)
-                    </label>
-                    <input
-                        type="number"
-                        value={formData.max_views}
-                        onChange={(e) => setFormData({ ...formData, max_views: e.target.value })}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                        placeholder="Unlimited"
-                        min="1"
-                    />
-                </div>
-
-                {/* Submit */}
-                <button
-                    type="submit"
-                    disabled={submitting}
-                    className="w-full px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 font-semibold disabled:opacity-50"
+                <button type="submit" disabled={submitting}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
                 >
-                    {submitting ? 'Creating...' : 'Create Share Link'}
+                    {submitting ? <><Loader2 size={16} className="animate-spin" /> Creating…</> : <><Share2 size={16} /> Create Share Link</>}
                 </button>
             </form>
         </div>

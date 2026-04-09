@@ -3,6 +3,7 @@
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import AppShell from '../../components/layout/AppShell';
 import { vaultApi, VaultItem, VaultStats } from '../../api/vault';
 import {
     Plus, Eye, Share2, Shield, Trophy, FileText,
@@ -111,7 +112,8 @@ export default function VaultDashboardPage() {
         .filter(i => !search || i.title.toLowerCase().includes(search.toLowerCase()));
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <AppShell>
+        <div className="min-h-full">
             <div className="bg-gradient-to-br from-slate-900 via-violet-950 to-blue-900 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
                 <div className="relative max-w-7xl mx-auto px-6 py-10">
@@ -184,5 +186,6 @@ export default function VaultDashboardPage() {
                 )}
             </div>
         </div>
+        </AppShell>
     );
 }
