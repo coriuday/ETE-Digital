@@ -21,7 +21,7 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import {
     getAccessToken,
     getRefreshToken,
-    setAccessToken,
+    setTokens,
 } from '../stores/authStore';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -34,7 +34,7 @@ export const api = axios.create({
     },
 });
 
-// Request interceptor - Add auth token from in-memory store
+// Request interceptor - Add auth token from store
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         const token = getAccessToken();
@@ -92,11 +92,11 @@ api.interceptors.response.use(
                     refresh_token: refreshToken,
                 });
 
-                const { access_token } = response.data;
+                const { access_token, refresh_token } = response.data;
 
                 // Update in-memory token so ALL subsequent requests use the new token.
-                // setAccessToken is safe to call statically — no circular dep.
-                setAccessToken(access_token);
+                // setTokens is safe to call statically — no circular dep.
+                setTokens(access_token, refresh_token);
 
                 // Retry original request with new token
                 if (originalRequest.headers) {
