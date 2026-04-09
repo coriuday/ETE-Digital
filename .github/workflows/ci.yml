@@ -81,6 +81,10 @@ jobs:
         working-directory: ./ete-digital/backend
         env:
           DATABASE_URL: postgresql://ete_user:test_password@localhost:5432/ete_digital_test
+          JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
+          ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
+          ENVIRONMENT: test
+          DEBUG: "false"
         run: alembic upgrade head
 
       - name: Run tests with coverage (local Postgres)
