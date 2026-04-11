@@ -22,6 +22,9 @@ Event-loop fix (pytest-asyncio ≥ 0.21):
 """
 
 import os
+
+os.environ["TEST_DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
+
 import uuid as _uuid
 
 # ---------------------------------------------------------------------------

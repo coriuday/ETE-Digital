@@ -153,5 +153,7 @@ if os.getenv("TEST_DATABASE_URL"):
     os.environ["DATABASE_URL"] = test_url
     logger.warning(f"🚀 OVERRIDING DATABASE_URL WITH TEST_DATABASE_URL: {test_url}")
 
+print("🚀 USING DB:", os.getenv("DATABASE_URL"))
+
 # Singleton instance
 settings = Settings()

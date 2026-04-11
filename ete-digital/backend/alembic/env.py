@@ -22,8 +22,13 @@ from app.models import (
 # this is the Alembic Config object
 config = context.config
 
-# Override sqlalchemy.url from settings
-config.set_main_option('sqlalchemy.url', str(settings.DATABASE_URL))
+url = os.getenv("TEST_DATABASE_URL") or str(settings.DATABASE_URL)
+
+# 🔥 FIX: convert async → sync
+if url.startswith("postgresql+asyncpg"):
+    url = url.replace("postgresql+asyncpg", "postgresql")
+
+config.set_main_option("sqlalchemy.url", url)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
