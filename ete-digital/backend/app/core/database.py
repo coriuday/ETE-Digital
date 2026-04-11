@@ -3,12 +3,16 @@ Database connection and session management
 SQLAlchemy setup with async support
 """
 
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
+# Force app to use TEST DB if available
+raw_db_url = os.getenv("TEST_DATABASE_URL") or str(settings.DATABASE_URL)
+
 # Convert PostgresDsn to async URL
-database_url = str(settings.DATABASE_URL).replace("postgresql://", "postgresql+asyncpg://")
+database_url = raw_db_url.replace("postgresql://", "postgresql+asyncpg://")
 
 # Create async engine
 engine = create_async_engine(
