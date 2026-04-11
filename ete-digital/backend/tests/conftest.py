@@ -79,6 +79,8 @@ else:
     _pool_class = NullPool
     _connect_args = {"statement_cache_size": 0}
 
+print(f"🧪 Pytest active execution DB URL: {'SQLite (In-Memory)' if _use_sqlite else _TEST_DB_URL}")
+
 # ---------------------------------------------------------------------------
 # Imports that trigger the app (after env vars are set)
 # ---------------------------------------------------------------------------
