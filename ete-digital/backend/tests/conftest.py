@@ -12,11 +12,27 @@ Strategy:
 IMPORTANT: We do NOT call load_dotenv() here. In CI the env vars are
 injected by GitHub Actions and must NOT be overridden by a local .env
 file (which would point at the production Supabase instance).
+
+Event-loop fix (pytest-asyncio ≥ 0.21):
+  - Do NOT define a custom event_loop fixture — it is deprecated.
+  - asyncio_mode = auto (in pytest.ini) makes every async test/fixture
+    use the default loop managed by pytest-asyncio automatically.
+  - Use NullPool so the engine never binds a connection to the loop at
+    import time; each connection is opened fresh inside the running loop.
 """
 
 import os
 import uuid as _uuid
 
+# ---------------------------------------------------------------------------
+# Provide safe fallback env vars so that Settings() doesn't raise when
+# no .env is present (e.g. local runs without a Postgres instance).
+# ---------------------------------------------------------------------------
+os.environ.setdefault("DATABASE_URL", "postgresql://localhost/placeholder")
+os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
+os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
+
+import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import (
@@ -24,40 +40,15 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
 )
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import JSONB
+
 
 @compiles(JSONB, "sqlite")
 def compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
-import asyncio
-import pytest
-
-@pytest.fixture(scope="session")
-def event_loop(request):
-    """
-    Session-scoped event loop for pytest-asyncio.
-
-    Using `request` param suppresses the DeprecationWarning from pytest-asyncio
-    about redefining the event_loop fixture. The loop is created fresh for the
-    entire test session and closed at teardown.
-    """
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    yield loop
-    loop.close()
-    asyncio.set_event_loop(None)
-
-# ---------------------------------------------------------------------------
-
-# Provide safe fallback env vars so that Settings() doesn't raise when
-# no .env is present (e.g. local runs without a Postgres instance).
-# ---------------------------------------------------------------------------
-os.environ.setdefault("DATABASE_URL", "postgresql://localhost/placeholder")
-os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
-os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
 
 # ---------------------------------------------------------------------------
 # Decide which engine to use
@@ -75,17 +66,15 @@ _use_sqlite = not _raw or "localhost/placeholder" in _raw
 
 if _use_sqlite:
     _TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
-    _engine_kwargs: dict = dict(
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        echo=False,
-    )
+    _pool_class = StaticPool
+    _connect_args: dict = {"check_same_thread": False}
 else:
     _TEST_DB_URL = _make_asyncpg_url(_raw)
-    _engine_kwargs = dict(
-        echo=False,
-        connect_args={"statement_cache_size": 0},
-    )
+    # NullPool: connections are never held open between requests,
+    # so they're always acquired inside the currently running event loop.
+    # This is the canonical fix for "Future attached to a different loop".
+    _pool_class = NullPool
+    _connect_args = {"statement_cache_size": 0}
 
 # ---------------------------------------------------------------------------
 # Imports that trigger the app (after env vars are set)
@@ -98,54 +87,84 @@ from app.core.database import Base, get_db  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Engine + session factory
+#
+# NOTE: We intentionally do NOT create a module-level engine that opens
+# connections at import time. Instead, we create a session-scoped fixture
+# so the engine is built inside the running event loop managed by
+# pytest-asyncio. NullPool ensures no connections linger across tests.
 # ---------------------------------------------------------------------------
 
-_engine = create_async_engine(_TEST_DB_URL, **_engine_kwargs)
 
-_TestingSessionLocal = async_sessionmaker(
-    _engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
-
-
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def _create_tables():
-    """Create all ORM tables before the session and drop them after."""
+@pytest_asyncio.fixture(scope="session")
+async def _engine():
+    """Session-scoped async engine. Created inside the running loop."""
     if _use_sqlite:
-        # SQLite: create tables ourselves (no Alembic migration needed)
-        async with _engine.begin() as conn:
+        eng = create_async_engine(
+            _TEST_DB_URL,
+            poolclass=_pool_class,
+            connect_args=_connect_args,
+            echo=False,
+        )
+    else:
+        eng = create_async_engine(
+            _TEST_DB_URL,
+            poolclass=_pool_class,
+            connect_args=_connect_args,
+            echo=False,
+        )
+
+    # Create tables (SQLite only — Postgres tables are created by Alembic in CI)
+    if _use_sqlite:
+        async with eng.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
-    # For Postgres CI: Alembic migrations run as a separate CI step, tables exist.
-    yield
+
+    yield eng
+
     if _use_sqlite:
-        async with _engine.begin() as conn:
+        async with eng.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
+
+    await eng.dispose()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def _session_factory(_engine):
+    """Session-scoped factory, derived from the session-scoped engine."""
+    return async_sessionmaker(
+        _engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
 
 
 # ---------------------------------------------------------------------------
 # Override get_db so the app uses the same test engine
 # ---------------------------------------------------------------------------
 
-async def _override_get_db():
-    async with _TestingSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def _override_get_db(_session_factory):
+    """Install the test session factory as the app's get_db override."""
 
+    async def _get_db_override():
+        async with _session_factory() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
 
-app.dependency_overrides[get_db] = _override_get_db
+    app.dependency_overrides[get_db] = _get_db_override
+    yield
+    app.dependency_overrides.pop(get_db, None)
 
 
 # ---------------------------------------------------------------------------
-# HTTP client
+# HTTP client (function-scoped — fresh client per test)
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture(scope="function")
@@ -158,12 +177,12 @@ async def client():
 
 
 # ---------------------------------------------------------------------------
-# Internal DB session for fixture user creation
+# Internal DB session for fixture user creation (function-scoped)
 # ---------------------------------------------------------------------------
 
 @pytest_asyncio.fixture(scope="function")
-async def _db():
-    async with _TestingSessionLocal() as session:
+async def _db(_session_factory):
+    async with _session_factory() as session:
         yield session
 
 
