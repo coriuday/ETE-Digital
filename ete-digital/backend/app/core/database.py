@@ -12,9 +12,11 @@ from app.core.config import settings
 def _make_asyncpg_url(url: str) -> str:
     if not url:
         return url
-    return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://").replace(
-        "postgresql://", "postgresql+asyncpg://"
-    )
+    if url.startswith("postgresql://") or url.startswith("postgresql+psycopg2://"):
+        return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://")
+    if url.startswith("sqlite://") and not url.startswith("sqlite+aiosqlite://"):
+        return url.replace("sqlite://", "sqlite+aiosqlite://")
+    return url
 
 
 DATABASE_URL = _make_asyncpg_url(os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL)

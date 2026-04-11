@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Database
-    DATABASE_URL: str
+    DATABASE_URL: str = "sqlite+aiosqlite:///./local_dev.db"
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
 

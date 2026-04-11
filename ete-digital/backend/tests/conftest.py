@@ -31,7 +31,7 @@ import asyncio
 # no .env is present (e.g. local runs without a Postgres instance).
 # ---------------------------------------------------------------------------
 if not os.getenv("DATABASE_URL") and not os.getenv("TEST_DATABASE_URL"):
-    os.environ["DATABASE_URL"] = "postgresql://localhost/placeholder"
+    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
 os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
 os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
 
@@ -57,15 +57,15 @@ def compile_jsonb_sqlite(type_, compiler, **kw):
 # Decide which engine to use
 # ---------------------------------------------------------------------------
 
+
 def _make_asyncpg_url(url: str) -> str:
-    return (
-        url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
-           .replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1).replace(
+        "postgresql://", "postgresql+asyncpg://", 1
     )
 
 
 _raw = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
-_use_sqlite = not _raw or "localhost/placeholder" in _raw
+_use_sqlite = "sqlite" in _raw or not _raw
 
 if _use_sqlite:
     _TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
@@ -125,6 +125,7 @@ async def _engine():
                 raise e
             print(f"DB not ready, retrying... ({i+1}/{retries})")
             import asyncio
+
             await asyncio.sleep(2)
 
     yield eng
@@ -151,6 +152,7 @@ async def _session_factory(_engine):
 # Override get_db so the app uses the same test engine
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def _override_get_db(_session_factory):
     """Install the test session factory as the app's get_db override."""
@@ -175,18 +177,18 @@ async def _override_get_db(_session_factory):
 # HTTP client (function-scoped — fresh client per test)
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture(scope="function")
 async def client():
     """ASGI test client wired to the test database."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
 # ---------------------------------------------------------------------------
 # Internal DB session for fixture user creation (function-scoped)
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture(scope="function")
 async def _db(_session_factory):
@@ -197,6 +199,7 @@ async def _db(_session_factory):
 # ---------------------------------------------------------------------------
 # User fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture
 async def candidate_user(_db: AsyncSession):
@@ -250,22 +253,17 @@ async def admin_user(_db: AsyncSession):
 # Token fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture
 async def candidate_token(candidate_user: User) -> str:
-    return create_access_token(
-        {"sub": str(candidate_user.id), "role": "candidate", "email": str(candidate_user.email)}
-    )
+    return create_access_token({"sub": str(candidate_user.id), "role": "candidate", "email": str(candidate_user.email)})
 
 
 @pytest_asyncio.fixture
 async def employer_token(employer_user: User) -> str:
-    return create_access_token(
-        {"sub": str(employer_user.id), "role": "employer", "email": str(employer_user.email)}
-    )
+    return create_access_token({"sub": str(employer_user.id), "role": "employer", "email": str(employer_user.email)})
 
 
 @pytest_asyncio.fixture
 async def admin_token(admin_user: User) -> str:
-    return create_access_token(
-        {"sub": str(admin_user.id), "role": "admin", "email": str(admin_user.email)}
-    )
+    return create_access_token({"sub": str(admin_user.id), "role": "admin", "email": str(admin_user.email)})
