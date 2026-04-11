@@ -23,16 +23,15 @@ Event-loop fix (pytest-asyncio ≥ 0.21):
 
 import os
 
-os.environ["TEST_DATABASE_URL"] = "postgresql+asyncpg://postgres:postgres@localhost:5432/test_db"
-os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL")
-
 import uuid as _uuid
+import asyncio
 
 # ---------------------------------------------------------------------------
 # Provide safe fallback env vars so that Settings() doesn't raise when
 # no .env is present (e.g. local runs without a Postgres instance).
 # ---------------------------------------------------------------------------
-os.environ.setdefault("DATABASE_URL", "postgresql://localhost/placeholder")
+if not os.getenv("DATABASE_URL") and not os.getenv("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = "postgresql://localhost/placeholder"
 os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
 os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
 
@@ -102,25 +101,29 @@ from app.core.database import Base, get_db  # noqa: E402
 @pytest_asyncio.fixture(scope="session")
 async def _engine():
     """Session-scoped async engine. Created inside the running loop."""
-    if _use_sqlite:
-        eng = create_async_engine(
-            _TEST_DB_URL,
-            poolclass=_pool_class,
-            connect_args=_connect_args,
-            echo=False,
-        )
-    else:
-        eng = create_async_engine(
-            _TEST_DB_URL,
-            poolclass=_pool_class,
-            connect_args=_connect_args,
-            echo=False,
-        )
+    retries = 10
 
-    # Always recreate tables to ensure schema matches models exactly (avoids UndefinedColumnError)
-    async with eng.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
-        await conn.run_sync(Base.metadata.create_all)
+    for i in range(retries):
+        try:
+            eng = create_async_engine(
+                _TEST_DB_URL,
+                poolclass=_pool_class,
+                connect_args=_connect_args,
+                echo=False,
+            )
+
+            async with eng.begin() as conn:
+                await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(Base.metadata.create_all)
+
+            break
+
+        except Exception as e:
+            if i == retries - 1:
+                raise e
+            print(f"DB not ready, retrying... ({i+1}/{retries})")
+            import asyncio
+            await asyncio.sleep(2)
 
     yield eng
 
