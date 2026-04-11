@@ -113,16 +113,15 @@ async def _engine():
             echo=False,
         )
 
-    # Create tables (SQLite only — Postgres tables are created by Alembic in CI)
-    if _use_sqlite:
-        async with eng.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
+    # Always recreate tables to ensure schema matches models exactly (avoids UndefinedColumnError)
+    async with eng.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
 
     yield eng
 
-    if _use_sqlite:
-        async with eng.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+    async with eng.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
     await eng.dispose()
 
