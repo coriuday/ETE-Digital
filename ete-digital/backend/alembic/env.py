@@ -22,11 +22,12 @@ from app.models import (
 # this is the Alembic Config object
 config = context.config
 
-url = os.getenv("TEST_DATABASE_URL") or str(settings.DATABASE_URL)
+url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
 
-# 🔥 FIX: convert async → sync
-if url.startswith("postgresql+asyncpg"):
-    url = url.replace("postgresql+asyncpg", "postgresql")
+print("🚀 ALEMBIC USING DB:", url)
+
+# ✅ FORCE sync driver (IMPORTANT)
+url = url.replace("+asyncpg", "")
 
 config.set_main_option("sqlalchemy.url", url)
 

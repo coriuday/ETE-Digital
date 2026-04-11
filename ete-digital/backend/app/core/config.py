@@ -3,9 +3,15 @@ FastAPI Application Configuration
 Centralized settings management using Pydantic BaseSettings
 """
 
+import os
 from typing import List, Optional
 from pydantic import PostgresDsn, model_validator
 from pydantic_settings import BaseSettings
+
+# ✅ ALWAYS override first
+if os.getenv("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL")
+    print("🚀 USING TEST DATABASE")
 
 
 class Settings(BaseSettings):
@@ -21,7 +27,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Database
-    DATABASE_URL: PostgresDsn
+    DATABASE_URL: str
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
 
@@ -141,19 +147,10 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 
-import os
 import logging
 
 # Set up simple logging for the config
 logger = logging.getLogger(__name__)
-
-# Force TEST_DATABASE_URL if available *before* Pydantic binds it (blocks Supabase connections in CI)
-if os.getenv("TEST_DATABASE_URL"):
-    test_url = os.getenv("TEST_DATABASE_URL")
-    os.environ["DATABASE_URL"] = test_url
-    logger.warning(f"🚀 OVERRIDING DATABASE_URL WITH TEST_DATABASE_URL: {test_url}")
-
-print("🚀 USING DB:", os.getenv("DATABASE_URL"))
 
 # Singleton instance
 settings = Settings()
