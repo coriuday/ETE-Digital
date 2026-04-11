@@ -27,7 +27,8 @@ url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
 print("🚀 ALEMBIC USING DB:", url)
 
 # ✅ FORCE sync driver (IMPORTANT)
-url = url.replace("+asyncpg", "")
+if "+asyncpg" in url:
+    url = url.replace("+asyncpg", "")
 
 config.set_main_option("sqlalchemy.url", url)
 
