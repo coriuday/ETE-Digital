@@ -6,8 +6,9 @@ SQLAlchemy setup with async support
 import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from app.core.config import settings
 
-DATABASE_URL = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL
 
 engine = create_async_engine(
     DATABASE_URL,
