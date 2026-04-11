@@ -19,6 +19,21 @@ jobs:
     name: Backend Tests (Local Postgres)
     runs-on: ubuntu-latest
 
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
+      ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
+      ENVIRONMENT: test
+      DEBUG: "false"
+      EMAIL_ENABLED: "false"
+      MINIO_ENDPOINT: 127.0.0.1
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_SECURE: "false"
+
     services:
       postgres:
         image: postgres:15
@@ -88,33 +103,13 @@ jobs:
 
       - name: Run database migrations (local)
         working-directory: ./ete-digital/backend
-        env:
-          # psycopg2 (sync) URL for alembic — do NOT use asyncpg here
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
-          ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
-          ENVIRONMENT: test
-          DEBUG: "false"
         run: alembic upgrade head
+
+      - name: Debug ENV
+        run: echo "TEST_DATABASE_URL=$TEST_DATABASE_URL"
 
       - name: Run tests with coverage (local Postgres)
         working-directory: ./ete-digital/backend
-        env:
-          # asyncpg URL — conftest.py uses this directly with NullPool
-          TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
-          # Sync URL kept for any sync SQLAlchemy usage in the app config
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test_db
-          REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
-          ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
-          ENVIRONMENT: test
-          DEBUG: "false"
-          EMAIL_ENABLED: "false"
-          MINIO_ENDPOINT: 127.0.0.1
-          MINIO_PORT: "9000"
-          MINIO_ACCESS_KEY: minioadmin
-          MINIO_SECRET_KEY: minioadmin123
-          MINIO_SECURE: "false"
         run: pytest tests/ -x --cov=app --cov-report=xml --cov-report=term-missing -q
 
       - name: Upload coverage to Codecov
