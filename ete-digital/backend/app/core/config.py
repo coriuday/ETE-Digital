@@ -141,5 +141,17 @@ class Settings(BaseSettings):
         case_sensitive = True
 
 
+import os
+import logging
+
+# Set up simple logging for the config
+logger = logging.getLogger(__name__)
+
+# Force TEST_DATABASE_URL if available *before* Pydantic binds it (blocks Supabase connections in CI)
+if os.getenv("TEST_DATABASE_URL"):
+    test_url = os.getenv("TEST_DATABASE_URL")
+    os.environ["DATABASE_URL"] = test_url
+    logger.warning(f"🚀 OVERRIDING DATABASE_URL WITH TEST_DATABASE_URL: {test_url}")
+
 # Singleton instance
 settings = Settings()
