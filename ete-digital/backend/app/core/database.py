@@ -8,7 +8,12 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings
 
-DATABASE_URL = os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL
+def _make_asyncpg_url(url: str) -> str:
+    if not url:
+        return url
+    return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://")
+
+DATABASE_URL = _make_asyncpg_url(os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL)
 
 engine = create_async_engine(
     DATABASE_URL,
