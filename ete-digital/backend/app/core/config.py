@@ -62,6 +62,9 @@ class Settings(BaseSettings):
         "https://ete-digital.vercel.app",
         "https://ete-digital-git-main.vercel.app",
         "https://*.vercel.app",
+        "https://jobsrow.vercel.app",
+        "https://jobsrow.com",
+        "https://www.jobsrow.com",
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
@@ -135,9 +138,11 @@ class Settings(BaseSettings):
             if self.DEBUG:
                 raise ValueError("DEBUG must be False in production. " "Set ENVIRONMENT=development to use debug mode.")
             if not self.REDIS_URL:
-                raise ValueError(
-                    "REDIS_URL must be set in production for rate limiting and "
-                    "WebSocket pub/sub to function correctly across workers."
+                import logging as _logging
+
+                _logging.getLogger(__name__).warning(
+                    "REDIS_URL is not set in production. Rate limiting will use in-memory storage "
+                    "which does NOT persist across workers or restarts. Set REDIS_URL for production reliability."
                 )
         return self
 
