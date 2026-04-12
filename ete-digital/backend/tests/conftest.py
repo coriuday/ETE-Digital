@@ -12,11 +12,30 @@ Strategy:
 IMPORTANT: We do NOT call load_dotenv() here. In CI the env vars are
 injected by GitHub Actions and must NOT be overridden by a local .env
 file (which would point at the production Supabase instance).
+
+Event-loop fix (pytest-asyncio ≥ 0.21):
+  - Do NOT define a custom event_loop fixture — it is deprecated.
+  - asyncio_mode = auto (in pytest.ini) makes every async test/fixture
+    use the default loop managed by pytest-asyncio automatically.
+  - Use NullPool so the engine never binds a connection to the loop at
+    import time; each connection is opened fresh inside the running loop.
 """
 
 import os
-import uuid as _uuid
 
+import uuid as _uuid
+import asyncio
+
+# ---------------------------------------------------------------------------
+# Provide safe fallback env vars so that Settings() doesn't raise when
+# no .env is present (e.g. local runs without a Postgres instance).
+# ---------------------------------------------------------------------------
+if not os.getenv("DATABASE_URL") and not os.getenv("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
+os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
+
+import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import (
@@ -24,50 +43,43 @@ from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
 )
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool, StaticPool
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.dialects.postgresql import JSONB
+
 
 @compiles(JSONB, "sqlite")
 def compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
-# ---------------------------------------------------------------------------
-
-# Provide safe fallback env vars so that Settings() doesn't raise when
-# no .env is present (e.g. local runs without a Postgres instance).
-# ---------------------------------------------------------------------------
-os.environ.setdefault("DATABASE_URL", "postgresql://localhost/placeholder")
-os.environ.setdefault("JWT_SECRET_KEY", "ci-test-secret-key-not-for-production")
-os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
 
 # ---------------------------------------------------------------------------
 # Decide which engine to use
 # ---------------------------------------------------------------------------
 
+
 def _make_asyncpg_url(url: str) -> str:
-    return (
-        url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
-           .replace("postgresql://", "postgresql+asyncpg://", 1)
+    return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1).replace(
+        "postgresql://", "postgresql+asyncpg://", 1
     )
 
 
 _raw = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
-_use_sqlite = not _raw or "localhost/placeholder" in _raw
+_use_sqlite = "sqlite" in _raw or not _raw
 
 if _use_sqlite:
     _TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
-    _engine_kwargs: dict = dict(
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-        echo=False,
-    )
+    _pool_class = StaticPool
+    _connect_args: dict = {"check_same_thread": False}
 else:
     _TEST_DB_URL = _make_asyncpg_url(_raw)
-    _engine_kwargs = dict(
-        echo=False,
-        connect_args={"statement_cache_size": 0},
-    )
+    # NullPool: connections are never held open between requests,
+    # so they're always acquired inside the currently running event loop.
+    # This is the canonical fix for "Future attached to a different loop".
+    _pool_class = NullPool
+    _connect_args = {"statement_cache_size": 0}
+
+print(f"🧪 Pytest active execution DB URL: {'SQLite (In-Memory)' if _use_sqlite else _TEST_DB_URL}")
 
 # ---------------------------------------------------------------------------
 # Imports that trigger the app (after env vars are set)
@@ -80,78 +92,114 @@ from app.core.database import Base, get_db  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Engine + session factory
+#
+# NOTE: We intentionally do NOT create a module-level engine that opens
+# connections at import time. Instead, we create a session-scoped fixture
+# so the engine is built inside the running event loop managed by
+# pytest-asyncio. NullPool ensures no connections linger across tests.
 # ---------------------------------------------------------------------------
 
-_engine = create_async_engine(_TEST_DB_URL, **_engine_kwargs)
 
-_TestingSessionLocal = async_sessionmaker(
-    _engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+@pytest_asyncio.fixture(scope="session")
+async def _engine():
+    """Session-scoped async engine. Created inside the running loop."""
+    retries = 10
+
+    for i in range(retries):
+        try:
+            eng = create_async_engine(
+                _TEST_DB_URL,
+                poolclass=_pool_class,
+                connect_args=_connect_args,
+                echo=False,
+            )
+
+            async with eng.begin() as conn:
+                await conn.run_sync(Base.metadata.drop_all)
+                await conn.run_sync(Base.metadata.create_all)
+
+            break
+
+        except Exception as e:
+            if i == retries - 1:
+                raise e
+            print(f"DB not ready, retrying... ({i+1}/{retries})")
+            import asyncio
+
+            await asyncio.sleep(2)
+
+    yield eng
+
+    async with eng.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+
+    await eng.dispose()
 
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def _create_tables():
-    """Create all ORM tables before the session and drop them after."""
-    if _use_sqlite:
-        # SQLite: create tables ourselves (no Alembic migration needed)
-        async with _engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-    # For Postgres CI: Alembic migrations run as a separate CI step, tables exist.
-    yield
-    if _use_sqlite:
-        async with _engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+@pytest_asyncio.fixture(scope="session")
+async def _session_factory(_engine):
+    """Session-scoped factory, derived from the session-scoped engine."""
+    return async_sessionmaker(
+        _engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
 
 
 # ---------------------------------------------------------------------------
 # Override get_db so the app uses the same test engine
 # ---------------------------------------------------------------------------
 
-async def _override_get_db():
-    async with _TestingSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
 
+@pytest_asyncio.fixture(scope="session", autouse=True)
+async def _override_get_db(_session_factory):
+    """Install the test session factory as the app's get_db override."""
 
-app.dependency_overrides[get_db] = _override_get_db
+    async def _get_db_override():
+        async with _session_factory() as session:
+            try:
+                yield session
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                raise
+            finally:
+                await session.close()
+
+    app.dependency_overrides[get_db] = _get_db_override
+    yield
+    app.dependency_overrides.pop(get_db, None)
 
 
 # ---------------------------------------------------------------------------
-# HTTP client
+# HTTP client (function-scoped — fresh client per test)
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture(scope="function")
 async def client():
     """ASGI test client wired to the test database."""
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
 # ---------------------------------------------------------------------------
-# Internal DB session for fixture user creation
+# Internal DB session for fixture user creation (function-scoped)
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture(scope="function")
-async def _db():
-    async with _TestingSessionLocal() as session:
+async def _db(_session_factory):
+    async with _session_factory() as session:
         yield session
 
 
 # ---------------------------------------------------------------------------
 # User fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest_asyncio.fixture
 async def candidate_user(_db: AsyncSession):
@@ -205,22 +253,17 @@ async def admin_user(_db: AsyncSession):
 # Token fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest_asyncio.fixture
 async def candidate_token(candidate_user: User) -> str:
-    return create_access_token(
-        {"sub": str(candidate_user.id), "role": "candidate", "email": str(candidate_user.email)}
-    )
+    return create_access_token({"sub": str(candidate_user.id), "role": "candidate", "email": str(candidate_user.email)})
 
 
 @pytest_asyncio.fixture
 async def employer_token(employer_user: User) -> str:
-    return create_access_token(
-        {"sub": str(employer_user.id), "role": "employer", "email": str(employer_user.email)}
-    )
+    return create_access_token({"sub": str(employer_user.id), "role": "employer", "email": str(employer_user.email)})
 
 
 @pytest_asyncio.fixture
 async def admin_token(admin_user: User) -> str:
-    return create_access_token(
-        {"sub": str(admin_user.id), "role": "admin", "email": str(admin_user.email)}
-    )
+    return create_access_token({"sub": str(admin_user.id), "role": "admin", "email": str(admin_user.email)})

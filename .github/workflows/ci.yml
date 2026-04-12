@@ -19,17 +19,32 @@ jobs:
     name: Backend Tests (Local Postgres)
     runs-on: ubuntu-latest
 
+    env:
+      TEST_DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/test_db
+      REDIS_URL: redis://localhost:6379/0
+      JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
+      ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
+      ENVIRONMENT: test
+      DEBUG: "false"
+      EMAIL_ENABLED: "false"
+      MINIO_ENDPOINT: 127.0.0.1
+      MINIO_PORT: "9000"
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin123
+      MINIO_SECURE: "false"
+
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:15
         env:
-          POSTGRES_DB: ete_digital_test
-          POSTGRES_USER: ete_user
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U postgres"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -77,32 +92,25 @@ jobs:
         working-directory: ./ete-digital/backend
         run: black app/ --check --line-length=127
 
+      - name: Install Postgres client
+        run: sudo apt-get install -y postgresql-client
+
+      - name: Wait for Postgres (real readiness)
+        run: |
+          until pg_isready -h localhost -p 5432 -U postgres; do
+            echo "Waiting for Postgres..."
+            sleep 2
+          done
+
       - name: Run database migrations (local)
         working-directory: ./ete-digital/backend
-        env:
-          DATABASE_URL: postgresql://ete_user:test_password@localhost:5432/ete_digital_test
-          JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
-          ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
-          ENVIRONMENT: test
-          DEBUG: "false"
         run: alembic upgrade head
+
+      - name: Debug ENV
+        run: echo "TEST_DATABASE_URL=$TEST_DATABASE_URL"
 
       - name: Run tests with coverage (local Postgres)
         working-directory: ./ete-digital/backend
-        env:
-          TEST_DATABASE_URL: postgresql://ete_user:test_password@localhost:5432/ete_digital_test
-          DATABASE_URL: postgresql://ete_user:test_password@localhost:5432/ete_digital_test
-          REDIS_URL: redis://localhost:6379/0
-          JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
-          ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
-          ENVIRONMENT: test
-          DEBUG: "false"
-          EMAIL_ENABLED: "false"
-          MINIO_ENDPOINT: localhost
-          MINIO_PORT: "9000"
-          MINIO_ACCESS_KEY: minioadmin
-          MINIO_SECRET_KEY: minioadmin123
-          MINIO_SECURE: "false"
         run: pytest tests/ -x --cov=app --cov-report=xml --cov-report=term-missing -q
 
       - name: Upload coverage to Codecov
@@ -158,13 +166,13 @@ jobs:
         env:
           TEST_DATABASE_URL: ${{ secrets.SUPABASE_TEST_DATABASE_URL }}
           DATABASE_URL: ${{ secrets.SUPABASE_TEST_DATABASE_URL }}
-          REDIS_URL: redis://localhost:6379/0
+          REDIS_URL: redis://127.0.0.1:6379/0
           JWT_SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
           ENCRYPTION_KEY: test-encryption-key-for-ci-minimum-32-characters
           ENVIRONMENT: test
           DEBUG: "false"
           EMAIL_ENABLED: "false"
-          MINIO_ENDPOINT: localhost
+          MINIO_ENDPOINT: 127.0.0.1
           MINIO_PORT: "9000"
           MINIO_ACCESS_KEY: minioadmin
           MINIO_SECRET_KEY: minioadmin123

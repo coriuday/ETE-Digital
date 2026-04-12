@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.core.database import get_db
 from app.core.security import get_current_user
+import uuid
 from app.models.users import User, UserProfile
 from app.schemas.users import UserProfileUpdate, UserProfileResponse, UserResponse
 
@@ -17,7 +18,7 @@ router = APIRouter()
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Get current user's profile"""
-    user_id = current_user["user_id"]
+    user_id = uuid.UUID(current_user["user_id"])
 
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
@@ -65,7 +66,7 @@ async def update_current_user_profile(
     db: AsyncSession = Depends(get_db),
 ):
     """Update (or create) current user's profile — upsert behaviour."""
-    user_id = current_user["user_id"]
+    user_id = uuid.UUID(current_user["user_id"])
 
     result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
     profile = result.scalar_one_or_none()
@@ -102,7 +103,7 @@ async def update_current_user_profile(
 @router.delete("/account", response_model=dict)
 async def delete_current_user_account(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
     """Request account deletion (GDPR compliance)"""
-    user_id = current_user["user_id"]
+    user_id = uuid.UUID(current_user["user_id"])
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
@@ -148,10 +149,11 @@ async def upload_resume(
     resume_url = f"/uploads/resumes/{filename}"
 
     # Update UserProfile
-    result = await db.execute(select(UserProfile).where(UserProfile.user_id == current_user["user_id"]))
+    user_uuid = uuid.UUID(current_user["user_id"])
+    result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_uuid))
     profile = result.scalar_one_or_none()
     if not profile:
-        profile = UserProfile(user_id=current_user["user_id"])
+        profile = UserProfile(user_id=user_uuid)
         db.add(profile)
     profile.resume_url = resume_url
     await db.commit()

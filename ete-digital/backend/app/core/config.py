@@ -3,9 +3,15 @@ FastAPI Application Configuration
 Centralized settings management using Pydantic BaseSettings
 """
 
+import os
 from typing import List, Optional
 from pydantic import PostgresDsn, model_validator
 from pydantic_settings import BaseSettings
+
+# ✅ ALWAYS override first
+if os.getenv("TEST_DATABASE_URL"):
+    os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL")
+    print("🚀 USING TEST DATABASE")
 
 
 class Settings(BaseSettings):
@@ -21,7 +27,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Database
-    DATABASE_URL: PostgresDsn
+    DATABASE_URL: str = "sqlite+aiosqlite:///./local_dev.db"
     DB_POOL_SIZE: int = 20
     DB_MAX_OVERFLOW: int = 10
 
@@ -56,6 +62,9 @@ class Settings(BaseSettings):
         "https://ete-digital.vercel.app",
         "https://ete-digital-git-main.vercel.app",
         "https://*.vercel.app",
+        "https://jobsrow.vercel.app",
+        "https://jobsrow.com",
+        "https://www.jobsrow.com",
     ]
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
@@ -129,9 +138,11 @@ class Settings(BaseSettings):
             if self.DEBUG:
                 raise ValueError("DEBUG must be False in production. " "Set ENVIRONMENT=development to use debug mode.")
             if not self.REDIS_URL:
-                raise ValueError(
-                    "REDIS_URL must be set in production for rate limiting and "
-                    "WebSocket pub/sub to function correctly across workers."
+                import logging as _logging
+
+                _logging.getLogger(__name__).warning(
+                    "REDIS_URL is not set in production. Rate limiting will use in-memory storage "
+                    "which does NOT persist across workers or restarts. Set REDIS_URL for production reliability."
                 )
         return self
 
@@ -140,6 +151,11 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = True
 
+
+import logging
+
+# Set up simple logging for the config
+logger = logging.getLogger(__name__)
 
 # Singleton instance
 settings = Settings()

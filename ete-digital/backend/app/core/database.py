@@ -3,29 +3,36 @@ Database connection and session management
 SQLAlchemy setup with async support
 """
 
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase
+import os
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.core.config import settings
 
-# Convert PostgresDsn to async URL
-database_url = str(settings.DATABASE_URL).replace("postgresql://", "postgresql+asyncpg://")
 
-# Create async engine
+def _make_asyncpg_url(url: str) -> str:
+    if not url:
+        return url
+    if url.startswith("postgresql://") or url.startswith("postgresql+psycopg2://"):
+        return url.replace("postgresql+psycopg2://", "postgresql+asyncpg://").replace("postgresql://", "postgresql+asyncpg://")
+    if url.startswith("sqlite://") and not url.startswith("sqlite+aiosqlite://"):
+        return url.replace("sqlite://", "sqlite+aiosqlite://")
+    return url
+
+
+DATABASE_URL = _make_asyncpg_url(os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL)
+
+print(f"🚀 FINAL DATABASE URL: {DATABASE_URL}")
+
 engine = create_async_engine(
-    database_url,
-    pool_size=settings.DB_POOL_SIZE,
-    max_overflow=settings.DB_MAX_OVERFLOW,
-    echo=settings.DEBUG,
-    connect_args={"statement_cache_size": 0},
+    DATABASE_URL,
+    echo=False,
+    future=True,
 )
 
-# Async session factory
-AsyncSessionLocal = async_sessionmaker(
-    engine,
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
     class_=AsyncSession,
     expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
 )
 
 
