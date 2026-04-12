@@ -90,6 +90,10 @@ jobs:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
+      - name: Install dependencies
+        working-directory: ./ete-digital/frontend
+        run: npm install
+
       - name: Build for Vercel production
         working-directory: ./ete-digital/frontend
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
