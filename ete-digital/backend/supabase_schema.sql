@@ -138,6 +138,11 @@ CREATE TABLE user_profiles (
     ssn_encrypted    VARCHAR(500),
     social_links     JSONB DEFAULT '{}'::jsonb,
     preferences      JSONB DEFAULT '{}'::jsonb,
+    -- AI matching columns (added in migration b2c3d4e5f6a7)
+    salary_expectation_min INTEGER,
+    salary_expectation_max INTEGER,
+    preferred_job_types    JSONB DEFAULT '[]'::jsonb,
+    preferred_locations    JSONB DEFAULT '[]'::jsonb,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at       TIMESTAMPTZ
 );
@@ -457,7 +462,7 @@ CREATE TABLE IF NOT EXISTS alembic_version (
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
 
-INSERT INTO alembic_version (version_num) VALUES ('71bc124d75eb');
+INSERT INTO alembic_version (version_num) VALUES ('c1d2e3f4a5b6');
 
 -- ============================================================
 -- RLS: Enable Row Level Security

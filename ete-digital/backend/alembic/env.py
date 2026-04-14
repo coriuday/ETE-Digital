@@ -5,30 +5,42 @@ import sys
 import os
 
 # Add parent directory to path
-sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.config import settings
 from app.core.database import Base
 
 # Import all models here to ensure they're registered
 from app.models import (
-    User, UserProfile, RefreshToken,
-    Job, Application,
-    Tryout, TryoutSubmission,
-    TalentVaultItem, VaultShareToken,
-    Notification, AuditLog
+    User,
+    UserProfile,
+    RefreshToken,
+    Job,
+    Application,
+    Tryout,
+    TryoutSubmission,
+    TalentVaultItem,
+    VaultShareToken,
+    Notification,
+    AuditLog,
 )
 
 # this is the Alembic Config object
 config = context.config
 
-url = os.getenv("TEST_DATABASE_URL") or os.getenv("DATABASE_URL")
+url = os.getenv("TEST_DATABASE_URL") or str(settings.DATABASE_URL)
 
 print("🚀 ALEMBIC USING DB:", url)
 
-# ✅ FORCE sync driver (IMPORTANT)
+# ✅ FORCE sync driver for Alembic (psycopg2, not asyncpg)
 if "+asyncpg" in url:
     url = url.replace("+asyncpg", "")
+
+# ✅ psycopg2 uses sslmode=require, NOT ssl=require
+if "?ssl=require" in url:
+    url = url.replace("?ssl=require", "?sslmode=require")
+elif "&ssl=require" in url:
+    url = url.replace("&ssl=require", "&sslmode=require")
 
 config.set_main_option("sqlalchemy.url", url)
 
@@ -63,10 +75,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection,
-            target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
