@@ -48,7 +48,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             f"font-src 'self' https://fonts.gstatic.com; "
             f"img-src 'self' data: https:; "
-            f"connect-src 'self' ws: wss: https://ete-digital-backend.onrender.com https://*.supabase.co;"
+            f"connect-src 'self' ws: wss: http://localhost:8000 http://127.0.0.1:8000 https://ete-digital-backend.onrender.com https://*.supabase.co;"
         )
         if settings.ENVIRONMENT == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

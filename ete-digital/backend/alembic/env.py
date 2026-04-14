@@ -30,7 +30,7 @@ config = context.config
 
 url = os.getenv("TEST_DATABASE_URL") or str(settings.DATABASE_URL)
 
-print("🚀 ALEMBIC USING DB:", url)
+print("[alembic] USING DB:", url)
 
 # ✅ FORCE sync driver for Alembic (psycopg2, not asyncpg)
 if "+asyncpg" in url:
