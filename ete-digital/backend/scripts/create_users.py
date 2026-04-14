@@ -21,9 +21,6 @@ USERS = [
 def post(url, body):
     data = json.dumps(body).encode()
     req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
-    if not (url.startswith("http://") or url.startswith("https://")):
-        raise ValueError("Invalid URL scheme")
-
     try:
         with urllib.request.urlopen(req, timeout=10) as res:
             return res.status, json.loads(res.read())
