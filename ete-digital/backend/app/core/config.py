@@ -54,17 +54,21 @@ class Settings(BaseSettings):
     FRONTEND_URL: str = "http://localhost:5173"
 
     # CORS — allow frontend origins
+    # NOTE: FastAPI/Starlette CORSMiddleware does EXACT string matching only.
+    # Wildcards like *.vercel.app are NOT supported — list every origin explicitly.
     # Can be overridden with CORS_ORIGINS env var (comma-separated list)
     CORS_ORIGINS: List[str] = [
+        # Local development
         "http://localhost:5173",
         "http://localhost:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:8000",
+        # Production — Vercel deployments
         "https://ete-digital.vercel.app",
         "https://ete-digital-git-main.vercel.app",
-        "https://*.vercel.app",
         "https://jobsrow.vercel.app",
+        # Production — custom domain
         "https://jobsrow.com",
         "https://www.jobsrow.com",
     ]
