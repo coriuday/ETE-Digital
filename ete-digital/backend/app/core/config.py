@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings
 # ✅ ALWAYS override first
 if os.getenv("TEST_DATABASE_URL"):
     os.environ["DATABASE_URL"] = os.getenv("TEST_DATABASE_URL")
-    print("🚀 USING TEST DATABASE")
+    print("[DB] USING TEST DATABASE")
 
 
 class Settings(BaseSettings):

@@ -21,7 +21,7 @@ def _make_asyncpg_url(url: str) -> str:
 
 DATABASE_URL = _make_asyncpg_url(os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL)
 
-print(f"🚀 FINAL DATABASE URL: {DATABASE_URL}")
+print(f"[DB] FINAL DATABASE URL: {DATABASE_URL}")
 
 engine = create_async_engine(
     DATABASE_URL,
