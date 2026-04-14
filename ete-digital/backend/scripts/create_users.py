@@ -3,6 +3,7 @@ Creates test users by calling the live backend API.
 No extra dependencies — uses stdlib urllib only.
 Run: python create_users.py
 """
+
 import urllib.request
 import urllib.error
 import json
@@ -10,24 +11,25 @@ import json
 BASE = "http://localhost:8000"
 
 USERS = [
-    {"email": "admin@etedigital.com",      "password": "Admin@1234",     "role": "admin",     "full_name": "ETE Admin"},
-    {"email": "hr@novatech.io",             "password": "Employer@1234",  "role": "employer",  "full_name": "NovaTech HR"},
-    {"email": "arjun.sharma@gmail.com",     "password": "Candidate@1234", "role": "candidate", "full_name": "Arjun Sharma"},
-    {"email": "priya.nair@gmail.com",       "password": "Candidate@1234", "role": "candidate", "full_name": "Priya Nair"},
+    {"email": "admin@etedigital.com", "password": "Admin@1234", "role": "admin", "full_name": "ETE Admin"},
+    {"email": "hr@novatech.io", "password": "Employer@1234", "role": "employer", "full_name": "NovaTech HR"},
+    {"email": "arjun.sharma@gmail.com", "password": "Candidate@1234", "role": "candidate", "full_name": "Arjun Sharma"},
+    {"email": "priya.nair@gmail.com", "password": "Candidate@1234", "role": "candidate", "full_name": "Priya Nair"},
 ]
+
 
 def post(url, body):
     data = json.dumps(body).encode()
-    req = urllib.request.Request(
-        url, data=data,
-        headers={"Content-Type": "application/json"},
-        method="POST"
-    )
+    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+    if not (url.startswith("http://") or url.startswith("https://")):
+        raise ValueError("Invalid URL scheme")
+
     try:
         with urllib.request.urlopen(req, timeout=10) as res:
             return res.status, json.loads(res.read())
     except urllib.error.HTTPError as e:
         return e.code, json.loads(e.read())
+
 
 print("Creating users via API...\n")
 for u in USERS:
