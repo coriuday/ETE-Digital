@@ -211,7 +211,7 @@ export default function RegisterPage() {
                         <div>
                             <label htmlFor="fullName" className={labelClass}>Full Name</label>
                             <input id="fullName" name="fullName" type="text" value={formData.fullName}
-                                onChange={handleChange} required placeholder="Priya Mehta"
+                                onChange={handleChange} required placeholder="Your Name"
                                 className={inputClass} />
                         </div>
 
@@ -326,7 +326,7 @@ export default function RegisterPage() {
                         Jobsrow © {new Date().getFullYear()} · Building the Future of Hiring
                     </p>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }
