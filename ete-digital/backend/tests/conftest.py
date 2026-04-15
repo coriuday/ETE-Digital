@@ -19,9 +19,37 @@ Event-loop fix (pytest-asyncio ≥ 0.21):
     use the default loop managed by pytest-asyncio automatically.
   - Use NullPool so the engine never binds a connection to the loop at
     import time; each connection is opened fresh inside the running loop.
+
+SAFETY: drop_all / create_all are NEVER called on a Supabase/production
+  database. If SUPABASE_INTEGRATION_MODE=true (set by CI when running
+  against SUPABASE_TEST_DATABASE_URL), the schema is assumed to already
+  exist — only read/write DML tests run, never DDL.
 """
 
 import os
+
+# ---------------------------------------------------------------------------
+# ⚠️  PRODUCTION SAFETY GUARD
+# Refuse to wipe the schema if we appear to be connected to Supabase.
+# Supabase URLs contain ".supabase.co" in the hostname.  We also check the
+# explicit SUPABASE_INTEGRATION_MODE flag set by the CI workflow.
+# ---------------------------------------------------------------------------
+_SUPABASE_INTEGRATION_MODE = os.environ.get("SUPABASE_INTEGRATION_MODE", "false").lower() == "true"
+_raw_url_check = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
+_looks_like_supabase = "supabase.co" in _raw_url_check or "supabase.com" in _raw_url_check
+
+if _looks_like_supabase and not _SUPABASE_INTEGRATION_MODE:
+    raise RuntimeError(
+        "\n\n"
+        "🚨  SAFETY ABORT: DATABASE_URL / TEST_DATABASE_URL points to Supabase (production)!\n"
+        "    Running the test suite against Supabase will call drop_all() and DESTROY user data.\n"
+        "\n"
+        "    If you intentionally want read-only integration tests against Supabase, set:\n"
+        "        SUPABASE_INTEGRATION_MODE=true\n"
+        "\n"
+        "    Otherwise, unset DATABASE_URL / TEST_DATABASE_URL to use the local SQLite fallback,\n"
+        "    or point them at your LOCAL postgres instance (localhost:5432).\n"
+    )
 
 import uuid as _uuid
 import asyncio
@@ -37,6 +65,7 @@ os.environ.setdefault("ENCRYPTION_KEY", "ci-test-encryption-key-32-chars!!")
 
 import pytest
 import pytest_asyncio
+import sqlalchemy as sa
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
@@ -102,7 +131,12 @@ from app.core.database import Base, get_db  # noqa: E402
 
 @pytest_asyncio.fixture(scope="session")
 async def _engine():
-    """Session-scoped async engine. Created inside the running loop."""
+    """Session-scoped async engine. Created inside the running loop.
+
+    When SUPABASE_INTEGRATION_MODE is active we SKIP drop_all / create_all.
+    The schema is assumed to already exist on Supabase (managed manually via
+    supabase_schema.sql). Touching it from here would destroy production data.
+    """
     retries = 10
 
     for i in range(retries):
@@ -114,9 +148,16 @@ async def _engine():
                 echo=False,
             )
 
-            async with eng.begin() as conn:
-                await conn.run_sync(Base.metadata.drop_all)
-                await conn.run_sync(Base.metadata.create_all)
+            if not _SUPABASE_INTEGRATION_MODE:
+                # Local CI / SQLite: create a fresh schema for each test run
+                async with eng.begin() as conn:
+                    await conn.run_sync(Base.metadata.drop_all)
+                    await conn.run_sync(Base.metadata.create_all)
+            else:
+                # Supabase integration mode: just verify connectivity
+                async with eng.connect() as conn:
+                    await conn.execute(sa.text("SELECT 1"))
+                print("[conftest] Supabase integration mode — skipping drop_all/create_all")
 
             break
 
@@ -130,8 +171,10 @@ async def _engine():
 
     yield eng
 
-    async with eng.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    if not _SUPABASE_INTEGRATION_MODE:
+        # Only wipe the local test schema — NEVER wipe Supabase
+        async with eng.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
 
     await eng.dispose()
 
