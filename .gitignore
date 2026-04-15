@@ -61,7 +61,6 @@ frontend/build/
 
 # Vite
 frontend/.vite/
-package-lock.json
 
 # Testing
 .vitest/

@@ -1,6 +1,6 @@
 """
 Security utilities for ETE Digital
-- Password hashing (Argon2)
+- Password hashing (Argon2 via argon2-cffi)
 - JWT token generation and validation
 - Field-level encryption (Fernet)
 - RBAC decorators
@@ -8,7 +8,8 @@ Security utilities for ETE Digital
 
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 import jwt
 from jwt import PyJWTError as JWTError
 from cryptography.fernet import Fernet
@@ -19,8 +20,8 @@ import hashlib
 
 from app.core.config import settings
 
-# Password hashing with Argon2
-pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+# Password hashing with Argon2 (argon2-cffi — actively maintained)
+_ph = PasswordHasher()
 
 # HTTP Bearer token scheme
 security = HTTPBearer()
@@ -30,13 +31,16 @@ security = HTTPBearer()
 
 
 def hash_password(password: str) -> str:
-    """Hash password using Argon2"""
-    return pwd_context.hash(password)
+    """Hash password using Argon2id (argon2-cffi)"""
+    return _ph.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
-    """Verify password against hash"""
-    return pwd_context.verify(plain_password, hashed_password)
+    """Verify password against Argon2 hash"""
+    try:
+        return _ph.verify(hashed_password, plain_password)
+    except (VerifyMismatchError, VerificationError, InvalidHashError):
+        return False
 
 
 def validate_password_strength(password: str) -> bool:
