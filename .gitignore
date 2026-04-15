@@ -200,6 +200,8 @@ secrets.json
 # Misc
 # ==========================================
 .history/
+.claude/
+.code-review-graph/
 .git-blame-ignore-revs
 coverage.xml
 # Ignore all varying venv folders
