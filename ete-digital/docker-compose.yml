@@ -1,106 +1,153 @@
+# ============================================================
+# ETE Digital — Production Docker Compose
+# ============================================================
+# Usage:
+#   Production:   docker compose up -d
+#   Dev override: docker compose -f docker-compose.yml -f docker-compose.override.yml up
+#
+# Required env vars (copy .env.example → .env and fill in):
+#   POSTGRES_PASSWORD, JWT_SECRET_KEY, ENCRYPTION_KEY
+# ============================================================
+
+name: ete-digital
+
 services:
-  # ─── PostgreSQL ──────────────────────────────────────────────
+
+  # ─── PostgreSQL ──────────────────────────────────────────────────────────────
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-ete_digital}
-      POSTGRES_USER: ${POSTGRES_USER:-ete_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
-    ports:
-      - "5432:5432"
+      POSTGRES_DB:       ${POSTGRES_DB:-ete_digital}
+      POSTGRES_USER:     ${POSTGRES_USER:-ete_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - backend-net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ete_user} -d ${POSTGRES_DB:-ete_digital}"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    # Expose only to internal network in production (no host port binding)
+    # Override in docker-compose.override.yml to expose 5432 locally
 
-  # ─── Redis ────────────────────────────────────────────────────
+  # ─── Redis ───────────────────────────────────────────────────────────────────
   redis:
     image: redis:7-alpine
     restart: unless-stopped
-    ports:
-      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - redis_data:/data
+    networks:
+      - backend-net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 3
+      start_period: 5s
 
-  # ─── MinIO (S3-compatible object storage) ─────────────────────
+  # ─── MinIO (S3-compatible object storage) ────────────────────────────────────
   minio:
-    image: minio/minio:latest
+    image: minio/minio:RELEASE.2024-11-07T00-52-20Z
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_USER:     ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
-    ports:
-      - "9000:9000"   # S3 API
-      - "9001:9001"   # MinIO Console
     volumes:
       - minio_data:/data
+    networks:
+      - backend-net
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # ─── MailHog (Local SMTP + Web UI for dev email testing) ──────
-  mailhog:
-    image: mailhog/mailhog:latest
-    restart: unless-stopped
+      start_period: 15s
+    # Console UI exposed to host; S3 API internal only
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI → http://localhost:8025
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
 
-  # ─── Backend ──────────────────────────────────────────────────
+  # ─── MailHog (local SMTP dev server) ─────────────────────────────────────────
+  # Uncomment in docker-compose.override.yml for local dev.
+  # Not included here so production compose doesn't spin it up.
+
+  # ─── Backend (FastAPI + Uvicorn) ─────────────────────────────────────────────
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      target: production
     restart: unless-stopped
     env_file:
       - ./backend/.env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ete_digital}
-      REDIS_URL: redis://redis:6379/0
-      SMTP_HOST: mailhog
-      SMTP_PORT: "1025"
-      EMAIL_ENABLED: "true"
+      # These override .env so container-to-container hostnames work
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ete_digital}
+      REDIS_URL:    redis://redis:6379/0
       MINIO_ENDPOINT: minio
-      MINIO_PORT: "9000"
+      MINIO_PORT:     "9000"
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
       MINIO_SECURE: "false"
+      # Email — uses MailHog in override; set production SMTP vars in .env
+      SMTP_HOST: ${SMTP_HOST:-mailhog}
+      SMTP_PORT: ${SMTP_PORT:-1025}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: >
-      sh -c "
-        alembic upgrade head &&
-        uvicorn app.main:app --host 0.0.0.0 --port 8000
-      "
+      minio:
+        condition: service_healthy
+    networks:
+      - backend-net
+      - frontend-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
-  # ─── Frontend ─────────────────────────────────────────────────
+  # ─── Frontend (React + Vite → nginx) ─────────────────────────────────────────
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
     restart: unless-stopped
     ports:
-      - "5173:80"
+      - "${FRONTEND_PORT:-80}:80"
     depends_on:
-      - backend
-    environment:
-      VITE_API_URL: http://backend:8000
+      backend:
+        condition: service_healthy
+    networks:
+      - frontend-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/healthz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
+# ─── Named volumes ────────────────────────────────────────────────────────────
 volumes:
   postgres_data:
+  redis_data:
   minio_data:
+
+# ─── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  backend-net:
+    driver: bridge
+  frontend-net:
+    driver: bridge

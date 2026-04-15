@@ -1,18 +1,16 @@
-FROM node:20-alpine as development
+# ── Dev Dockerfile (HMR + volume mounts) ──────────────────────────────────────
+# Used by docker-compose.override.yml for local development only.
+# The production image is in Dockerfile.
+FROM node:22-alpine AS development
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json package-lock.json* ./
+# Install deps (layer-cached; node_modules come from volume override in compose)
+COPY package.json package-lock.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install
-
-# Copy source code
-COPY . .
-
-# Expose port
+# Source is mounted via docker-compose volume — no COPY needed
 EXPOSE 5173
 
-# Start dev server
-CMD ["npm", "run", "dev"]
+# --host exposes Vite's dev server to the Docker network (required for port mapping)
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
