@@ -66,6 +66,7 @@ import PrivacyPolicyPage from './pages/marketing/PrivacyPolicyPage';
 import TermsPage from './pages/marketing/TermsPage';
 import CookiePolicyPage from './pages/marketing/CookiePolicyPage';
 import SafeJobSearchPage from './pages/marketing/SafeJobSearchPage';
+import ScrollToTop from './components/layout/ScrollToTop';
 
 // ---- Settings Pages ----
 import AccountSettingsPage from './pages/settings/AccountSettingsPage';
@@ -82,6 +83,7 @@ export default function AppRouter() {
 
     return (
         <BrowserRouter>
+            <ScrollToTop />
             <Routes>
                 {/* Landing Page */}
                 <Route
