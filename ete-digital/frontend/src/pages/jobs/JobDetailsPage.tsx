@@ -9,7 +9,7 @@ import { jobsApi, Job } from '../../api/jobs';
 import { useAuthStore } from '../../stores/authStore';
 import {
     ArrowLeft, MapPin, Clock, Globe, Eye, Users,
-    CheckCircle2, Star, Loader2, Building2, CalendarDays, Zap, Code2, ChevronRight
+    CheckCircle2, Star, Loader2, Building2, CalendarDays, Zap, Code2, ChevronRight, ExternalLink
 } from 'lucide-react';
 
 export default function JobDetailsPage() {
@@ -237,6 +237,21 @@ export default function JobDetailsPage() {
                                     <Link to="/dashboard" className="text-sm font-bold text-white hover:text-emerald-300 transition-colors flex items-center justify-center gap-1">
                                         Go to dashboard <ChevronRight size={14} />
                                     </Link>
+                                </div>
+                            ) : job.external_apply_url ? (
+                                /* ── External Application Redirect ── */
+                                <div className="space-y-3">
+                                    <a
+                                        href={job.external_apply_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold text-lg rounded-2xl hover:scale-[1.02] transform transition-all shadow-[0_0_20px_rgba(37,99,235,0.3)] flex items-center justify-center gap-2"
+                                    >
+                                        <ExternalLink size={18} /> Apply on Company Website
+                                    </a>
+                                    <p className="text-xs text-slate-500 text-center leading-relaxed">
+                                        You'll be redirected to {job.company}'s official careers page to complete your application.
+                                    </p>
                                 </div>
                             ) : (
                                 <>

@@ -33,6 +33,9 @@ class JobCreate(BaseModel):
     has_tryout: bool = False
     tryout_config: Optional[Dict] = None
 
+    # External application redirect (optional)
+    external_apply_url: Optional[str] = Field(None, max_length=2048)
+
     # Outcome-based terms (optional)
     outcome_terms: Optional[Dict] = None
 
@@ -72,6 +75,7 @@ class JobUpdate(BaseModel):
     tryout_config: Optional[Dict] = None
     outcome_terms: Optional[Dict] = None
     custom_questions: Optional[Dict] = None
+    external_apply_url: Optional[str] = Field(None, max_length=2048)
 
     @model_validator(mode="after")
     def _validate_salary_range(self) -> "JobUpdate":
@@ -113,6 +117,7 @@ class JobResponse(BaseModel):
     tryout_config: Optional[Dict]
     outcome_terms: Optional[Dict]
     custom_questions: Optional[Dict]
+    external_apply_url: Optional[str] = None
 
     status: JobStatus
     views_count: int

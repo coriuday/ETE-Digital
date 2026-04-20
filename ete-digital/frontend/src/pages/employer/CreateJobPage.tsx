@@ -10,7 +10,7 @@ import AppShell from '../../components/layout/AppShell';
 import {
     Briefcase, MapPin, DollarSign, Code, Users,
     CheckCircle2, AlertCircle, Loader2, ChevronRight,
-    Zap, Globe, X, Plus,
+    Zap, Globe, X, Plus, ExternalLink,
 } from 'lucide-react';
 
 const JOB_TYPES = [
@@ -58,6 +58,7 @@ export default function CreateJobPage() {
         salary_currency: 'INR',
         experience_required: '',
         has_tryout: false,
+        external_apply_url: '',
     });
 
     const inputCls = `w-full px-4 py-2.5 border rounded-xl text-sm outline-none transition-all duration-150
@@ -123,6 +124,7 @@ export default function CreateJobPage() {
             if (salaryMin !== null) jobData.salary_min = salaryMin;
             if (salaryMax !== null) jobData.salary_max = salaryMax;
             if (formData.experience_required) jobData.experience_required = formData.experience_required;
+            if (formData.external_apply_url.trim()) jobData.external_apply_url = formData.external_apply_url.trim();
 
             await jobsApi.createJob(jobData);
             navigate('/employer/jobs');
@@ -312,7 +314,26 @@ export default function CreateJobPage() {
                             </p>
                         </SectionCard>
 
-                        {/* Section 5 — Trial Task */}
+                        {/* Section 5.5 — External Application URL */}
+                        <SectionCard title="External Application Link" icon={<ExternalLink size={16} />} isDark={isDark}>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className={labelCls}>Company Application URL <span className={`text-xs font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(optional)</span></label>
+                                    <input
+                                        type="url" name="external_apply_url" value={formData.external_apply_url} onChange={handleChange}
+                                        className={inputCls} placeholder="https://careers.yourcompany.com/apply/job-id"
+                                    />
+                                </div>
+                                <div className={`flex items-start gap-2.5 p-3 rounded-xl ${isDark ? 'bg-amber-900/20 border border-amber-700/30' : 'bg-amber-50 border border-amber-100'}`}>
+                                    <ExternalLink size={14} className={`mt-0.5 flex-shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
+                                    <p className={`text-xs leading-relaxed ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                                        If provided, candidates clicking "Apply" will be redirected to your company's application page instead of applying through Jobsrow. Leave empty to use Jobsrow's built-in application form.
+                                    </p>
+                                </div>
+                            </div>
+                        </SectionCard>
+
+                        {/* Section 6 — Trial Task */}
                         <SectionCard title="Trial Task (Tryout)" icon={<Zap size={16} />} isDark={isDark}>
                             <div className="flex items-start gap-4">
                                 <div

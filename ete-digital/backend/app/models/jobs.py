@@ -78,6 +78,7 @@ class Job(Base):
 
     # Tryout configuration
     has_tryout = Column(Boolean, default=False, nullable=False)
+    external_apply_url = Column(String(2048), nullable=True)  # Redirect to company website
     tryout_config = Column(JSONB)  # {'duration_days': 3, 'payment': 5000, 'rubric': {...}}
 
     # Outcome-based pricing (optional)

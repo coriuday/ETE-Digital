@@ -19,6 +19,7 @@ export interface Job {
     skills_required: string[];
     experience_required: string | null;
     has_tryout: boolean;
+    external_apply_url: string | null;
     status: string;
     views_count: number;
     applications_count: number;
