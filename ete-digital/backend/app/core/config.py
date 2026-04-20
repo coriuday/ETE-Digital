@@ -83,13 +83,15 @@ class Settings(BaseSettings):
 
     # Email / SMTP
     EMAIL_ENABLED: bool = True  # Set False to skip sending (console log only)
+    EMAIL_PROVIDER: str = "smtp"  # 'smtp' or 'resend'
+    RESEND_API_KEY: Optional[str] = None  # Resend.com API key (free: 100/day)
     SMTP_HOST: str = "localhost"
     SMTP_PORT: int = 1025
     SMTP_USE_TLS: bool = False  # True = STARTTLS (Gmail / Mailgun port 587)
     SMTP_USER: Optional[str] = None
     SMTP_PASSWORD: Optional[str] = None
-    SMTP_FROM_EMAIL: str = "noreply@etedigital.com"
-    SMTP_FROM_NAME: str = "ETE Digital"
+    SMTP_FROM_EMAIL: str = "noreply@jobsrow.com"
+    SMTP_FROM_NAME: str = "Jobrows"
 
     # Object Storage - MinIO/S3
     MINIO_ENDPOINT: str = "localhost:9000"
