@@ -21,8 +21,24 @@ const footerSections = {
         { label: 'Browse Candidates', href: '/employer/applications' },
         { label: 'Grade Tryouts', href: '/employer/tryouts/grade' },
         { label: 'Analytics Dashboard', href: '/employer/analytics' },
-        { label: 'Employer FAQ', href: '/faq' },
+        { label: 'Employer FAQ', href: '/help/employers' },
         { label: 'Contact Sales', href: '/contact' },
+    ],
+    'Company': [
+        { label: 'About JobsRow', href: '/about' },
+        { label: 'How It Works', href: '/how-it-works' },
+        { label: 'FAQ', href: '/faq' },
+        { label: 'Contact Us', href: '/contact' },
+        { label: 'ESG at JobsRow', href: '/about' },
+        { label: 'Safe Job Search', href: '/about' },
+    ],
+    'Help': [
+        { label: 'Help Center', href: '/help' },
+        { label: 'Help for Job Seekers', href: '/help/job-seekers' },
+        { label: 'Help for Employers', href: '/help/employers' },
+        { label: 'Privacy Policy', href: '/privacy-policy' },
+        { label: 'Terms of Service', href: '/terms' },
+        { label: 'Cookie Policy', href: '/cookies' },
     ],
 };
 
@@ -63,13 +79,13 @@ const extraFooterLinks = [
     { label: 'FAQ', href: '/faq' },
     { label: 'Contact Us', href: '/contact' },
     { label: 'Career Advice', href: '#' },
-    { label: 'Browse Jobs', href: '#' },
+    { label: 'Browse Jobs', href: '/jobs' },
     { label: 'Browse Companies', href: '#' },
     { label: 'Salaries', href: '#' },
     { label: 'Events', href: '#' },
     { label: 'Work at JobsRow', href: '#' },
     { label: 'Countries', href: '#' },
-    { label: 'Help', href: '#' },
+    { label: 'Help', href: '/help' },
     { label: 'ESG at JobsRow', href: '/about' },
     { label: 'Guidelines for Safe Job Search', href: '/about' },
 ];
@@ -88,7 +104,7 @@ export default function Footer() {
         <footer className="bg-gray-50 text-gray-600 border-t border-gray-200">
             {/* Main Footer Grid */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+                <div className="grid grid-cols-1 lg:grid-cols-6 gap-10">
 
                     {/* Brand Column */}
                     <div className="lg:col-span-2">

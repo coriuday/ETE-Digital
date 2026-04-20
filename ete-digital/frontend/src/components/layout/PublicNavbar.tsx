@@ -19,6 +19,7 @@ export default function PublicNavbar() {
         { label: 'Jobs', href: '/jobs' },
         { label: 'How It Works', href: '/how-it-works' },
         { label: 'About', href: '/about' },
+        { label: 'Help', href: '/help' },
     ];
 
     const isActive = (href: string) => location.pathname === href;

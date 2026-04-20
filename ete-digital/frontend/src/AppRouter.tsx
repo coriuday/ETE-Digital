@@ -57,6 +57,9 @@ import AboutPage from './pages/marketing/AboutPage';
 import ContactPage from './pages/marketing/ContactPage';
 import FaqPage from './pages/marketing/FaqPage';
 import PricingPage from './pages/marketing/PricingPage';
+import HelpCenterPage from './pages/marketing/HelpCenterPage';
+import HelpJobSeekersPage from './pages/marketing/HelpJobSeekersPage';
+import HelpEmployersPage from './pages/marketing/HelpEmployersPage';
 
 // ---- Legal Pages ----
 import PrivacyPolicyPage from './pages/marketing/PrivacyPolicyPage';
@@ -111,6 +114,11 @@ export default function AppRouter() {
                 <Route path="/faq" element={<FaqPage />} />
                 <Route path="/pricing" element={<PricingPage />} />
                 <Route path="/how-it-works" element={<HowItWorksPage />} />
+
+                {/* Help Center Pages */}
+                <Route path="/help" element={<HelpCenterPage />} />
+                <Route path="/help/job-seekers" element={<HelpJobSeekersPage />} />
+                <Route path="/help/employers" element={<HelpEmployersPage />} />
 
                 {/* Legal Pages */}
                 <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
