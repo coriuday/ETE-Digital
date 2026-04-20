@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Sun, Moon, LayoutGrid } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -12,7 +12,7 @@ export default function PublicNavbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const { isAuthenticated } = useAuthStore();
     const location = useLocation();
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const isDark = theme === 'dark';
 
     const navLinks = [
@@ -34,17 +34,7 @@ export default function PublicNavbar() {
 
                     {/* Logo — Jobsrow */}
                     <Link to="/" className="flex items-center gap-2.5 group">
-                        <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 flex items-center justify-center shadow-lg group-hover:shadow-indigo-500/40 transition-shadow duration-300">
-                            <LayoutGrid className="w-5 h-5 text-white" />
-                        </div>
-                        <div className="flex items-baseline gap-0.5">
-                            <span className={`text-xl font-extrabold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                                Jobs
-                            </span>
-                            <span className="text-xl font-extrabold tracking-tight bg-gradient-to-r from-violet-600 to-indigo-500 bg-clip-text text-transparent">
-                                row
-                            </span>
-                        </div>
+                        <span className="text-[28px] font-extrabold text-[#176BBE] tracking-tight">JobsRow.com</span>
                     </Link>
 
                     {/* Desktop Nav Links */}
@@ -66,25 +56,8 @@ export default function PublicNavbar() {
                         ))}
                     </div>
 
-                    {/* Right: Theme Toggle + CTA Buttons */}
+                    {/* Right: CTA Buttons */}
                     <div className="hidden md:flex items-center gap-3">
-                        {/* Dark/Light Toggle */}
-                        <button
-                            id="theme-toggle-desktop"
-                            onClick={toggleTheme}
-                            aria-label="Toggle dark/light mode"
-                            className={`p-2 rounded-xl transition-all duration-200 ${
-                                isDark
-                                    ? 'bg-gray-700 text-amber-400 hover:bg-gray-600'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
-                        >
-                            {isDark
-                                ? <Sun className="w-4 h-4" />
-                                : <Moon className="w-4 h-4" />
-                            }
-                        </button>
-
                         {isAuthenticated ? (
                             <Link
                                 to="/dashboard"
@@ -112,20 +85,8 @@ export default function PublicNavbar() {
                         )}
                     </div>
 
-                    {/* Mobile: Theme + Menu Toggle */}
+                    {/* Mobile: Menu Toggle */}
                     <div className="md:hidden flex items-center gap-2">
-                        <button
-                            id="theme-toggle-mobile"
-                            onClick={toggleTheme}
-                            aria-label="Toggle dark/light mode"
-                            className={`p-2 rounded-xl transition-all duration-200 ${
-                                isDark
-                                    ? 'bg-gray-700 text-amber-400'
-                                    : 'bg-gray-100 text-gray-600'
-                            }`}
-                        >
-                            {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                        </button>
                         <button
                             className={`p-2 transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
                             onClick={() => setMenuOpen(!menuOpen)}

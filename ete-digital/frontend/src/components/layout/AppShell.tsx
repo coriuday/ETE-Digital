@@ -10,9 +10,8 @@ import { useTheme } from '../../contexts/ThemeContext';
 import {
     LayoutDashboard, Search, Briefcase, FileText, Trophy,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
-    ChevronLeft, ChevronRight, Menu, X, ShieldCheck,
+    ChevronLeft, ChevronRight, Menu, X,
     PlusCircle, ClipboardList, Star, UserCheck, CheckCheck,
-    Sun, Moon, LayoutGrid,
 } from 'lucide-react';
 
 interface NavItem {
@@ -84,7 +83,7 @@ export default function AppShell({ children }: AppShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
-    const { theme, toggleTheme } = useTheme();
+    const { theme } = useTheme();
     const isDark = theme === 'dark';
 
     const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
@@ -127,17 +126,16 @@ export default function AppShell({ children }: AppShellProps) {
                 className={`flex items-center gap-3 px-4 py-5 border-b border-white/10 hover:bg-white/5 transition-colors
         ${collapsed && !mobile ? 'justify-center' : ''}`}
             >
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                    {user?.role === 'admin' ? <ShieldCheck size={18} /> : <LayoutGrid size={18} />}
-                </div>
                 {(!collapsed || mobile) && (
                     <div>
                         <div className="flex items-baseline gap-0">
-                            <span className="text-sm font-extrabold text-white leading-tight">Jobs</span>
-                            <span className="text-sm font-extrabold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">row</span>
+                            <span className="text-[28px] font-extrabold text-[#176BBE] tracking-tight leading-none">JobsRow.com</span>
                         </div>
-                        <p className="text-xs text-gray-400">{roleLabel} Panel</p>
+                        <p className="text-xs text-gray-400 mt-1">{roleLabel} Panel</p>
                     </div>
+                )}
+                {(collapsed && !mobile) && (
+                    <span className="text-[28px] font-extrabold text-[#176BBE] tracking-tight leading-none">JR</span>
                 )}
             </Link>
 
@@ -243,20 +241,6 @@ export default function AppShell({ children }: AppShellProps) {
                     </button>
 
                     <div className="flex-1" />
-
-                    {/* Dark/Light Mode Toggle */}
-                    <button
-                        id="dashboard-theme-toggle"
-                        onClick={toggleTheme}
-                        aria-label="Toggle dark/light mode"
-                        className={`p-2 rounded-xl transition-all duration-200 ${
-                            isDark
-                                ? 'bg-gray-700 text-amber-400 hover:bg-gray-600'
-                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                    >
-                        {isDark ? <Sun size={18} /> : <Moon size={18} />}
-                    </button>
 
                     {/* Notification Bell */}
                     <div className="relative" ref={notifRef}>
