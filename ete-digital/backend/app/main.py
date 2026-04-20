@@ -44,11 +44,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
-            f"script-src 'self' 'nonce-{nonce}'; "  # nonce replaces 'unsafe-inline'
+            f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com; "
             f"style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
             f"font-src 'self' https://fonts.gstatic.com; "
             f"img-src 'self' data: https:; "
-            f"connect-src 'self' ws: wss: http://localhost:8000 http://127.0.0.1:8000 https://ete-digital-backend.onrender.com https://*.supabase.co;"
+            f"frame-src https://accounts.google.com; "
+            f"connect-src 'self' ws: wss: http://localhost:8000 http://127.0.0.1:8000 https://ete-digital-backend.onrender.com https://*.supabase.co https://accounts.google.com;"
         )
         if settings.ENVIRONMENT == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
@@ -130,12 +131,16 @@ async def root():
 
 # Register routers
 from app.api.auth import auth  # noqa: E402
+from app.api.auth import totp as totp_router  # noqa: E402
+from app.api.auth import oauth as oauth_router  # noqa: E402
 from app.api.users import users  # noqa: E402
 from app.api.jobs import jobs, analytics  # noqa: E402
 from app.api.talent import tryouts, vault  # noqa: E402
 from app.api.platform import notifications, admin, websocket  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
+app.include_router(totp_router.router, tags=["Two-Factor Auth"])     # prefix in router: /api/auth/2fa
+app.include_router(oauth_router.router, tags=["OAuth"])              # prefix in router: /api/auth/oauth
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])

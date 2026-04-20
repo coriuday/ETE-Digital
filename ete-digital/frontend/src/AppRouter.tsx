@@ -12,6 +12,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
 import EmailVerificationPage from './pages/auth/EmailVerificationPage';
+import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
 
 // ---- Misc Pages ----
 import DashboardPage from './pages/candidate/DashboardPage';
@@ -71,6 +72,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 // ---- Settings Pages ----
 import AccountSettingsPage from './pages/settings/AccountSettingsPage';
 import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
+import TwoFactorPage from './pages/settings/TwoFactorPage';
 
 export default function AppRouter() {
     const { isAuthenticated, user } = useAuthStore();
@@ -103,6 +105,9 @@ export default function AppRouter() {
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/verify-email" element={<EmailVerificationPage />} />
+
+                {/* OAuth Callback — must be public (no auth guard) */}
+                <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
                 {/* Public Job Search */}
                 <Route path="/jobs" element={<JobSearchPage />} />
@@ -137,6 +142,7 @@ export default function AppRouter() {
                     {/* Settings */}
                     <Route path="/settings" element={<AccountSettingsPage />} />
                     <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+                    <Route path="/settings/2fa" element={<TwoFactorPage />} />
 
                     {/* Candidate Routes */}
                     <Route path="/dashboard/applications" element={<MyApplicationsPage />} />

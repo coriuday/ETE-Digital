@@ -1,8 +1,9 @@
 """
 User and Authentication Models
+Includes: 2FA (TOTP), Google OAuth, email/phone verification, RLS-safe fields.
 """
 
-from sqlalchemy import Column, String, Boolean, DateTime, Integer, Enum as SQLEnum, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, Integer, Text, Enum as SQLEnum, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -41,13 +42,27 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     last_login_at = Column(DateTime(timezone=True))
 
-    # Email verification
+    # Email verification (legacy: is_verified still used; email_verified added in migration 002)
     verification_token = Column(String(255))
     verification_token_expires = Column(DateTime(timezone=True))
+    email_verified = Column(Boolean, default=False, nullable=False)
+
+    # Phone verification (set true after SMS OTP confirmed)
+    phone_verified = Column(Boolean, default=False, nullable=False)
 
     # Password reset
     reset_token = Column(String(255))
     reset_token_expires = Column(DateTime(timezone=True))
+
+    # Two-Factor Authentication — TOTP (RFC 6238, Google Authenticator compatible)
+    totp_secret = Column(String(255), nullable=True)       # Base32 secret (encrypted)
+    totp_enabled = Column(Boolean, default=False, nullable=False)
+    totp_backup_codes = Column(JSONB, default=list)        # Hashed one-time codes
+
+    # OAuth / Social Login (Google Sign-In, etc.)
+    oauth_provider = Column(String(50), nullable=True)     # 'google', 'github', etc.
+    oauth_provider_id = Column(String(255), nullable=True) # Provider's sub/user ID
+    avatar_url = Column(String(500), nullable=True)        # From OAuth provider or upload
 
     # ORM relationships
     profile = relationship(
@@ -96,6 +111,9 @@ class UserProfile(Base):
     salary_expectation_max = Column(Integer, nullable=True)  # Candidate's ceiling salary
     preferred_job_types = Column(JSONB, default=list)  # ['full_time', 'contract']
     preferred_locations = Column(JSONB, default=list)  # ['Mumbai', 'Remote', 'Bangalore']
+
+    # Phone verification timestamp (set when phone OTP confirmed)
+    phone_verified_at = Column(DateTime(timezone=True), nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

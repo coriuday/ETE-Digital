@@ -7,7 +7,7 @@ Security utilities for ETE Digital
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 import jwt
@@ -17,6 +17,14 @@ from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import base64
 import hashlib
+import secrets
+import string
+
+try:
+    import pyotp
+    PYOTP_AVAILABLE = True
+except ImportError:
+    PYOTP_AVAILABLE = False
 
 from app.core.config import settings
 
@@ -171,6 +179,81 @@ def decrypt_field(value: str) -> str:
     except Exception:
         # Value wasn't encrypted (e.g., old data or test data) — return as-is
         return value
+
+
+# ========== Two-Factor Authentication (TOTP) ==========
+
+
+def generate_totp_secret() -> str:
+    """
+    Generate a cryptographically random Base32 TOTP secret.
+    Store this encrypted in users.totp_secret.
+    Compatible with Google Authenticator, Authy, 1Password, etc.
+    """
+    if PYOTP_AVAILABLE:
+        return pyotp.random_base32()
+    # Fallback: manual Base32 secret if pyotp not installed yet
+    alphabet = string.ascii_uppercase + "234567"  # Base32 charset
+    return "".join(secrets.choice(alphabet) for _ in range(32))
+
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    """
+    Verify a 6-digit TOTP code against the stored secret.
+    Allows 1 time-step window (30s before/after) to handle clock drift.
+    Returns False if pyotp is not installed.
+    """
+    if not PYOTP_AVAILABLE:
+        return False
+    try:
+        totp = pyotp.TOTP(secret)
+        return totp.verify(code, valid_window=1)
+    except Exception:
+        return False
+
+
+def generate_backup_codes(count: int = 8) -> tuple[List[str], List[str]]:
+    """
+    Generate one-time backup codes for 2FA recovery.
+    Returns: (plaintext_codes_for_user, hashed_codes_for_db)
+    Show plaintext to user ONCE. Store only hashed versions in DB.
+    Format: XXXX-XXXX-XXXX (12 alphanumeric chars with dashes)
+    """
+    plaintext = []
+    hashed = []
+    for _ in range(count):
+        code = secrets.token_hex(6).upper()  # 12 hex chars
+        formatted = f"{code[:4]}-{code[4:8]}-{code[8:]}"  # e.g. A1B2-C3D4-E5F6
+        plaintext.append(formatted)
+        # Hash backup code (SHA-256 is fine — they're long random codes)
+        code_hash = hashlib.sha256(formatted.encode()).hexdigest()
+        hashed.append(code_hash)
+    return plaintext, hashed
+
+
+def verify_backup_code(code: str, hashed_codes: List[str]) -> tuple[bool, List[str]]:
+    """
+    Verify a backup code against the stored hashed list.
+    Returns (is_valid, remaining_codes_after_removal).
+    Backup codes are single-use — the used code is removed.
+    """
+    code_hash = hashlib.sha256(code.upper().replace(" ", "").encode()).hexdigest()
+    if code_hash in hashed_codes:
+        remaining = [h for h in hashed_codes if h != code_hash]
+        return True, remaining
+    return False, hashed_codes
+
+
+def generate_totp_qr_url(email: str, secret: str, issuer: str = "Jobrows") -> str:
+    """
+    Generate the otpauth:// URI for QR code display.
+    The frontend renders this as a QR code for the user to scan.
+    """
+    if PYOTP_AVAILABLE:
+        totp = pyotp.TOTP(secret)
+        return totp.provisioning_uri(name=email, issuer_name=issuer)
+    # Fallback URL format
+    return f"otpauth://totp/{issuer}:{email}?secret={secret}&issuer={issuer}&algorithm=SHA1&digits=6&period=30"
 
 
 # ========== RBAC Decorators ==========

@@ -23,6 +23,8 @@ interface AuthState {
     initializeAuth: () => Promise<void>;
     clearError: () => void;
     setTokens: (accessToken: string, refreshToken?: string) => void;
+    /** Called by OAuthCallbackPage — stores tokens then fetches user */
+    setTokensFromOAuth: (accessToken: string, refreshToken: string, _role: string) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -38,10 +40,19 @@ export const useAuthStore = create<AuthState>()(
 
             setTokens: (accessToken: string, refreshToken?: string) => {
                 const updates: Partial<AuthState> = { accessToken };
-                if (refreshToken) {
-                    updates.refreshToken = refreshToken;
-                }
+                if (refreshToken) updates.refreshToken = refreshToken;
                 set(updates);
+            },
+
+            setTokensFromOAuth: async (accessToken: string, refreshToken: string, _role: string) => {
+                set({ accessToken, refreshToken, isLoading: true });
+                try {
+                    const user = await authApi.getCurrentUser();
+                    set({ user, isAuthenticated: true, isLoading: false, isInitialized: true });
+                } catch {
+                    // Fallback: build minimal user from role claim in token
+                    set({ isAuthenticated: true, isLoading: false, isInitialized: true });
+                }
             },
 
             login: async (email: string, password: string) => {
