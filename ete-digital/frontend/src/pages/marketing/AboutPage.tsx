@@ -29,10 +29,10 @@ export default function AboutPage() {
             <section className="pt-24 pb-16 bg-gradient-to-br from-gray-900 to-primary-900">
                 <div className="max-w-4xl mx-auto px-4 text-center">
                     <h1 className="text-4xl md:text-5xl font-bold text-white mb-6">
-                        We're fixing how the world hires
+                        About Jobsrow
                     </h1>
                     <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-                        Jobsrow was born from a simple frustration: the hiring process was broken for everyone—candidates wasted time on unpaid tasks, and employers hired people who couldn't actually do the job.
+                        Jobsrow is a fast-growing job platform designed to simplify the way job seekers and employers connect. Our mission is to make job searching easier, faster, and more effective by putting users at the center of everything we do.
                     </p>
                 </div>
             </section>
@@ -40,14 +40,25 @@ export default function AboutPage() {
             {/* Mission */}
             <section className="py-16 bg-gray-50">
                 <div className="max-w-4xl mx-auto px-4">
-                    <div className="bg-white rounded-2xl p-10 shadow-soft border border-gray-100 text-center">
-                        <div className="text-4xl mb-4">🎯</div>
-                        <h2 className="text-2xl font-bold text-gray-900 mb-4">Our Mission</h2>
-                        <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto">
+                    <div className="bg-white rounded-2xl p-10 shadow-soft border border-gray-100">
+                        <div className="text-4xl mb-4 text-center">🎯</div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-4 text-center">Our Mission</h2>
+                        <p className="text-lg text-gray-600 leading-relaxed max-w-2xl mx-auto text-center">
                             To create a world where every hiring decision is based on demonstrated skill,
                             where candidates are compensated for their effort, and where employers find
                             the right person every single time—faster and fairer than ever before.
                         </p>
+                        <div className="mt-8 pt-6 border-t border-gray-100">
+                            <p className="text-sm text-gray-600 leading-[1.8] max-w-2xl mx-auto">
+                                We provide powerful tools that help job seekers explore opportunities, build professional profiles, and connect with employers across multiple industries. At the same time, we empower businesses to discover qualified talent through smart hiring solutions and streamlined recruitment processes.
+                            </p>
+                            <p className="text-sm text-gray-600 leading-[1.8] max-w-2xl mx-auto mt-3">
+                                With the support of advanced technology, data-driven insights, and intelligent matching systems, Jobsrow enhances the hiring experience for both candidates and employers. Our platform is built to reduce hiring time, improve candidate quality, and create meaningful career opportunities.
+                            </p>
+                            <p className="text-sm font-medium text-gray-900 leading-[1.8] max-w-2xl mx-auto mt-3">
+                                Jobsrow aims to become a trusted global platform by continuously innovating and adapting to the evolving job market, helping individuals grow their careers and organizations build strong teams.
+                            </p>
+                        </div>
                     </div>
                 </div>
             </section>

@@ -24,22 +24,22 @@ const footerSections = {
         { label: 'Employer FAQ', href: '/help/employers' },
         { label: 'Contact Sales', href: '/contact' },
     ],
-    'Company': [
-        { label: 'About JobsRow', href: '/about' },
-        { label: 'How It Works', href: '/how-it-works' },
-        { label: 'FAQ', href: '/faq' },
-        { label: 'Contact Us', href: '/contact' },
-        { label: 'ESG at JobsRow', href: '/about' },
-        { label: 'Safe Job Search', href: '/about' },
-    ],
-    'Help': [
-        { label: 'Help Center', href: '/help' },
-        { label: 'Help for Job Seekers', href: '/help/job-seekers' },
-        { label: 'Help for Employers', href: '/help/employers' },
-        { label: 'Privacy Policy', href: '/privacy-policy' },
-        { label: 'Terms of Service', href: '/terms' },
-        { label: 'Cookie Policy', href: '/cookies' },
-    ],
+    // 'Company': [
+    //     { label: 'About JobsRow', href: '/about' },
+    //     { label: 'How It Works', href: '/how-it-works' },
+    //     { label: 'FAQ', href: '/faq' },
+    //     { label: 'Contact Us', href: '/contact' },
+    //     { label: 'ESG at JobsRow', href: '/about' },
+    //     { label: 'Safe Job Search', href: '/about' },
+    // ],
+    // 'Help': [
+    //     { label: 'Help Center', href: '/help' },
+    //     { label: 'Help for Job Seekers', href: '/help/job-seekers' },
+    //     { label: 'Help for Employers', href: '/help/employers' },
+    //     { label: 'Privacy Policy', href: '/privacy-policy' },
+    //     { label: 'Terms of Service', href: '/terms' },
+    //     { label: 'Cookie Policy', href: '/cookies' },
+    // ],
 };
 
 const PinterestIcon = ({ className }: { className?: string }) => (
@@ -87,7 +87,7 @@ const extraFooterLinks = [
     { label: 'Countries', href: '#' },
     { label: 'Help', href: '/help' },
     { label: 'ESG at JobsRow', href: '/about' },
-    { label: 'Guidelines for Safe Job Search', href: '/about' },
+    { label: 'Guidelines for Safe Job Search', href: '/safe-job-search' },
 ];
 
 const bottomLinks = [

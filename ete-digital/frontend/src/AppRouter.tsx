@@ -65,6 +65,7 @@ import HelpEmployersPage from './pages/marketing/HelpEmployersPage';
 import PrivacyPolicyPage from './pages/marketing/PrivacyPolicyPage';
 import TermsPage from './pages/marketing/TermsPage';
 import CookiePolicyPage from './pages/marketing/CookiePolicyPage';
+import SafeJobSearchPage from './pages/marketing/SafeJobSearchPage';
 
 // ---- Settings Pages ----
 import AccountSettingsPage from './pages/settings/AccountSettingsPage';
@@ -125,6 +126,7 @@ export default function AppRouter() {
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/cookies" element={<CookiePolicyPage />} />
                 <Route path="/copyright" element={<CopyrightPage />} />
+                <Route path="/safe-job-search" element={<SafeJobSearchPage />} />
 
                 {/* Protected Routes */}
                 <Route element={<ProtectedRoute />}>

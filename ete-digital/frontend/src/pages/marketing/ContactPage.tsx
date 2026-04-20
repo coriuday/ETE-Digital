@@ -47,7 +47,7 @@ export default function ContactPage() {
                                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Contact Information</h2>
                                 <div className="space-y-4">
                                     {[
-                                        { icon: <Mail className="w-5 h-5 text-primary-600" />, label: 'Email', value: 'hello@etedigital.com' },
+                                        { icon: <Mail className="w-5 h-5 text-primary-600" />, label: 'Email', value: 'support@jobsrow.com' },
                                         { icon: <Phone className="w-5 h-5 text-primary-600" />, label: 'Phone', value: '+91 80000 00000' },
                                         { icon: <MapPin className="w-5 h-5 text-primary-600" />, label: 'Office', value: 'Bengaluru, Karnataka, India' },
                                         { icon: <MessageSquare className="w-5 h-5 text-primary-600" />, label: 'Response Time', value: 'Within 24 business hours' },
