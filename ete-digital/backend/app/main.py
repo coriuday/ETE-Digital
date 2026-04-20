@@ -14,6 +14,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 from app.core.limiter import limiter
 from app.core.config import settings
+from app.core.database import engine
 
 # ---- Security Headers Middleware ----
 
@@ -108,11 +109,39 @@ app.add_middleware(
 
 
 # Health check endpoint
-@app.get("/health")
+@app.get("/health", status_code=200)
 async def health_check():
-    """Health check endpoint for monitoring"""
+    """Deep health check — tests DB connectivity.
+
+    Returns HTTP 200 when healthy, HTTP 503 when the DB is unreachable.
+    Render uses this endpoint to decide whether to route traffic here.
+    """
+    from fastapi.responses import JSONResponse
+    from sqlalchemy import text as sa_text
+
+    db_status = "unknown"
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(sa_text("SELECT 1"))
+        db_status = "connected"
+    except Exception as exc:
+        import logging as _logging
+
+        _logging.getLogger(__name__).error("Health check DB probe failed: %s", exc)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "degraded",
+                "db": "disconnected",
+                "app": settings.APP_NAME,
+                "version": settings.APP_VERSION,
+                "environment": settings.ENVIRONMENT,
+            },
+        )
+
     return {
         "status": "healthy",
+        "db": db_status,
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "environment": settings.ENVIRONMENT,
@@ -139,8 +168,8 @@ from app.api.talent import tryouts, vault  # noqa: E402
 from app.api.platform import notifications, admin, websocket  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(totp_router.router, tags=["Two-Factor Auth"])     # prefix in router: /api/auth/2fa
-app.include_router(oauth_router.router, tags=["OAuth"])              # prefix in router: /api/auth/oauth
+app.include_router(totp_router.router, tags=["Two-Factor Auth"])  # prefix in router: /api/auth/2fa
+app.include_router(oauth_router.router, tags=["OAuth"])  # prefix in router: /api/auth/oauth
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])
