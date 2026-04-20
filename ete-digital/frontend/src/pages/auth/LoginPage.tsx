@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, Star, Trophy, ShieldCheck, Loader2, LayoutGrid } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { useTheme } from '../../contexts/ThemeContext';
+
 
 const brandPoints = [
     { icon: <Star size={16} className="text-violet-300" />, text: 'Real Skill-Based Job Tryouts' },
@@ -17,8 +17,7 @@ const brandPoints = [
 export default function LoginPage() {
     const navigate = useNavigate();
     const { login } = useAuthStore();
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -120,8 +119,7 @@ export default function LoginPage() {
             </div>
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────────── */}
-            <div className={`flex-1 flex items-center justify-center px-6 py-12 transition-colors duration-200
-                ${isDark ? 'bg-[#0d0b1e]' : 'bg-gray-50'}`}>
+            <div className="flex-1 flex items-center justify-center px-6 py-12 bg-gray-50">
                 <div className="w-full max-w-md">
 
                     {/* Mobile logo */}
@@ -130,23 +128,20 @@ export default function LoginPage() {
                             style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)' }}>
                             <LayoutGrid size={15} className="text-white" />
                         </div>
-                        <span className={`font-extrabold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>Jobsrow</span>
+                        <span className="font-extrabold text-lg text-gray-900">Jobsrow</span>
                     </Link>
 
-                    <h2 className={`text-3xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                    <h2 className="text-3xl font-bold mb-1 text-gray-900"
                         style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
                         Welcome back
                     </h2>
-                    <p className={`text-sm mb-8 ${isDark ? 'text-violet-300' : 'text-gray-500'}`}>
+                    <p className="text-sm mb-8 text-gray-500">
                         Sign in to continue your journey on Jobsrow
                     </p>
 
                     {/* Error banner */}
                     {error && (
-                        <div className={`mb-6 px-4 py-3 rounded-xl text-sm border
-                            ${isDark
-                                ? 'bg-red-950/50 border-red-800/50 text-red-300'
-                                : 'bg-red-50 border-red-200 text-red-700'}`}>
+                        <div className="mb-6 px-4 py-3 rounded-xl text-sm border bg-red-50 border-red-200 text-red-700">
                             {error}
                         </div>
                     )}
@@ -155,7 +150,7 @@ export default function LoginPage() {
 
                         {/* Email */}
                         <div>
-                            <label className={`block text-sm font-semibold mb-1.5 ${isDark ? 'text-violet-200' : 'text-gray-700'}`}>
+                            <label className="block text-sm font-semibold mb-1.5 text-gray-700">
                                 Email address
                             </label>
                             <input
@@ -165,21 +160,18 @@ export default function LoginPage() {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 placeholder="you@company.com"
-                                className={`w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400
-                                    ${isDark
-                                        ? 'bg-[#1f1c39] text-white border border-[#47464f]/40 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20'
-                                        : 'bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10'}`}
+                                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
                             />
                         </div>
 
                         {/* Password */}
                         <div>
                             <div className="flex items-center justify-between mb-1.5">
-                                <label className={`block text-sm font-semibold ${isDark ? 'text-violet-200' : 'text-gray-700'}`}>
+                                <label className="block text-sm font-semibold text-gray-700">
                                     Password
                                 </label>
                                 <Link to="/forgot-password"
-                                    className={`text-xs font-medium hover:underline ${isDark ? 'text-violet-400' : 'text-indigo-600'}`}>
+                                    className="text-xs font-medium hover:underline text-indigo-600">
                                     Forgot password?
                                 </Link>
                             </div>
@@ -191,16 +183,12 @@ export default function LoginPage() {
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Enter your password"
-                                    className={`w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400
-                                        ${isDark
-                                            ? 'bg-[#1f1c39] text-white border border-[#47464f]/40 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20'
-                                            : 'bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10'}`}
+                                    className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPw(!showPw)}
-                                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors
-                                        ${isDark ? 'text-violet-400 hover:text-violet-200' : 'text-gray-400 hover:text-gray-600'}`}>
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors text-gray-400 hover:text-gray-600">
                                     {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
                                 </button>
                             </div>
@@ -223,20 +211,20 @@ export default function LoginPage() {
 
                     {/* Divider */}
                     <div className="relative my-7 flex items-center gap-3">
-                        <div className={`flex-1 h-px ${isDark ? 'bg-[#47464f]/40' : 'bg-gray-200'}`} />
-                        <span className={`text-xs font-medium ${isDark ? 'text-violet-400' : 'text-gray-400'}`}>OR</span>
-                        <div className={`flex-1 h-px ${isDark ? 'bg-[#47464f]/40' : 'bg-gray-200'}`} />
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-xs font-medium text-gray-400">OR</span>
+                        <div className="flex-1 h-px bg-gray-200" />
                     </div>
 
-                    <p className={`text-center text-sm ${isDark ? 'text-violet-300' : 'text-gray-500'}`}>
+                    <p className="text-center text-sm text-gray-500">
                         Don't have an account?{' '}
                         <Link to="/register"
-                            className={`font-semibold hover:underline ${isDark ? 'text-violet-400' : 'text-indigo-600'}`}>
+                            className="font-semibold hover:underline text-indigo-600">
                             Sign up free
                         </Link>
                     </p>
 
-                    <p className={`text-center text-xs mt-8 ${isDark ? 'text-[#47464f]' : 'text-gray-300'}`}>
+                    <p className="text-center text-xs mt-8 text-gray-300">
                         Jobsrow © {new Date().getFullYear()} · Building the Future of Hiring
                     </p>
                 </div>

@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
 import { tryoutsApi, Submission } from '../../api/tryouts';
-import { useTheme } from '../../contexts/ThemeContext';
 import {
     Trophy, AlertCircle, Briefcase, Clock,
     CheckCircle, XCircle, Hourglass, DollarSign, Star, ArrowRight,
@@ -30,8 +29,7 @@ export default function MyTryoutsPage() {
     const [submissions, setSubmissions] = useState<Submission[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+
 
     useEffect(() => { loadSubmissions(); }, []);
 
@@ -48,16 +46,16 @@ export default function MyTryoutsPage() {
         }
     };
 
-    const bg = isDark ? 'bg-gray-900' : 'bg-gray-50';
-    const cardBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-    const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-    const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
+    const bg = 'bg-gray-50';
+    const cardBg = 'bg-white border-gray-200';
+    const textPrimary = 'text-gray-900';
+    const textMuted = 'text-gray-500';
 
     return (
         <AppShell>
             <div className={`min-h-full ${bg}`}>
                 {/* Header */}
-                <div className={`border-b px-6 py-5 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="border-b border-gray-200 px-6 py-5 bg-white">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center">
@@ -80,7 +78,7 @@ export default function MyTryoutsPage() {
                     {loading ? (
                         <div className="space-y-4">
                             {[1, 2, 3].map(i => (
-                                <div key={i} className={`h-40 rounded-2xl animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                                <div key={i} className="h-40 rounded-2xl animate-pulse bg-gray-200" />
                             ))}
                         </div>
                     ) : error ? (
@@ -88,13 +86,13 @@ export default function MyTryoutsPage() {
                             <AlertCircle size={40} className="mb-3 opacity-60" />
                             <p className="text-sm">{error}</p>
                             <button onClick={loadSubmissions}
-                                className={`mt-4 px-5 py-2 rounded-xl text-sm font-medium transition-colors ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-100 hover:bg-gray-200 text-gray-700'}`}
+                                className="mt-4 px-5 py-2 rounded-xl text-sm font-medium transition-colors bg-gray-100 hover:bg-gray-200 text-gray-700"
                             >
                                 Try Again
                             </button>
                         </div>
                     ) : submissions.length === 0 ? (
-                        <div className={`flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+                        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-gray-300">
                             <Trophy size={48} className="mb-4 opacity-20" />
                             <h3 className={`font-bold text-lg mb-1 ${textPrimary}`}>No tryout submissions yet</h3>
                             <p className={`text-sm mb-6 max-w-xs ${textMuted}`}>
@@ -141,7 +139,7 @@ export default function MyTryoutsPage() {
 
                                             {/* Scores */}
                                             {(sub.auto_score !== undefined || sub.manual_score !== undefined || sub.final_score !== undefined) && (
-                                                <div className={`grid grid-cols-3 gap-3 p-4 rounded-xl mb-4 ${isDark ? 'bg-gray-700/50' : 'bg-gray-50'}`}>
+                                                <div className="grid grid-cols-3 gap-3 p-4 rounded-xl mb-4 bg-gray-50">
                                                     {sub.auto_score !== undefined && (
                                                         <div className="text-center">
                                                             <p className={`text-xs mb-1 ${textMuted}`}>Auto Score</p>
@@ -167,13 +165,11 @@ export default function MyTryoutsPage() {
 
                                             {/* Feedback */}
                                             {sub.feedback && (
-                                                <div className={`p-4 rounded-xl border-l-4 ${
-                                                    isDark ? 'bg-blue-900/20 border-blue-500' : 'bg-blue-50 border-blue-400'
-                                                }`}>
-                                                    <p className={`text-xs font-bold mb-1 flex items-center gap-1.5 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                <div className="p-4 rounded-xl border-l-4 bg-blue-50 border-blue-400">
+                                                    <p className="text-xs font-bold mb-1 flex items-center gap-1.5 text-blue-700">
                                                         <Star size={12} /> Reviewer Feedback
                                                     </p>
-                                                    <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{sub.feedback}</p>
+                                                    <p className="text-sm text-gray-700">{sub.feedback}</p>
                                                 </div>
                                             )}
                                         </div>

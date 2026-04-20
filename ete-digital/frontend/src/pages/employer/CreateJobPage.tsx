@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
-import { useTheme } from '../../contexts/ThemeContext';
+
 import AppShell from '../../components/layout/AppShell';
 import {
     Briefcase, MapPin, DollarSign, Code, Users,
@@ -38,8 +38,7 @@ const EXPERIENCE_LEVELS = [
 
 export default function CreateJobPage() {
     const navigate = useNavigate();
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [skillInput, setSkillInput] = useState('');
@@ -61,12 +60,8 @@ export default function CreateJobPage() {
         external_apply_url: '',
     });
 
-    const inputCls = `w-full px-4 py-2.5 border rounded-xl text-sm outline-none transition-all duration-150
-        focus:ring-2 focus:ring-violet-500 focus:border-violet-500
-        ${isDark
-            ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500'
-            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'}`;
-    const labelCls = `block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+    const inputCls = `w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 focus:border-violet-400 bg-white text-gray-900 placeholder:text-gray-400`;
+    const labelCls = `block text-sm font-medium mb-1.5 text-gray-700`;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value, type } = e.target;
@@ -141,16 +136,16 @@ export default function CreateJobPage() {
 
     return (
         <AppShell>
-            <div className={`min-h-full ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <div className="min-h-full bg-gray-50">
                 {/* Page Header */}
-                <div className={`border-b px-6 py-5 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="border-b border-gray-200 px-6 py-5 bg-white">
                     <div className="max-w-4xl mx-auto flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
                             <Briefcase size={18} className="text-white" />
                         </div>
                         <div>
-                            <h1 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Post a New Job</h1>
-                            <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Fill in the details to attract the right candidates</p>
+                            <h1 className="text-xl font-bold text-gray-900">Post a New Job</h1>
+                            <p className="text-sm text-gray-500">Fill in the details to attract the right candidates</p>
                         </div>
                     </div>
                 </div>
@@ -168,7 +163,7 @@ export default function CreateJobPage() {
                         )}
 
                         {/* Section 1 — Basic Info */}
-                        <SectionCard title="Basic Information" icon={<Briefcase size={16} />} isDark={isDark}>
+                        <SectionCard title="Basic Information" icon={<Briefcase size={16} />}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                                 <div>
                                     <label className={labelCls}>Job Title <span className="text-red-500">*</span></label>
@@ -212,11 +207,11 @@ export default function CreateJobPage() {
                                     <label className="flex items-center gap-2.5 cursor-pointer select-none">
                                         <div
                                             onClick={() => setFormData(p => ({ ...p, remote_ok: !p.remote_ok }))}
-                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${formData.remote_ok ? 'bg-violet-600' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${formData.remote_ok ? 'bg-violet-600' : 'bg-gray-300'}`}
                                         >
                                             <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${formData.remote_ok ? 'translate-x-4' : 'translate-x-1'}`} />
                                         </div>
-                                        <span className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        <span className="text-sm font-medium text-gray-700">
                                             <Globe size={13} className="inline mr-1" />Remote OK
                                         </span>
                                     </label>
@@ -225,7 +220,7 @@ export default function CreateJobPage() {
                         </SectionCard>
 
                         {/* Section 2 — Description */}
-                        <SectionCard title="Job Description" icon={<Code size={16} />} isDark={isDark}>
+                        <SectionCard title="Job Description" icon={<Code size={16} />}>
                             <div className="space-y-5">
                                 <div>
                                     <label className={labelCls}>Description <span className="text-red-500">*</span></label>
@@ -245,7 +240,7 @@ export default function CreateJobPage() {
                         </SectionCard>
 
                         {/* Section 3 — Skills */}
-                        <SectionCard title="Required Skills" icon={<Users size={16} />} isDark={isDark}>
+                        <SectionCard title="Required Skills" icon={<Users size={16} />}>
                             <div className="flex gap-2 mb-3">
                                 <input
                                     type="text" value={skillInput}
@@ -265,7 +260,7 @@ export default function CreateJobPage() {
                                 <div className="flex flex-wrap gap-2 mt-3">
                                     {skills.map(skill => (
                                         <span key={skill} className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border ${
-                                            isDark ? 'bg-violet-900/30 border-violet-700 text-violet-300' : 'bg-violet-50 border-violet-200 text-violet-700'
+                                            'bg-violet-50 border-violet-200 text-violet-700'
                                         }`}>
                                             {skill}
                                             <button type="button" onClick={() => removeSkill(skill)} className="hover:text-red-500 transition-colors">
@@ -276,12 +271,12 @@ export default function CreateJobPage() {
                                 </div>
                             )}
                             {skills.length === 0 && (
-                                <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No skills added yet. Add skills to help match better candidates.</p>
+                                <p className="text-xs mt-2 text-gray-400">No skills added yet. Add skills to help match better candidates.</p>
                             )}
                         </SectionCard>
 
                         {/* Section 4 — Compensation */}
-                        <SectionCard title="Compensation" icon={<DollarSign size={16} />} isDark={isDark}>
+                        <SectionCard title="Compensation" icon={<DollarSign size={16} />}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                 <div>
                                     <label className={labelCls}>Currency</label>
@@ -290,14 +285,14 @@ export default function CreateJobPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={labelCls}>Min Salary <span className={`text-xs font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(per year)</span></label>
+                                    <label className={labelCls}>Min Salary <span className="text-xs font-normal text-gray-400">(per year)</span></label>
                                     <input
                                         type="number" name="salary_min" value={formData.salary_min} onChange={handleChange}
                                         className={inputCls} placeholder="e.g. 500000" min="0"
                                     />
                                 </div>
                                 <div>
-                                    <label className={labelCls}>Max Salary <span className={`text-xs font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(per year)</span></label>
+                                    <label className={labelCls}>Max Salary <span className="text-xs font-normal text-gray-400">(per year)</span></label>
                                     <input
                                         type="number" name="salary_max" value={formData.salary_max} onChange={handleChange}
                                         className={inputCls} placeholder="e.g. 1200000" min="0"
@@ -309,24 +304,24 @@ export default function CreateJobPage() {
                                     <AlertCircle size={13} /> Min salary cannot be greater than max salary
                                 </p>
                             )}
-                            <p className={`text-xs mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            <p className="text-xs mt-3 text-gray-400">
                                 Leave both fields empty to post as "Salary not disclosed". Transparent salaries attract 3× more applicants.
                             </p>
                         </SectionCard>
 
                         {/* Section 5.5 — External Application URL */}
-                        <SectionCard title="External Application Link" icon={<ExternalLink size={16} />} isDark={isDark}>
+                        <SectionCard title="External Application Link" icon={<ExternalLink size={16} />}>
                             <div className="space-y-3">
                                 <div>
-                                    <label className={labelCls}>Company Application URL <span className={`text-xs font-normal ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>(optional)</span></label>
+                                    <label className={labelCls}>Company Application URL <span className="text-xs font-normal text-gray-400">(optional)</span></label>
                                     <input
                                         type="url" name="external_apply_url" value={formData.external_apply_url} onChange={handleChange}
                                         className={inputCls} placeholder="https://careers.yourcompany.com/apply/job-id"
                                     />
                                 </div>
-                                <div className={`flex items-start gap-2.5 p-3 rounded-xl ${isDark ? 'bg-amber-900/20 border border-amber-700/30' : 'bg-amber-50 border border-amber-100'}`}>
-                                    <ExternalLink size={14} className={`mt-0.5 flex-shrink-0 ${isDark ? 'text-amber-400' : 'text-amber-600'}`} />
-                                    <p className={`text-xs leading-relaxed ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>
+                                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                                    <ExternalLink size={14} className="mt-0.5 flex-shrink-0 text-amber-600" />
+                                    <p className="text-xs leading-relaxed text-amber-700">
                                         If provided, candidates clicking "Apply" will be redirected to your company's application page instead of applying through Jobsrow. Leave empty to use Jobsrow's built-in application form.
                                     </p>
                                 </div>
@@ -334,19 +329,19 @@ export default function CreateJobPage() {
                         </SectionCard>
 
                         {/* Section 6 — Trial Task */}
-                        <SectionCard title="Trial Task (Tryout)" icon={<Zap size={16} />} isDark={isDark}>
+                        <SectionCard title="Trial Task (Tryout)" icon={<Zap size={16} />}>
                             <div className="flex items-start gap-4">
                                 <div
                                     onClick={() => setFormData(p => ({ ...p, has_tryout: !p.has_tryout }))}
-                                    className={`relative inline-flex h-6 w-11 mt-0.5 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${formData.has_tryout ? 'bg-violet-600' : isDark ? 'bg-gray-600' : 'bg-gray-300'}`}
+                                    className={`relative inline-flex h-6 w-11 mt-0.5 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${formData.has_tryout ? 'bg-violet-600' : 'bg-gray-300'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${formData.has_tryout ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </div>
                                 <div>
-                                    <p className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                                    <p className="text-sm font-semibold text-gray-800">
                                         Include a paid trial task
                                     </p>
-                                    <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                                    <p className="text-xs mt-1 text-gray-400">
                                         Candidates complete a real work sample before the interview. You'll set up the tryout details after posting the job.
                                     </p>
                                 </div>
@@ -358,7 +353,7 @@ export default function CreateJobPage() {
                             <button
                                 type="button" onClick={() => navigate('/employer/jobs')}
                                 className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-colors ${
-                                    isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                             >
                                 Cancel
@@ -377,14 +372,14 @@ export default function CreateJobPage() {
     );
 }
 
-function SectionCard({ title, icon, isDark, children }: { title: string; icon: React.ReactNode; isDark: boolean; children: React.ReactNode }) {
-    const cardBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
+function SectionCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+    const cardBg = 'bg-white border-gray-200';
     return (
         <div className={`rounded-2xl border p-6 ${cardBg}`}>
             <div className="flex items-center gap-2 mb-5">
-                <span className={`${isDark ? 'text-violet-400' : 'text-violet-600'}`}>{icon}</span>
-                <h2 className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{title}</h2>
-                <ChevronRight size={14} className={isDark ? 'text-gray-600' : 'text-gray-300'} />
+                <span className="text-violet-600">{icon}</span>
+                <h2 className="text-base font-bold text-gray-900">{title}</h2>
+                <ChevronRight size={14} className="text-gray-300" />
             </div>
             {children}
         </div>

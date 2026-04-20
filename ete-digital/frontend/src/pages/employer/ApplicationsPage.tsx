@@ -6,7 +6,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
 import { jobsApi } from '../../api/jobs';
-import { useTheme } from '../../contexts/ThemeContext';
 import {
     ClipboardList, Users, Search, Filter, Star, ChevronRight,
     AlertCircle, Briefcase, Calendar, Zap, ArrowUpDown,
@@ -35,37 +34,37 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string 
     withdrawn: { label: 'Withdrawn', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' },
 };
 
-function MatchBadge({ score, isDark }: { score: number | null; isDark: boolean }) {
+function MatchBadge({ score }: { score: number | null }) {
     if (score === null) return null;
     const color = score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-red-400';
     const barColor = score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-amber-500' : 'bg-red-400';
     const bgColor = score >= 80
-        ? isDark ? 'bg-emerald-900/30 border-emerald-800' : 'bg-emerald-50 border-emerald-200'
+        ? 'bg-emerald-50 border-emerald-200'
         : score >= 60
-            ? isDark ? 'bg-amber-900/30 border-amber-800' : 'bg-amber-50 border-amber-200'
-            : isDark ? 'bg-red-900/30 border-red-800' : 'bg-red-50 border-red-200';
+            ? 'bg-amber-50 border-amber-200'
+            : 'bg-red-50 border-red-200';
 
     return (
         <div className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${bgColor}`}>
             <Zap size={11} className={color} />
             <span className={color}>{score}% match</span>
-            <div className={`w-12 h-1 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'} overflow-hidden`}>
+            <div className="w-12 h-1 rounded-full bg-gray-200 overflow-hidden">
                 <div className={`h-full rounded-full ${barColor}`} style={{ width: `${score}%` }} />
             </div>
         </div>
     );
 }
 
-function SkeletonCard({ isDark }: { isDark: boolean }) {
+function SkeletonCard() {
     return (
-        <div className={`rounded-2xl border p-5 animate-pulse ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className="rounded-2xl border p-5 animate-pulse bg-white border-gray-200">
             <div className="flex items-center gap-4">
-                <div className={`w-12 h-12 rounded-full flex-shrink-0 ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+                <div className="w-12 h-12 rounded-full flex-shrink-0 bg-gray-200" />
                 <div className="flex-1 space-y-2">
-                    <div className={`h-4 w-2/5 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
-                    <div className={`h-3 w-1/3 rounded ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+                    <div className="h-4 w-2/5 rounded bg-gray-200" />
+                    <div className="h-3 w-1/3 rounded bg-gray-200" />
                 </div>
-                <div className={`h-6 w-20 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`} />
+                <div className="h-6 w-20 rounded-full bg-gray-200" />
             </div>
         </div>
     );
@@ -81,8 +80,6 @@ export default function ApplicationsPage() {
     const [search, setSearch] = useState('');
     const [sortBy, setSortBy] = useState<'date' | 'match'>('match');
     const [jobs, setJobs] = useState<any[]>([]);
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
 
     const loadData = useCallback(async () => {
         setLoading(true);
@@ -135,13 +132,11 @@ export default function ApplicationsPage() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
 
-    const bg = isDark ? 'bg-gray-900' : 'bg-gray-50';
-    const cardBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-    const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-    const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
-    const inputCls = `w-full px-4 py-2.5 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 ${
-        isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900'
-    }`;
+    const bg = 'bg-gray-50';
+    const cardBg = 'bg-white border-gray-200';
+    const textPrimary = 'text-gray-900';
+    const textMuted = 'text-gray-500';
+    const inputCls = `w-full px-4 py-2.5 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 bg-white border-gray-300 text-gray-900`;
 
     // KPI stats
     const pendingCount = applications.filter(a => a.status === 'pending').length;
@@ -152,7 +147,7 @@ export default function ApplicationsPage() {
         <AppShell>
             <div className={`min-h-full ${bg}`}>
                 {/* Header */}
-                <div className={`border-b px-6 py-5 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="border-b border-gray-200 px-6 py-5 bg-white">
                     <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
@@ -214,8 +209,8 @@ export default function ApplicationsPage() {
                             onClick={() => setSortBy(s => s === 'match' ? 'date' : 'match')}
                             className={`flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold border transition-colors ${
                                 sortBy === 'match'
-                                    ? isDark ? 'bg-violet-900/40 border-violet-700 text-violet-300' : 'bg-violet-50 border-violet-200 text-violet-700'
-                                    : isDark ? 'border-gray-600 text-gray-400 hover:bg-gray-700' : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+                                    ? 'bg-violet-50 border-violet-200 text-violet-700'
+                                    : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                             }`}
                         >
                             <ArrowUpDown size={12} />
@@ -238,10 +233,10 @@ export default function ApplicationsPage() {
                     {/* Applications */}
                     {loading ? (
                         <div className="space-y-3">
-                            {[1, 2, 3, 4].map(i => <SkeletonCard key={i} isDark={isDark} />)}
+                            {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
                         </div>
                     ) : filtered.length === 0 ? (
-                        <div className={`flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+                        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-gray-300">
                             <ClipboardList size={48} className="mb-4 opacity-20" />
                             <h3 className={`font-bold text-lg mb-1 ${textPrimary}`}>No applications found</h3>
                             <p className={`text-sm ${textMuted}`}>
@@ -279,7 +274,7 @@ export default function ApplicationsPage() {
                                                     {/* Match score */}
                                                     {app.match_score !== null && (
                                                         <div className="mt-2">
-                                                            <MatchBadge score={app.match_score} isDark={isDark} />
+                                                            <MatchBadge score={app.match_score} />
                                                         </div>
                                                     )}
 
@@ -307,9 +302,7 @@ export default function ApplicationsPage() {
                                                                     ));
                                                                 } catch { /* silent */ }
                                                             }}
-                                                            className={`flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap ${
-                                                                isDark ? 'bg-emerald-900/40 text-emerald-400 hover:bg-emerald-900/60 border border-emerald-800' : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                                                            }`}
+                                                            className="flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl transition-colors whitespace-nowrap bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
                                                         >
                                                             <Star size={11} /> Shortlist
                                                         </button>

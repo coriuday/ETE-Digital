@@ -6,7 +6,6 @@
  */
 import { useState, useEffect } from 'react';
 import { useAuthStore } from '../../stores/authStore';
-import { useTheme } from '../../contexts/ThemeContext';
 import AppShell from '../../components/layout/AppShell';
 import api from '../../api/client';
 import {
@@ -19,8 +18,6 @@ type Tab = 'profile' | 'password' | 'danger';
 
 export default function AccountSettingsPage() {
     const { user, fetchUser } = useAuthStore();
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
     const [activeTab, setActiveTab] = useState<Tab>('profile');
 
     const tabs: { key: Tab; icon: React.ReactNode; label: string }[] = [
@@ -31,13 +28,13 @@ export default function AccountSettingsPage() {
 
     return (
         <AppShell>
-        <div className={`min-h-full py-8 px-4 transition-colors ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="min-h-full py-8 px-4 bg-gray-50">
             <div className="max-w-3xl mx-auto">
-                <h1 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Account Settings</h1>
-                <p className={`text-sm mb-8 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Manage your account information and preferences.</p>
+                <h1 className="text-2xl font-bold mb-2 text-gray-900">Account Settings</h1>
+                <p className="text-sm mb-8 text-gray-500">Manage your account information and preferences.</p>
 
                 {/* Tabs */}
-                <div className={`flex gap-1 mb-6 rounded-xl p-1.5 border w-fit shadow-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="flex gap-1 mb-6 rounded-xl p-1.5 border w-fit shadow-sm bg-white border-gray-200">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
@@ -45,7 +42,7 @@ export default function AccountSettingsPage() {
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                 activeTab === tab.key
                                     ? 'bg-violet-600 text-white shadow-sm'
-                                    : isDark ? 'text-gray-400 hover:text-white hover:bg-gray-700' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                             }`}
                         >
                             {tab.icon}

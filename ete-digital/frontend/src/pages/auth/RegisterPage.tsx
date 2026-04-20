@@ -5,7 +5,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { useTheme } from '../../contexts/ThemeContext';
 import { ArrowRight, CheckCircle, Circle, Loader2, LayoutGrid, Users, Briefcase, Zap } from 'lucide-react';
 
 const validatePasswordStrength = (password: string) => {
@@ -35,8 +34,7 @@ const stats = [
 export default function RegisterPage() {
     const navigate = useNavigate();
     const { register, error, isLoading, clearError } = useAuthStore();
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+
 
     const [formData, setFormData] = useState({
         email: '',
@@ -78,12 +76,9 @@ export default function RegisterPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const inputClass = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400
-        ${isDark
-            ? 'bg-[#1f1c39] text-white border border-[#47464f]/40 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20'
-            : 'bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10'}`;
+    const inputClass = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10`;
 
-    const labelClass = `block text-sm font-semibold mb-1.5 ${isDark ? 'text-violet-200' : 'text-gray-700'}`;
+    const labelClass = `block text-sm font-semibold mb-1.5 text-gray-700`;
 
     return (
         <div className="min-h-screen flex font-['Inter',sans-serif]">
@@ -174,8 +169,7 @@ export default function RegisterPage() {
             </div>
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────────── */}
-            <div className={`flex-1 flex items-center justify-center px-6 py-10 transition-colors duration-200
-                ${isDark ? 'bg-[#0d0b1e]' : 'bg-gray-50'}`}>
+            <div className="flex-1 flex items-center justify-center px-6 py-10 bg-gray-50">
                 <div className="w-full max-w-md">
 
                     {/* Mobile logo */}
@@ -184,23 +178,20 @@ export default function RegisterPage() {
                             style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)' }}>
                             <LayoutGrid size={15} className="text-white" />
                         </div>
-                        <span className={`font-extrabold text-lg ${isDark ? 'text-white' : 'text-gray-900'}`}>Jobsrow</span>
+                        <span className="font-extrabold text-lg text-gray-900">Jobsrow</span>
                     </Link>
 
-                    <h2 className={`text-3xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}
+                    <h2 className="text-3xl font-bold mb-1 text-gray-900"
                         style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
                         Create your account
                     </h2>
-                    <p className={`text-sm mb-7 ${isDark ? 'text-violet-300' : 'text-gray-500'}`}>
+                    <p className="text-sm mb-7 text-gray-500">
                         Where skills speak louder than résumés
                     </p>
 
                     {/* Error */}
                     {displayError && (
-                        <div className={`mb-5 px-4 py-3 rounded-xl text-sm border
-                            ${isDark
-                                ? 'bg-red-950/50 border-red-800/50 text-red-300'
-                                : 'bg-red-50 border-red-200 text-red-700'}`}>
+                        <div className="mb-5 px-4 py-3 rounded-xl text-sm border bg-red-50 border-red-200 text-red-700">
                             {displayError}
                         </div>
                     )}
@@ -234,12 +225,8 @@ export default function RegisterPage() {
                                         onClick={() => setFormData({ ...formData, role: r })}
                                         className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all border
                                             ${formData.role === r
-                                                ? isDark
-                                                    ? 'bg-violet-600/30 border-violet-500 text-violet-200'
-                                                    : 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                                                : isDark
-                                                    ? 'bg-transparent border-[#47464f]/40 text-violet-400 hover:border-violet-500/60'
-                                                    : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'}`}>
+                                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
+                                                : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'}`}>
                                         {r === 'candidate' ? <Users size={15} /> : <Briefcase size={15} />}
                                         {r === 'candidate' ? 'Job Seeker' : 'Employer'}
                                     </button>
@@ -256,8 +243,7 @@ export default function RegisterPage() {
                                 required minLength={8} placeholder="Min. 8 characters"
                                 className={inputClass} />
                             {(showPasswordHints || formData.password) && (
-                                <div className={`mt-2.5 p-3 rounded-xl text-xs space-y-1.5
-                                    ${isDark ? 'bg-[#1f1c39]' : 'bg-gray-50'}`}>
+                                <div className="mt-2.5 p-3 rounded-xl text-xs space-y-1.5 bg-gray-50">
                                     {[
                                         { check: passwordStrength.hasMinLength, label: 'At least 8 characters' },
                                         { check: passwordStrength.hasUppercase, label: 'One uppercase letter (A-Z)' },
@@ -265,7 +251,7 @@ export default function RegisterPage() {
                                         { check: passwordStrength.hasDigit, label: 'One number (0-9)' },
                                         { check: passwordStrength.hasSpecial, label: 'One special character (!@#$%)' },
                                     ].map(({ check, label }) => (
-                                        <div key={label} className={`flex items-center gap-2 transition-colors ${check ? 'text-emerald-500' : isDark ? 'text-violet-400' : 'text-gray-400'}`}>
+                                        <div key={label} className={`flex items-center gap-2 transition-colors ${check ? 'text-emerald-500' : 'text-gray-400'}`}>
                                             {check
                                                 ? <CheckCircle size={13} />
                                                 : <Circle size={13} />}
@@ -299,30 +285,30 @@ export default function RegisterPage() {
                                 : <>Create Account <ArrowRight size={16} /></>}
                         </button>
 
-                        <p className={`text-center text-xs ${isDark ? 'text-violet-400/60' : 'text-gray-400'}`}>
+                        <p className="text-center text-xs text-gray-400">
                             By signing up, you agree to our{' '}
-                            <Link to="/terms" className={`hover:underline ${isDark ? 'text-violet-400' : 'text-indigo-600'}`}>Terms</Link>
+                            <Link to="/terms" className="hover:underline text-indigo-600">Terms</Link>
                             {' '}&amp;{' '}
-                            <Link to="/privacy-policy" className={`hover:underline ${isDark ? 'text-violet-400' : 'text-indigo-600'}`}>Privacy Policy</Link>
+                            <Link to="/privacy-policy" className="hover:underline text-indigo-600">Privacy Policy</Link>
                         </p>
                     </form>
 
                     {/* Divider */}
                     <div className="relative my-6 flex items-center gap-3">
-                        <div className={`flex-1 h-px ${isDark ? 'bg-[#47464f]/40' : 'bg-gray-200'}`} />
-                        <span className={`text-xs font-medium ${isDark ? 'text-violet-400' : 'text-gray-400'}`}>OR</span>
-                        <div className={`flex-1 h-px ${isDark ? 'bg-[#47464f]/40' : 'bg-gray-200'}`} />
+                        <div className="flex-1 h-px bg-gray-200" />
+                        <span className="text-xs font-medium text-gray-400">OR</span>
+                        <div className="flex-1 h-px bg-gray-200" />
                     </div>
 
-                    <p className={`text-center text-sm ${isDark ? 'text-violet-300' : 'text-gray-500'}`}>
+                    <p className="text-center text-sm text-gray-500">
                         Already have an account?{' '}
                         <Link to="/login"
-                            className={`font-semibold hover:underline ${isDark ? 'text-violet-400' : 'text-indigo-600'}`}>
+                            className="font-semibold hover:underline text-indigo-600">
                             Sign in
                         </Link>
                     </p>
 
-                    <p className={`text-center text-xs mt-6 ${isDark ? 'text-[#47464f]' : 'text-gray-300'}`}>
+                    <p className="text-center text-xs mt-6 text-gray-300">
                         Jobsrow © {new Date().getFullYear()} · Building the Future of Hiring
                     </p>
                 </div>

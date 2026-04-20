@@ -6,7 +6,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
 import { vaultApi, ShareToken, VaultItem } from '../../api/vault';
-import { useTheme } from '../../contexts/ThemeContext';
 import {
     Share2, Copy, Trash2, Plus, Loader2, Eye, CheckCircle,
     AlertCircle, Clock, X, ChevronLeft,
@@ -19,8 +18,7 @@ export default function ShareManagementPage() {
     const [error, setError] = useState('');
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
+
 
     useEffect(() => { loadData(); }, []);
 
@@ -58,19 +56,19 @@ export default function ShareManagementPage() {
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const bg = isDark ? 'bg-gray-900' : 'bg-gray-50';
-    const cardBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-    const textPrimary = isDark ? 'text-white' : 'text-gray-900';
-    const textMuted = isDark ? 'text-gray-400' : 'text-gray-500';
+    const bg = 'bg-gray-50';
+    const cardBg = 'bg-white border-gray-200';
+    const textPrimary = 'text-gray-900';
+    const textMuted = 'text-gray-500';
 
     return (
         <AppShell>
             <div className={`min-h-full ${bg}`}>
                 {/* Header */}
-                <div className={`border-b px-6 py-5 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="border-b border-gray-200 px-6 py-5 bg-white">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Link to="/vault" className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-gray-700 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
+                            <Link to="/vault" className="p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-500">
                                 <ChevronLeft size={18} />
                             </Link>
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
@@ -103,7 +101,6 @@ export default function ShareManagementPage() {
                     {showCreateForm && (
                         <CreateShareForm
                             items={items}
-                            isDark={isDark}
                             onSuccess={(newToken) => {
                                 setTokens(prev => [newToken, ...prev]);
                                 setShowCreateForm(false);
@@ -115,11 +112,11 @@ export default function ShareManagementPage() {
                     {loading ? (
                         <div className="space-y-4">
                             {[1, 2].map(i => (
-                                <div key={i} className={`h-36 rounded-2xl animate-pulse ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`} />
+                                <div key={i} className="h-36 rounded-2xl animate-pulse bg-gray-200" />
                             ))}
                         </div>
                     ) : tokens.length === 0 ? (
-                        <div className={`flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed ${isDark ? 'border-gray-700' : 'border-gray-300'}`}>
+                        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-gray-300">
                             <Share2 size={48} className="mb-4 opacity-20" />
                             <h3 className={`font-bold text-lg mb-1 ${textPrimary}`}>No share links yet</h3>
                             <p className={`text-sm mb-6 max-w-xs ${textMuted}`}>
@@ -143,8 +140,8 @@ export default function ShareManagementPage() {
                                                 <div className="flex items-center gap-2 flex-wrap mb-1">
                                                     <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                                                         token.is_active
-                                                            ? isDark ? 'bg-emerald-900/40 text-emerald-400' : 'bg-emerald-100 text-emerald-700'
-                                                            : isDark ? 'bg-gray-700 text-gray-500' : 'bg-gray-100 text-gray-500'
+                                                            ? 'bg-emerald-100 text-emerald-700'
+                                                            : 'bg-gray-100 text-gray-500'
                                                     }`}>
                                                         {token.is_active ? <CheckCircle size={10} /> : <X size={10} />}
                                                         {token.is_active ? 'Active' : 'Inactive'}
@@ -183,18 +180,14 @@ export default function ShareManagementPage() {
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                                                     copiedId === token.id
                                                         ? 'bg-emerald-500 text-white'
-                                                        : isDark
-                                                            ? 'bg-indigo-600 hover:bg-indigo-500 text-white'
-                                                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
                                                 }`}
                                             >
                                                 {copiedId === token.id ? <><CheckCircle size={14} /> Copied!</> : <><Copy size={14} /> Copy Link</>}
                                             </button>
                                             <button
                                                 onClick={() => handleRevoke(token.id)}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                                                    isDark ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' : 'bg-red-50 text-red-600 hover:bg-red-100'
-                                                }`}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-red-50 text-red-600 hover:bg-red-100"
                                             >
                                                 <Trash2 size={14} /> Revoke
                                             </button>
@@ -210,9 +203,8 @@ export default function ShareManagementPage() {
     );
 }
 
-function CreateShareForm({ items, isDark, onSuccess }: {
+function CreateShareForm({ items, onSuccess }: {
     items: VaultItem[];
-    isDark: boolean;
     onSuccess: (token: ShareToken) => void;
 }) {
     const [submitting, setSubmitting] = useState(false);
@@ -224,11 +216,9 @@ function CreateShareForm({ items, isDark, onSuccess }: {
         max_views: '',
     });
 
-    const cardBg = isDark ? 'bg-gray-800/80 border-gray-700' : 'bg-white border-gray-200';
-    const inputCls = `w-full px-3.5 py-2.5 border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 ${
-        isDark ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-500' : 'bg-white border-gray-300 text-gray-900'
-    }`;
-    const labelCls = `block text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`;
+    const cardBg = 'bg-white border-gray-200';
+    const inputCls = `w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 bg-white text-gray-900`;
+    const labelCls = `block text-sm font-medium mb-1.5 text-gray-700`;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -265,23 +255,23 @@ function CreateShareForm({ items, isDark, onSuccess }: {
 
     return (
         <div className={`rounded-2xl border p-6 ${cardBg}`}>
-            <h2 className={`text-base font-bold mb-5 ${isDark ? 'text-white' : 'text-gray-900'}`}>Create New Share Link</h2>
+            <h2 className="text-base font-bold mb-5 text-gray-900">Create New Share Link</h2>
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                     <label className={labelCls}>Select Items to Share <span className="text-red-500">*</span></label>
-                    <div className={`border rounded-xl p-3 max-h-48 overflow-y-auto space-y-1 ${isDark ? 'border-gray-600 bg-gray-700/50' : 'border-gray-200 bg-gray-50'}`}>
+                    <div className="border border-gray-200 bg-gray-50 rounded-xl p-3 max-h-48 overflow-y-auto space-y-1">
                         {items.length === 0 ? (
-                            <p className={`text-sm text-center py-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            <p className="text-sm text-center py-4 text-gray-400">
                                 No vault items yet. <Link to="/vault/add" className="text-indigo-400 hover:underline">Add items</Link>
                             </p>
                         ) : items.map(item => (
                             <label key={item.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                                 formData.vault_item_ids.includes(item.id)
-                                    ? isDark ? 'bg-violet-900/30' : 'bg-violet-50'
-                                    : isDark ? 'hover:bg-gray-600' : 'hover:bg-gray-100'
+                                    ? 'bg-violet-50'
+                                    : 'hover:bg-gray-100'
                             }`}>
                                 <input type="checkbox" checked={formData.vault_item_ids.includes(item.id)} onChange={() => toggleItem(item.id)} className="accent-violet-500 w-4 h-4" />
-                                <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{item.title}</span>
+                                <span className="text-sm text-gray-800">{item.title}</span>
                             </label>
                         ))}
                     </div>

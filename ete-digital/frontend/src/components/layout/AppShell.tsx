@@ -1,12 +1,12 @@
 /**
  * AppShell — Shared sidebar + topbar layout
  * Used by Candidate, Employer, and Admin dashboards
+ * Theme: Light mode only
  */
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../utils/useNotifications';
-import { useTheme } from '../../contexts/ThemeContext';
 import {
     LayoutDashboard, Search, Briefcase, FileText, Trophy,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
@@ -83,8 +83,6 @@ export default function AppShell({ children }: AppShellProps) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [notifOpen, setNotifOpen] = useState(false);
     const notifRef = useRef<HTMLDivElement>(null);
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
 
     const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
 
@@ -116,14 +114,14 @@ export default function AppShell({ children }: AppShellProps) {
 
     const Sidebar = ({ mobile = false }) => (
         <div
-            className={`flex flex-col h-full bg-gray-900 text-white transition-all duration-300
+            className={`flex flex-col h-full bg-white border-r border-gray-200 text-gray-800 transition-all duration-300
         ${mobile ? 'w-72' : collapsed ? 'w-20' : 'w-64'}`}
         >
-            {/* Logo — clickable, navigates to role dashboard */}
+            {/* Logo */}
             <Link
                 to={roleHome}
                 onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-4 py-5 border-b border-white/10 hover:bg-white/5 transition-colors
+                className={`flex items-center gap-3 px-4 py-5 border-b border-gray-100 hover:bg-gray-50 transition-colors
         ${collapsed && !mobile ? 'justify-center' : ''}`}
             >
                 {(!collapsed || mobile) && (
@@ -141,13 +139,13 @@ export default function AppShell({ children }: AppShellProps) {
 
             {/* User Info */}
             {(!collapsed || mobile) && (
-                <div className="px-4 py-4 border-b border-white/10">
+                <div className="px-4 py-4 border-b border-gray-100">
                     <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${roleColor} flex items-center justify-center text-sm font-bold flex-shrink-0`}>
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${roleColor} flex items-center justify-center text-sm font-bold flex-shrink-0 text-white`}>
                             {user?.full_name?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold text-white truncate">{user?.full_name || 'User'}</p>
+                            <p className="text-sm font-semibold text-gray-900 truncate">{user?.full_name || 'User'}</p>
                             <p className="text-xs text-gray-400 truncate">{user?.email}</p>
                         </div>
                     </div>
@@ -166,14 +164,14 @@ export default function AppShell({ children }: AppShellProps) {
                             title={collapsed && !mobile ? item.label : undefined}
                             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
                 ${active
-                                    ? 'bg-white/15 text-white shadow-sm'
-                                    : 'text-gray-400 hover:bg-white/8 hover:text-white'}
+                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm'
+                                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}
                 ${collapsed && !mobile ? 'justify-center' : ''}`}
                         >
-                            <span className={`flex-shrink-0 ${active ? 'text-white' : ''}`}>{item.icon}</span>
+                            <span className={`flex-shrink-0 ${active ? 'text-indigo-600' : ''}`}>{item.icon}</span>
                             {(!collapsed || mobile) && <span>{item.label}</span>}
                             {active && (!collapsed || mobile) && (
-                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-500" />
                             )}
                         </Link>
                     );
@@ -181,11 +179,11 @@ export default function AppShell({ children }: AppShellProps) {
             </nav>
 
             {/* Logout */}
-            <div className="px-3 py-4 border-t border-white/10">
+            <div className="px-3 py-4 border-t border-gray-100">
                 <button
                     onClick={handleLogout}
                     className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-            text-gray-400 hover:bg-red-500/15 hover:text-red-400 transition-all duration-150
+            text-gray-500 hover:bg-red-50 hover:text-red-600 transition-all duration-150
             ${collapsed && !mobile ? 'justify-center' : ''}`}
                 >
                     <LogOut size={20} className="flex-shrink-0" />
@@ -196,14 +194,13 @@ export default function AppShell({ children }: AppShellProps) {
     );
 
     return (
-        <div className={`flex h-screen overflow-hidden transition-colors duration-200 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="flex h-screen overflow-hidden bg-gray-50">
             {/* Desktop Sidebar */}
             <div className="hidden lg:flex flex-col relative flex-shrink-0">
                 <Sidebar />
                 <button
                     onClick={() => setCollapsed(!collapsed)}
-                    className={`absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10 transition-colors border
-            ${isDark ? 'bg-gray-700 border-gray-600 hover:bg-gray-600 text-gray-200' : 'bg-white border-gray-300 hover:bg-gray-50 text-gray-600'}`}
+                    className="absolute -right-3 top-20 w-6 h-6 rounded-full flex items-center justify-center shadow-md z-10 transition-colors border bg-white border-gray-300 hover:bg-gray-50 text-gray-600"
                 >
                     {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
                 </button>
@@ -212,12 +209,12 @@ export default function AppShell({ children }: AppShellProps) {
             {/* Mobile Sidebar */}
             {mobileOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
-                    <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setMobileOpen(false)} />
                     <div className="absolute left-0 top-0 bottom-0 flex">
                         <Sidebar mobile />
                         <button
                             onClick={() => setMobileOpen(false)}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
+                            className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"
                         >
                             <X size={20} />
                         </button>
@@ -228,14 +225,10 @@ export default function AppShell({ children }: AppShellProps) {
             {/* Main Content */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Topbar */}
-                <header className={`border-b px-4 lg:px-6 py-3 flex items-center gap-4 flex-shrink-0 transition-colors duration-200 ${
-                    isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                }`}>
+                <header className="border-b border-gray-200 px-4 lg:px-6 py-3 flex items-center gap-4 flex-shrink-0 bg-white">
                     <button
                         onClick={() => setMobileOpen(true)}
-                        className={`lg:hidden p-2 rounded-lg transition-colors ${
-                            isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'
-                        }`}
+                        className="lg:hidden p-2 rounded-lg transition-colors text-gray-500 hover:bg-gray-100"
                     >
                         <Menu size={20} />
                     </button>
@@ -247,9 +240,7 @@ export default function AppShell({ children }: AppShellProps) {
                         <button
                             id="notification-bell"
                             onClick={() => setNotifOpen((o) => !o)}
-                            className={`relative p-2 rounded-lg transition-colors ${
-                                isDark ? 'text-gray-400 hover:bg-gray-700' : 'text-gray-500 hover:bg-gray-100'
-                            }`}
+                            className="relative p-2 rounded-lg transition-colors text-gray-500 hover:bg-gray-100"
                             aria-label="Notifications"
                         >
                             <Bell size={20} />
@@ -260,17 +251,15 @@ export default function AppShell({ children }: AppShellProps) {
                             )}
                         </button>
 
-                        {/* Notification Dropdown — theme-aware */}
+                        {/* Notification Dropdown */}
                         {notifOpen && (
-                            <div className={`absolute right-0 top-12 w-80 rounded-xl shadow-xl border z-50 overflow-hidden ${
-                                isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-                            }`}>
-                                <div className={`flex items-center justify-between px-4 py-3 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-                                    <h3 className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Notifications</h3>
+                            <div className="absolute right-0 top-12 w-80 rounded-xl shadow-xl border border-gray-200 z-50 overflow-hidden bg-white">
+                                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+                                    <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
                                     {unreadCount > 0 && (
                                         <button
                                             onClick={() => markAllRead()}
-                                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+                                            className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
                                         >
                                             <CheckCheck size={13} />
                                             Mark all read
@@ -278,17 +267,17 @@ export default function AppShell({ children }: AppShellProps) {
                                     )}
                                 </div>
 
-                                <div className={`max-h-72 overflow-y-auto divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-50'}`}>
+                                <div className="max-h-72 overflow-y-auto divide-y divide-gray-50">
                                     {notifications.length === 0 ? (
-                                        <p className={`text-center text-sm py-8 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No notifications yet</p>
+                                        <p className="text-center text-sm py-8 text-gray-400">No notifications yet</p>
                                     ) : (
                                         notifications.slice(0, 10).map((n) => (
                                             <div
                                                 key={n.id}
                                                 className={`px-4 py-3 cursor-pointer transition-colors ${
                                                     !n.is_read
-                                                        ? isDark ? 'bg-blue-900/20 hover:bg-blue-900/30' : 'bg-blue-50/50 hover:bg-blue-50'
-                                                        : isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'
+                                                        ? 'bg-blue-50/50 hover:bg-blue-50'
+                                                        : 'hover:bg-gray-50'
                                                 }`}
                                                 onClick={() => {
                                                     markRead(n.id);
@@ -301,9 +290,9 @@ export default function AppShell({ children }: AppShellProps) {
                                                         <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                                                     )}
                                                     <div className={!n.is_read ? '' : 'ml-3.5'}>
-                                                        <p className={`text-xs font-semibold ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>{n.title}</p>
-                                                        <p className={`text-xs mt-0.5 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{n.message}</p>
-                                                        <p className={`text-[10px] mt-1 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                                                        <p className="text-xs font-semibold text-gray-800">{n.title}</p>
+                                                        <p className="text-xs mt-0.5 leading-relaxed text-gray-500">{n.message}</p>
+                                                        <p className="text-[10px] mt-1 text-gray-400">
                                                             {new Date(n.created_at).toLocaleString()}
                                                         </p>
                                                     </div>
@@ -313,11 +302,11 @@ export default function AppShell({ children }: AppShellProps) {
                                     )}
                                 </div>
 
-                                <div className={`border-t px-4 py-2 text-center ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
+                                <div className="border-t border-gray-100 px-4 py-2 text-center">
                                     <Link
                                         to="/settings/notifications"
                                         onClick={() => setNotifOpen(false)}
-                                        className="text-xs text-blue-400 hover:text-blue-300"
+                                        className="text-xs text-blue-600 hover:text-blue-700"
                                     >
                                         Notification Settings
                                     </Link>

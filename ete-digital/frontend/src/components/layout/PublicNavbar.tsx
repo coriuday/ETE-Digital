@@ -1,19 +1,16 @@
 /**
  * Public-facing Navigation Bar — Jobsrow
- * Includes Dark/Light mode toggle + responsive mobile menu
+ * Theme: Light mode only
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
-import { useTheme } from '../../contexts/ThemeContext';
 
 export default function PublicNavbar() {
     const [menuOpen, setMenuOpen] = useState(false);
     const { isAuthenticated } = useAuthStore();
     const location = useLocation();
-    const { theme } = useTheme();
-    const isDark = theme === 'dark';
 
     const navLinks = [
         { label: 'Jobs', href: '/jobs' },
@@ -25,15 +22,11 @@ export default function PublicNavbar() {
     const isActive = (href: string) => location.pathname === href;
 
     return (
-        <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b shadow-sm transition-colors duration-200
-            ${isDark
-                ? 'bg-gray-900/95 border-gray-700'
-                : 'bg-white/95 border-gray-100'
-            }`}>
+        <nav className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b shadow-sm bg-white/95 border-gray-100">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
 
-                    {/* Logo — Jobsrow */}
+                    {/* Logo */}
                     <Link to="/" className="flex items-center gap-2.5 group">
                         <span className="text-[28px] font-extrabold text-[#176BBE] tracking-tight">JobsRow.com</span>
                     </Link>
@@ -47,9 +40,7 @@ export default function PublicNavbar() {
                                 className={`text-sm font-medium transition-colors ${
                                     isActive(link.href)
                                         ? 'text-indigo-600'
-                                        : isDark
-                                            ? 'text-gray-300 hover:text-white'
-                                            : 'text-gray-600 hover:text-gray-900'
+                                        : 'text-gray-600 hover:text-gray-900'
                                 }`}
                             >
                                 {link.label}
@@ -70,9 +61,7 @@ export default function PublicNavbar() {
                             <>
                                 <Link
                                     to="/login"
-                                    className={`px-4 py-2 text-sm font-medium transition-colors ${
-                                        isDark ? 'text-gray-300 hover:text-white' : 'text-gray-700 hover:text-indigo-600'
-                                    }`}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors"
                                 >
                                     Log In
                                 </Link>
@@ -89,7 +78,7 @@ export default function PublicNavbar() {
                     {/* Mobile: Menu Toggle */}
                     <div className="md:hidden flex items-center gap-2">
                         <button
-                            className={`p-2 transition-colors ${isDark ? 'text-gray-300 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`}
+                            className="p-2 transition-colors text-gray-600 hover:text-gray-900"
                             onClick={() => setMenuOpen(!menuOpen)}
                             aria-label="Toggle menu"
                         >
@@ -101,31 +90,25 @@ export default function PublicNavbar() {
 
             {/* Mobile Menu */}
             {menuOpen && (
-                <div className={`md:hidden border-t px-4 py-4 space-y-3 ${
-                    isDark ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-100'
-                }`}>
+                <div className="md:hidden border-t border-gray-100 px-4 py-4 space-y-3 bg-white">
                     {navLinks.map(link => (
                         <Link
                             key={link.href}
                             to={link.href}
-                            className={`block text-sm font-medium py-1 transition-colors ${
-                                isDark ? 'text-gray-300 hover:text-indigo-400' : 'text-gray-700 hover:text-indigo-600'
-                            }`}
+                            className="block text-sm font-medium py-1 transition-colors text-gray-700 hover:text-indigo-600"
                             onClick={() => setMenuOpen(false)}
                         >
                             {link.label}
                         </Link>
                     ))}
-                    <div className="pt-3 border-t flex flex-col gap-2 border-gray-200 dark:border-gray-700">
+                    <div className="pt-3 border-t flex flex-col gap-2 border-gray-200">
                         {isAuthenticated ? (
                             <Link to="/dashboard" className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold text-center">
                                 Dashboard
                             </Link>
                         ) : (
                             <>
-                                <Link to="/login" className={`px-4 py-2 border rounded-xl text-sm font-medium text-center ${
-                                    isDark ? 'border-gray-600 text-gray-300' : 'border-gray-300 text-gray-700'
-                                }`}>
+                                <Link to="/login" className="px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-center text-gray-700">
                                     Log In
                                 </Link>
                                 <Link to="/register" className="px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold text-center">
