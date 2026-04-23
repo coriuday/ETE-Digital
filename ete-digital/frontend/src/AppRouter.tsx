@@ -5,6 +5,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
+import GoogleAnalytics from './components/GoogleAnalytics';
 
 // ---- Auth Pages ----
 import LoginPage from './pages/auth/LoginPage';
@@ -86,6 +87,7 @@ export default function AppRouter() {
     return (
         <BrowserRouter>
             <ScrollToTop />
+            <GoogleAnalytics />
             <Routes>
                 {/* Landing Page */}
                 <Route
