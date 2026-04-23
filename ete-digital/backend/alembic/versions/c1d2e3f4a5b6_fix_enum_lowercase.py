@@ -12,6 +12,7 @@ reconciles the database with the ORM.
 Similar mismatches exist for other enums — this migration fixes them all
 to be consistent with the lowercase values_callable pattern in models.
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -48,9 +49,10 @@ def upgrade():
     # ── applicationstatus ────────────────────────────────────────────────────
     op.execute("ALTER TYPE applicationstatus RENAME TO applicationstatus_old")
     op.execute(
-        "CREATE TYPE applicationstatus AS ENUM "
-        "('pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn')"
+        "CREATE TYPE applicationstatus AS ENUM " "('pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn')"
     )
+    # Must drop DEFAULT before changing column type (PostgreSQL can't auto-cast)
+    op.execute("ALTER TABLE applications ALTER COLUMN status DROP DEFAULT")
     op.execute(
         """
         ALTER TABLE applications
@@ -58,13 +60,13 @@ def upgrade():
             USING lower(status::text)::applicationstatus
         """
     )
+    op.execute("ALTER TABLE applications ALTER COLUMN status SET DEFAULT 'pending'::applicationstatus")
     op.execute("DROP TYPE applicationstatus_old")
 
     # ── jobtype ──────────────────────────────────────────────────────────────
     op.execute("ALTER TYPE jobtype RENAME TO jobtype_old")
-    op.execute(
-        "CREATE TYPE jobtype AS ENUM ('full_time', 'part_time', 'contract', 'internship')"
-    )
+    op.execute("CREATE TYPE jobtype AS ENUM ('full_time', 'part_time', 'contract', 'internship')")
+    op.execute("ALTER TABLE jobs ALTER COLUMN job_type DROP DEFAULT")
     op.execute(
         """
         ALTER TABLE jobs
@@ -82,9 +84,10 @@ def upgrade():
 
     # ── jobstatus ────────────────────────────────────────────────────────────
     op.execute("ALTER TYPE jobstatus RENAME TO jobstatus_old")
-    op.execute(
-        "CREATE TYPE jobstatus AS ENUM ('draft', 'active', 'closed', 'archived')"
-    )
+    op.execute("CREATE TYPE jobstatus AS ENUM ('draft', 'active', 'closed', 'archived')")
+    op.execute("ALTER TABLE jobs ALTER COLUMN status DROP DEFAULT")
+    # Supabase RLS policy references jobs.status — must drop it before type change
+    op.execute('DROP POLICY IF EXISTS "Public can view active jobs" ON jobs')
     op.execute(
         """
         ALTER TABLE jobs
@@ -92,6 +95,9 @@ def upgrade():
             USING lower(status::text)::jobstatus
         """
     )
+    op.execute("ALTER TABLE jobs ALTER COLUMN status SET DEFAULT 'draft'::jobstatus")
+    # Recreate the RLS policy with the new lowercase enum value
+    op.execute('CREATE POLICY "Public can view active jobs" ON jobs ' "FOR SELECT USING (status = 'active'::jobstatus)")
     op.execute("DROP TYPE jobstatus_old")
 
 
@@ -113,8 +119,7 @@ def downgrade():
     # applicationstatus
     op.execute("ALTER TYPE applicationstatus RENAME TO applicationstatus_new")
     op.execute(
-        "CREATE TYPE applicationstatus AS ENUM "
-        "('PENDING', 'REVIEWED', 'SHORTLISTED', 'REJECTED', 'HIRED', 'WITHDRAWN')"
+        "CREATE TYPE applicationstatus AS ENUM " "('PENDING', 'REVIEWED', 'SHORTLISTED', 'REJECTED', 'HIRED', 'WITHDRAWN')"
     )
     op.execute(
         """
@@ -127,9 +132,7 @@ def downgrade():
 
     # jobtype
     op.execute("ALTER TYPE jobtype RENAME TO jobtype_new")
-    op.execute(
-        "CREATE TYPE jobtype AS ENUM ('FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP')"
-    )
+    op.execute("CREATE TYPE jobtype AS ENUM ('FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP')")
     op.execute(
         """
         ALTER TABLE jobs
@@ -147,9 +150,7 @@ def downgrade():
 
     # jobstatus
     op.execute("ALTER TYPE jobstatus RENAME TO jobstatus_new")
-    op.execute(
-        "CREATE TYPE jobstatus AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED')"
-    )
+    op.execute("CREATE TYPE jobstatus AS ENUM ('DRAFT', 'ACTIVE', 'CLOSED', 'ARCHIVED')")
     op.execute(
         """
         ALTER TABLE jobs

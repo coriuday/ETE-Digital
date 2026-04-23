@@ -192,7 +192,7 @@ export default function LandingPage() {
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 shadow-sm">
                             <Sparkles size={14} className="text-violet-500 dark:text-violet-400" />
-                            India's No.1 Outcome-Driven Hiring Platform
+                            India’s Most Result-Oriented Hiring Platform
                         </span>
                     </motion.div>
 
