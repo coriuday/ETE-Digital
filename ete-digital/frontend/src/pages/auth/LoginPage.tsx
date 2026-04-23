@@ -88,7 +88,7 @@ export default function LoginPage() {
 
                     {/* Hero copy */}
                     <div className="py-8">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-4">India's #1 Outcome-Driven Platform</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-4">India's Most Result-Oriented Platform</p>
                         <h1 className="text-4xl font-bold text-white leading-tight mb-5"
                             style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
                             Your Skills.<br />

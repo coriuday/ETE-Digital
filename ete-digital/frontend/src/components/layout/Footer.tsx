@@ -115,7 +115,7 @@ export default function Footer() {
 
                         {/* Tagline + Description */}
                         <p className="text-sm font-semibold text-violet-600 uppercase tracking-wider mb-2">
-                            The No.1 Outcome-Driven Job Platform
+                            The Most Result-Oriented Job Platform
                         </p>
                         <p className="text-sm leading-relaxed mb-5 max-w-xs text-gray-500">
                             JobsRow is India's premier hiring platform where candidates prove their skills through real tryouts and get paid. With 1.5 Cr+ resumes and top MNC opportunities, find your row in the workforce today.
