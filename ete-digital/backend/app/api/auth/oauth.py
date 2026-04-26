@@ -19,11 +19,13 @@ Requirements (set in .env):
   GOOGLE_REDIRECT_URI=https://your-backend.com/api/auth/oauth/google/callback
 """
 
+import base64
+import json
 import uuid
 from typing import Optional
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
 from sqlalchemy import select, update
@@ -48,8 +50,14 @@ def _google_configured() -> bool:
 # ─── Redirect to Google ──────────────────────────────────────
 
 @router.get("/google")
-async def google_login():
-    """Redirect user to Google OAuth2 consent screen."""
+async def google_login(
+    role: str = Query(default="candidate", regex="^(candidate|employer)$"),
+):
+    """
+    Redirect user to Google OAuth2 consent screen.
+    Accepts ?role=candidate (default) or ?role=employer
+    and encodes it in the OAuth state param so it survives the round-trip.
+    """
     if not _google_configured():
         raise HTTPException(
             status_code=503,
@@ -58,6 +66,11 @@ async def google_login():
 
     import urllib.parse
 
+    # Encode the desired role in the state param (base64 JSON)
+    state_payload = base64.urlsafe_b64encode(
+        json.dumps({"role": role}).encode()
+    ).decode()
+
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
         "redirect_uri": settings.GOOGLE_REDIRECT_URI,
@@ -65,6 +78,7 @@ async def google_login():
         "scope": "openid email profile",
         "access_type": "offline",
         "prompt": "select_account",  # Always show account picker
+        "state": state_payload,
     }
     url = f"{GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
     return RedirectResponse(url=url)
@@ -76,6 +90,7 @@ async def google_login():
 async def google_callback(
     code: Optional[str] = None,
     error: Optional[str] = None,
+    state: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -95,6 +110,17 @@ async def google_callback(
 
     if not _google_configured():
         raise HTTPException(status_code=503, detail="Google OAuth not configured.")
+
+    # Decode role from state param (defaults to candidate if missing/invalid)
+    desired_role = UserRole.CANDIDATE
+    if state:
+        try:
+            state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
+            role_str = state_data.get("role", "candidate")
+            if role_str == "employer":
+                desired_role = UserRole.EMPLOYER
+        except Exception:
+            pass  # Malformed state — fall back to candidate
 
     # Exchange code for tokens
     async with httpx.AsyncClient() as client:
@@ -171,13 +197,13 @@ async def google_callback(
         )
         await db.commit()
     else:
-        # New user — create account
+        # New user — create account with the role passed via state
         new_user_id = uuid.uuid4()
         user = User(
             id=new_user_id,
             email=email,
             password_hash="OAUTH_NO_PASSWORD",  # Sentinel — cannot be used for password login
-            role=UserRole.CANDIDATE,             # Default role; changeable later
+            role=desired_role,                   # Candidate or Employer, from OAuth state
             is_verified=email_verified_by_google,
             email_verified=email_verified_by_google,
             is_active=True,

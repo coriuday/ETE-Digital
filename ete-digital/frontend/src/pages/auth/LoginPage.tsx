@@ -228,15 +228,25 @@ export default function LoginPage() {
                         <div className="flex-1 h-px bg-gray-200" />
                     </div>
 
-                    {/* Google OAuth Button */}
-                    <a
-                        id="google-login"
-                        href={`${BACKEND_URL}/api/auth/oauth/google?role=candidate`}
-                        className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 bg-white font-medium text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                    >
-                        <GoogleIcon />
-                        Continue with Google
-                    </a>
+                    {/* Google OAuth Buttons — role-aware */}
+                    <div className="space-y-2.5">
+                        <a
+                            id="google-login-candidate"
+                            href={`${BACKEND_URL}/api/auth/oauth/google?role=candidate`}
+                            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 bg-white font-medium text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                        >
+                            <GoogleIcon />
+                            Continue as Job Seeker
+                        </a>
+                        <a
+                            id="google-login-employer"
+                            href={`${BACKEND_URL}/api/auth/oauth/google?role=employer`}
+                            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-indigo-200 bg-indigo-50 font-medium text-sm text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all shadow-sm"
+                        >
+                            <GoogleIcon />
+                            Continue as Employer
+                        </a>
+                    </div>
 
                     <p className="text-center text-sm text-gray-500">
                         Don't have an account?{' '}
