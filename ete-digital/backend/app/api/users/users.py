@@ -3,8 +3,10 @@ User management and profile API endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete
+from typing import Optional
 
 from app.core.database import get_db
 from app.core.security import get_current_user
@@ -99,18 +101,31 @@ async def update_current_user_profile(
     )
 
 
+class DeleteAccountRequest(BaseModel):
+    reason: Optional[str] = None
+
+
 @router.delete("/me", response_model=dict)
 @router.delete("/account", response_model=dict)
-async def delete_current_user_account(current_user: dict = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
-    """Request account deletion (GDPR compliance)"""
+async def delete_current_user_account(
+    body: DeleteAccountRequest = DeleteAccountRequest(),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Permanently delete the current user's account and all associated data."""
     user_id = uuid.UUID(current_user["user_id"])
+
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    user.is_active = False
+
+    # Hard-delete profile first (FK constraint), then the user row
+    await db.execute(delete(UserProfile).where(UserProfile.user_id == user_id))
+    await db.execute(delete(User).where(User.id == user_id))
     await db.commit()
-    return {"message": "Account marked for deletion. You have 30 days to cancel this request."}
+
+    return {"message": "Your account has been permanently deleted."}
 
 
 @router.post("/me/resume", response_model=dict)
