@@ -275,23 +275,6 @@ export default function LandingPage() {
                 </div>
             </main>
 
-            {/* ════════════════════════════════════════════
-                TRUSTED BY
-            ════════════════════════════════════════════ */}
-            <section className="py-12 border-y border-slate-200 dark:border-white/5 bg-white/50 dark:bg-transparent">
-                <div className="max-w-5xl mx-auto px-4 text-center">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-6">
-                        Trusted by Engineers at
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-x-10 gap-y-4 items-center">
-                        {['Infosys', 'TCS', 'Wipro', 'HCL', 'Razorpay', 'CRED', 'Zepto', 'Meesho'].map((name) => (
-                            <span key={name} className="text-slate-400 dark:text-slate-600 font-bold text-sm hover:text-slate-600 dark:hover:text-slate-400 transition-colors">
-                                {name}
-                            </span>
-                        ))}
-                    </div>
-                </div>
-            </section>
 
             {/* ════════════════════════════════════════════
                 FEATURES
@@ -542,32 +525,6 @@ export default function LandingPage() {
                 </div>
             </section>
 
-            {/* ════════════════════════════════════════════
-                TESTIMONIAL / SOCIAL PROOF
-            ════════════════════════════════════════════ */}
-            <section className="py-24 relative z-10">
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                    <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                        <div className="flex justify-center gap-1 mb-4">
-                            {[...Array(5)].map((_, i) => (
-                                <Star key={i} size={20} className="text-amber-400 fill-amber-400" />
-                            ))}
-                        </div>
-                        <blockquote className="text-2xl md:text-3xl font-bold text-slate-900 dark:text-white italic mb-6 max-w-3xl mx-auto leading-relaxed">
-                            "Jobsrow changed how I approach job hunting. The tryout system made me stand out without a single referral."
-                        </blockquote>
-                        <div className="flex items-center justify-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">
-                                AK
-                            </div>
-                            <div className="text-left">
-                                <p className="text-sm font-bold text-slate-900 dark:text-white">Arjun Kumar</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">Senior Engineer, Razorpay</p>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
 
             {/* ════════════════════════════════════════════
                 FINAL CTA BANNER

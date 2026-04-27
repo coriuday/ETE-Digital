@@ -83,39 +83,6 @@ export default function AboutPage() {
                 </div>
             </section>
 
-            {/* Story */}
-            <section className="py-16 bg-gray-50">
-                <div className="max-w-4xl mx-auto px-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
-                        <div>
-                            <h2 className="text-3xl font-bold text-gray-900 mb-6">The story behind Jobsrow</h2>
-                            <div className="space-y-4 text-gray-600 leading-relaxed text-sm">
-                                <p>In 2023, our co-founder Arjun was hiring engineers at a fast-growing startup. After 3 months, 120 interviews, and 15 take-home assignments (all unpaid), he was exhausted—and still hadn't found the right fit.</p>
-                                <p>Meanwhile, his friend Priya—a talented developer—had spent 40+ hours on unpaid take-homes for companies that ghosted her. The system was failing everyone.</p>
-                                <p>Arjun and Kavya teamed up to build Jobsrow: a platform where tryouts are paid, transparent, and lead to actual outcomes. Since launch, over ₹2.5 crore has been paid to candidates for completing tryouts.</p>
-                                <p className="font-medium text-gray-900">That's the future of hiring we're building.</p>
-                            </div>
-                        </div>
-                        <div className="bg-gradient-to-br from-primary-50 to-secondary-50 rounded-2xl p-8 text-center">
-                            <div className="text-5xl font-black text-primary-600 mb-2">2023</div>
-                            <div className="text-gray-600 text-sm mb-6">Founded</div>
-                            <div className="grid grid-cols-2 gap-6">
-                                {[
-                                    { v: '₹2.5Cr+', l: 'Paid to Candidates' },
-                                    { v: '95%', l: 'Hire Rate' },
-                                    { v: '12 days', l: 'Avg. Time to Hire' },
-                                    { v: '4.8/5', l: 'Candidate Rating' },
-                                ].map((s, i) => (
-                                    <div key={i}>
-                                        <div className="text-xl font-bold text-primary-700">{s.v}</div>
-                                        <div className="text-xs text-gray-500 mt-0.5">{s.l}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             {/* Team
             <section className="py-16 bg-white">
