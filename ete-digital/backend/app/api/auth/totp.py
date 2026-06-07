@@ -8,6 +8,8 @@ POST /api/auth/2fa/backup   → Use a backup code to complete login
 GET  /api/auth/2fa/status   → Check if 2FA is enabled for current user
 """
 
+from datetime import datetime, timezone, timedelta
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
