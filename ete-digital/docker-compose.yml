@@ -91,7 +91,8 @@ services:
       target: production
     restart: unless-stopped
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false   # Present on VPS; skipped in CI where .env is not committed
     environment:
       # These override .env so container-to-container hostnames work
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ete_digital}
