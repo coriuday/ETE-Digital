@@ -22,6 +22,7 @@ import string
 
 try:
     import pyotp
+
     PYOTP_AVAILABLE = True
 except ImportError:
     PYOTP_AVAILABLE = False

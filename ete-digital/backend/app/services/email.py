@@ -41,9 +41,13 @@ class EmailService:
         """Print email to console when providers are not configured (dev mode)."""
         separator = "=" * 70
         logger.warning(
-            "\n%s\n📧 EMAIL (console fallback — no email provider configured)\n"
-            "To: %s\nSubject: %s\n%s\n%s\n%s",
-            separator, to_email, subject, separator, html_content, separator,
+            "\n%s\n📧 EMAIL (console fallback — no email provider configured)\n" "To: %s\nSubject: %s\n%s\n%s\n%s",
+            separator,
+            to_email,
+            subject,
+            separator,
+            html_content,
+            separator,
         )
 
     def _send_via_resend(self, to_email: str, subject: str, html_content: str, text_content: Optional[str]) -> bool:
