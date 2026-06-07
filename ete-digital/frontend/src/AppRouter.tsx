@@ -1,79 +1,88 @@
 /**
  * App Router
- * Main routing configuration
+ * Main routing configuration with React.lazy code splitting
  */
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAnalytics from './components/GoogleAnalytics';
-
-// ---- Auth Pages ----
-import LoginPage from './pages/auth/LoginPage';
-import RegisterPage from './pages/auth/RegisterPage';
-import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage from './pages/auth/ResetPasswordPage';
-import EmailVerificationPage from './pages/auth/EmailVerificationPage';
-import OAuthCallbackPage from './pages/auth/OAuthCallbackPage';
-
-// ---- Misc Pages ----
-import DashboardPage from './pages/candidate/DashboardPage';
-import LandingPage from './pages/public/LandingPage';
-import NotFoundPage from './pages/public/NotFoundPage';
-
-// ---- Jobs Pages ----
-import JobSearchPage from './pages/jobs/JobSearchPage';
-import JobDetailsPage from './pages/jobs/JobDetailsPage';
-
-// ---- Candidate Pages ----
-import TryoutDetailsPage from './pages/candidate/TryoutDetailsPage';
-import MyTryoutsPage from './pages/candidate/MyTryoutsPage';
-import VaultDashboardPage from './pages/candidate/VaultDashboardPage';
-import VaultItemFormPage from './pages/candidate/VaultItemFormPage';
-import ShareManagementPage from './pages/candidate/ShareManagementPage';
-import MyApplicationsPage from './pages/candidate/MyApplicationsPage';
-
-// ---- Public Pages ----
-import SharedVaultPage from './pages/public/SharedVaultPage';
-import CopyrightPage from './pages/public/CopyrightPage';
-import HowItWorksPage from './pages/public/HowItWorksPage';
-
-// ---- Employer Pages ----
-import EmployerJobsPage from './pages/employer/EmployerJobsPage';
-import EmployerDashboardPage from './pages/employer/EmployerDashboardPage';
-import CreateJobPage from './pages/employer/CreateJobPage';
-import ApplicationsPage from './pages/employer/ApplicationsPage';
-import ApplicationDetailsPage from './pages/employer/ApplicationDetailsPage';
-import CreateTryoutPage from './pages/employer/CreateTryoutPage';
-import GradeTryoutsPage from './pages/employer/GradeTryoutsPage';
-import GradeSubmissionPage from './pages/employer/GradeSubmissionPage';
-import AnalyticsDashboardPage from './pages/employer/AnalyticsDashboardPage';
-
-// ---- Admin Pages ----
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
-import AdminJobsPage from './pages/admin/AdminJobsPage';
-import AdminApplicationsPage from './pages/admin/AdminApplicationsPage';
-
-// ---- Marketing Pages ----
-import AboutPage from './pages/marketing/AboutPage';
-import ContactPage from './pages/marketing/ContactPage';
-import FaqPage from './pages/marketing/FaqPage';
-import PricingPage from './pages/marketing/PricingPage';
-import HelpCenterPage from './pages/marketing/HelpCenterPage';
-import HelpJobSeekersPage from './pages/marketing/HelpJobSeekersPage';
-import HelpEmployersPage from './pages/marketing/HelpEmployersPage';
-
-// ---- Legal Pages ----
-import PrivacyPolicyPage from './pages/marketing/PrivacyPolicyPage';
-import TermsPage from './pages/marketing/TermsPage';
-import CookiePolicyPage from './pages/marketing/CookiePolicyPage';
-import SafeJobSearchPage from './pages/marketing/SafeJobSearchPage';
 import ScrollToTop from './components/layout/ScrollToTop';
 
+// ---- Loading Fallback ----
+const LoadingFallback = () => (
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading Jobrows...</p>
+    </div>
+);
+
+// ---- Auth Pages ----
+const LoginPage = lazy(() => import('./pages/auth/LoginPage'));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage = lazy(() => import('./pages/auth/ResetPasswordPage'));
+const EmailVerificationPage = lazy(() => import('./pages/auth/EmailVerificationPage'));
+const OAuthCallbackPage = lazy(() => import('./pages/auth/OAuthCallbackPage'));
+
+// ---- Misc Pages ----
+const DashboardPage = lazy(() => import('./pages/candidate/DashboardPage'));
+const LandingPage = lazy(() => import('./pages/public/LandingPage'));
+const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
+
+// ---- Jobs Pages ----
+const JobSearchPage = lazy(() => import('./pages/jobs/JobSearchPage'));
+const JobDetailsPage = lazy(() => import('./pages/jobs/JobDetailsPage'));
+
+// ---- Candidate Pages ----
+const TryoutDetailsPage = lazy(() => import('./pages/candidate/TryoutDetailsPage'));
+const MyTryoutsPage = lazy(() => import('./pages/candidate/MyTryoutsPage'));
+const VaultDashboardPage = lazy(() => import('./pages/candidate/VaultDashboardPage'));
+const VaultItemFormPage = lazy(() => import('./pages/candidate/VaultItemFormPage'));
+const ShareManagementPage = lazy(() => import('./pages/candidate/ShareManagementPage'));
+const MyApplicationsPage = lazy(() => import('./pages/candidate/MyApplicationsPage'));
+
+// ---- Public Pages ----
+const SharedVaultPage = lazy(() => import('./pages/public/SharedVaultPage'));
+const CopyrightPage = lazy(() => import('./pages/public/CopyrightPage'));
+const HowItWorksPage = lazy(() => import('./pages/public/HowItWorksPage'));
+
+// ---- Employer Pages ----
+const EmployerJobsPage = lazy(() => import('./pages/employer/EmployerJobsPage'));
+const EmployerDashboardPage = lazy(() => import('./pages/employer/EmployerDashboardPage'));
+const CreateJobPage = lazy(() => import('./pages/employer/CreateJobPage'));
+const ApplicationsPage = lazy(() => import('./pages/employer/ApplicationsPage'));
+const ApplicationDetailsPage = lazy(() => import('./pages/employer/ApplicationDetailsPage'));
+const CreateTryoutPage = lazy(() => import('./pages/employer/CreateTryoutPage'));
+const GradeTryoutsPage = lazy(() => import('./pages/employer/GradeTryoutsPage'));
+const GradeSubmissionPage = lazy(() => import('./pages/employer/GradeSubmissionPage'));
+const AnalyticsDashboardPage = lazy(() => import('./pages/employer/AnalyticsDashboardPage'));
+
+// ---- Admin Pages ----
+const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
+const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'));
+const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'));
+
+// ---- Marketing Pages ----
+const AboutPage = lazy(() => import('./pages/marketing/AboutPage'));
+const ContactPage = lazy(() => import('./pages/marketing/ContactPage'));
+const FaqPage = lazy(() => import('./pages/marketing/FaqPage'));
+const PricingPage = lazy(() => import('./pages/marketing/PricingPage'));
+const HelpCenterPage = lazy(() => import('./pages/marketing/HelpCenterPage'));
+const HelpJobSeekersPage = lazy(() => import('./pages/marketing/HelpJobSeekersPage'));
+const HelpEmployersPage = lazy(() => import('./pages/marketing/HelpEmployersPage'));
+
+// ---- Legal Pages ----
+const PrivacyPolicyPage = lazy(() => import('./pages/marketing/PrivacyPolicyPage'));
+const TermsPage = lazy(() => import('./pages/marketing/TermsPage'));
+const CookiePolicyPage = lazy(() => import('./pages/marketing/CookiePolicyPage'));
+const SafeJobSearchPage = lazy(() => import('./pages/marketing/SafeJobSearchPage'));
+
 // ---- Settings Pages ----
-import AccountSettingsPage from './pages/settings/AccountSettingsPage';
-import NotificationSettingsPage from './pages/settings/NotificationSettingsPage';
-import TwoFactorPage from './pages/settings/TwoFactorPage';
+const AccountSettingsPage = lazy(() => import('./pages/settings/AccountSettingsPage'));
+const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage'));
+const TwoFactorPage = lazy(() => import('./pages/settings/TwoFactorPage'));
 
 export default function AppRouter() {
     const { isAuthenticated, user } = useAuthStore();
@@ -88,99 +97,101 @@ export default function AppRouter() {
         <BrowserRouter>
             <ScrollToTop />
             <GoogleAnalytics />
-            <Routes>
-                {/* Landing Page */}
-                <Route
-                    path="/"
-                    element={isAuthenticated ? <Navigate to={roleHome} /> : <LandingPage />}
-                />
+            <Suspense fallback={<LoadingFallback />}>
+                <Routes>
+                    {/* Landing Page */}
+                    <Route
+                        path="/"
+                        element={isAuthenticated ? <Navigate to={roleHome} /> : <LandingPage />}
+                    />
 
-                {/* Auth Routes (redirect to role dashboard if already logged in) */}
-                <Route
-                    path="/login"
-                    element={isAuthenticated ? <Navigate to={roleHome} /> : <LoginPage />}
-                />
-                <Route
-                    path="/register"
-                    element={isAuthenticated ? <Navigate to={roleHome} /> : <RegisterPage />}
-                />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
-                <Route path="/verify-email" element={<EmailVerificationPage />} />
+                    {/* Auth Routes (redirect to role dashboard if already logged in) */}
+                    <Route
+                        path="/login"
+                        element={isAuthenticated ? <Navigate to={roleHome} /> : <LoginPage />}
+                    />
+                    <Route
+                        path="/register"
+                        element={isAuthenticated ? <Navigate to={roleHome} /> : <RegisterPage />}
+                    />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route path="/reset-password" element={<ResetPasswordPage />} />
+                    <Route path="/verify-email" element={<EmailVerificationPage />} />
 
-                {/* OAuth Callback — must be public (no auth guard) */}
-                <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+                    {/* OAuth Callback — must be public (no auth guard) */}
+                    <Route path="/auth/callback" element={<OAuthCallbackPage />} />
 
-                {/* Public Job Search */}
-                <Route path="/jobs" element={<JobSearchPage />} />
-                <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
+                    {/* Public Job Search */}
+                    <Route path="/jobs" element={<JobSearchPage />} />
+                    <Route path="/jobs/:jobId" element={<JobDetailsPage />} />
 
-                {/* Public Shared Vault */}
-                <Route path="/shared/:token" element={<SharedVaultPage />} />
+                    {/* Public Shared Vault */}
+                    <Route path="/shared/:token" element={<SharedVaultPage />} />
 
-                {/* Marketing Pages */}
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                <Route path="/faq" element={<FaqPage />} />
-                <Route path="/pricing" element={<PricingPage />} />
-                <Route path="/how-it-works" element={<HowItWorksPage />} />
+                    {/* Marketing Pages */}
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/faq" element={<FaqPage />} />
+                    <Route path="/pricing" element={<PricingPage />} />
+                    <Route path="/how-it-works" element={<HowItWorksPage />} />
 
-                {/* Help Center Pages */}
-                <Route path="/help" element={<HelpCenterPage />} />
-                <Route path="/help/job-seekers" element={<HelpJobSeekersPage />} />
-                <Route path="/help/employers" element={<HelpEmployersPage />} />
+                    {/* Help Center Pages */}
+                    <Route path="/help" element={<HelpCenterPage />} />
+                    <Route path="/help/job-seekers" element={<HelpJobSeekersPage />} />
+                    <Route path="/help/employers" element={<HelpEmployersPage />} />
 
-                {/* Legal Pages */}
-                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-                <Route path="/terms" element={<TermsPage />} />
-                <Route path="/cookies" element={<CookiePolicyPage />} />
-                <Route path="/copyright" element={<CopyrightPage />} />
-                <Route path="/safe-job-search" element={<SafeJobSearchPage />} />
+                    {/* Legal Pages */}
+                    <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                    <Route path="/terms" element={<TermsPage />} />
+                    <Route path="/cookies" element={<CookiePolicyPage />} />
+                    <Route path="/copyright" element={<CopyrightPage />} />
+                    <Route path="/safe-job-search" element={<SafeJobSearchPage />} />
 
-                {/* Protected Routes */}
-                <Route element={<ProtectedRoute />}>
-                    <Route path="/dashboard" element={<DashboardPage />} />
+                    {/* Protected Routes */}
+                    <Route element={<ProtectedRoute />}>
+                        <Route path="/dashboard" element={<DashboardPage />} />
 
-                    {/* Settings */}
-                    <Route path="/settings" element={<AccountSettingsPage />} />
-                    <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
-                    <Route path="/settings/2fa" element={<TwoFactorPage />} />
+                        {/* Settings */}
+                        <Route path="/settings" element={<AccountSettingsPage />} />
+                        <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
+                        <Route path="/settings/2fa" element={<TwoFactorPage />} />
 
-                    {/* Candidate Routes */}
-                    <Route path="/dashboard/applications" element={<MyApplicationsPage />} />
-                    <Route path="/dashboard/tryouts" element={<MyTryoutsPage />} />
-                    <Route path="/tryouts/job/:jobId" element={<TryoutDetailsPage />} />
-                    <Route path="/tryouts/:tryoutId" element={<TryoutDetailsPage />} />
-                    <Route path="/vault" element={<VaultDashboardPage />} />
-                    <Route path="/vault/add" element={<VaultItemFormPage />} />
-                    <Route path="/vault/edit/:itemId" element={<VaultItemFormPage />} />
-                    <Route path="/vault/shares" element={<ShareManagementPage />} />
+                        {/* Candidate Routes */}
+                        <Route path="/dashboard/applications" element={<MyApplicationsPage />} />
+                        <Route path="/dashboard/tryouts" element={<MyTryoutsPage />} />
+                        <Route path="/tryouts/job/:jobId" element={<TryoutDetailsPage />} />
+                        <Route path="/tryouts/:tryoutId" element={<TryoutDetailsPage />} />
+                        <Route path="/vault" element={<VaultDashboardPage />} />
+                        <Route path="/vault/add" element={<VaultItemFormPage />} />
+                        <Route path="/vault/edit/:itemId" element={<VaultItemFormPage />} />
+                        <Route path="/vault/shares" element={<ShareManagementPage />} />
 
-                    {/* Employer Routes */}
-                    <Route path="/employer/jobs" element={<EmployerJobsPage />} />
-                    <Route path="/employer/jobs/create" element={<CreateJobPage />} />
-                    <Route path="/employer/applications" element={<ApplicationsPage />} />
-                    <Route path="/employer/applications/:applicationId" element={<ApplicationDetailsPage />} />
-                    <Route path="/employer/tryouts/create" element={<CreateTryoutPage />} />
-                    <Route path="/employer/tryouts/grade" element={<GradeTryoutsPage />} />
-                    <Route path="/employer/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />
-                    <Route path="/employer/analytics" element={<AnalyticsDashboardPage />} />
+                        {/* Employer Routes */}
+                        <Route path="/employer/jobs" element={<EmployerJobsPage />} />
+                        <Route path="/employer/jobs/create" element={<CreateJobPage />} />
+                        <Route path="/employer/applications" element={<ApplicationsPage />} />
+                        <Route path="/employer/applications/:applicationId" element={<ApplicationDetailsPage />} />
+                        <Route path="/employer/tryouts/create" element={<CreateTryoutPage />} />
+                        <Route path="/employer/tryouts/grade" element={<GradeTryoutsPage />} />
+                        <Route path="/employer/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />
+                        <Route path="/employer/analytics" element={<AnalyticsDashboardPage />} />
 
-                    {/* Employer Dashboard */}
-                    <Route path="/employer/dashboard" element={<EmployerDashboardPage />} />
-                </Route>
+                        {/* Employer Dashboard */}
+                        <Route path="/employer/dashboard" element={<EmployerDashboardPage />} />
+                    </Route>
 
-                {/* Admin-only Routes */}
-                <Route element={<ProtectedRoute requiredRole="admin" />}>
-                    <Route path="/admin" element={<AdminDashboardPage />} />
-                    <Route path="/admin/users" element={<AdminUsersPage />} />
-                    <Route path="/admin/jobs" element={<AdminJobsPage />} />
-                    <Route path="/admin/applications" element={<AdminApplicationsPage />} />
-                </Route>
+                    {/* Admin-only Routes */}
+                    <Route element={<ProtectedRoute requiredRole="admin" />}>
+                        <Route path="/admin" element={<AdminDashboardPage />} />
+                        <Route path="/admin/users" element={<AdminUsersPage />} />
+                        <Route path="/admin/jobs" element={<AdminJobsPage />} />
+                        <Route path="/admin/applications" element={<AdminApplicationsPage />} />
+                    </Route>
 
-                {/* 404 - Catch All */}
-                <Route path="*" element={<NotFoundPage />} />
-            </Routes>
+                    {/* 404 - Catch All */}
+                    <Route path="*" element={<NotFoundPage />} />
+                </Routes>
+            </Suspense>
         </BrowserRouter>
     );
 }

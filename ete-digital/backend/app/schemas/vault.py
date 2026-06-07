@@ -130,6 +130,8 @@ class VaultAccessResponse(BaseModel):
     """Response when accessing vault via share token"""
 
     item: VaultItemResponse
+    candidate_name: Optional[str] = None  # Fetched from UserProfile.full_name
+    shared_with_company: Optional[str] = None  # From ShareToken.shared_with_company
     remaining_views: Optional[int]
     expires_at: Optional[datetime]
 

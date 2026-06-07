@@ -1,10 +1,11 @@
 /**
- * Jobsrow - Theme System
- * CSS Variables for dynamic theming
- * Supports light/dark modes with WCAG AAA contrast ratios
+ * Jobsrow — Premium Design System
+ * Violet / Zinc enterprise light theme
+ * Inspired by Linear · Stripe · Vercel
+ * Supports light/dark modes with WCAG AA contrast ratios
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -12,54 +13,58 @@
 
 @layer base {
   :root {
-    /* Primary brand colors - Blue spectrum */
-    --color-primary-50: 220 100% 97%;
-    --color-primary-100: 220 95% 92%;
-    --color-primary-200: 220 90% 85%;
-    --color-primary-300: 220 85% 75%;
-    --color-primary-400: 220 85% 65%;
-    --color-primary-500: 220 90% 56%;
-    /* Main brand color */
-    --color-primary-600: 220 90% 48%;
-    --color-primary-700: 220 85% 40%;
-    --color-primary-800: 220 80% 32%;
-    --color-primary-900: 220 75% 24%;
+    /* ── Brand: Violet spectrum ──────────────────────────────── */
+    --color-primary-50:  263 87% 97%;   /* #F5F3FF */
+    --color-primary-100: 263 85% 93%;   /* #EDE9FE */
+    --color-primary-200: 263 83% 86%;   /* #DDD6FE */
+    --color-primary-300: 263 79% 75%;   /* #C4B5FD */
+    --color-primary-400: 263 75% 64%;   /* #A78BFA */
+    --color-primary-500: 263 72% 57%;   /* #8B5CF6  — hover state  */
+    --color-primary-600: 262 83% 58%;   /* #7C3AED  — CTA default  */
+    --color-primary-700: 263 70% 50%;   /* #6D28D9  — pressed      */
+    --color-primary-800: 263 69% 42%;   /* #5B21B6 */
+    --color-primary-900: 264 67% 35%;   /* #4C1D95 */
 
-    /* Semantic colors */
-    --color-success: 142 71% 45%;
-    --color-warning: 38 92% 50%;
-    --color-error: 0 84% 60%;
-    --color-info: 199 89% 48%;
+    /* ── Semantic: precise Tailwind v3 values ───────────────── */
+    --color-success: 163 94% 24%;       /* Emerald-700 #047857 */
+    --color-warning:  32 95% 44%;       /* Amber-600   #D97706 */
+    --color-error:     0 72% 51%;       /* Red-600     #DC2626 */
+    --color-info:    199 89% 48%;       /* Sky-500     #0EA5E9 */
 
-    /* Neutrals - Light mode */
-    --color-background: 0 0% 100%;
-    --color-surface: 0 0% 98%;
-    --color-text-primary: 222 47% 11%;
-    --color-text-secondary: 215 16% 47%;
-    --color-text-tertiary: 214 20% 69%;
+    /* ── Neutrals: Zinc scale (light mode) ──────────────────── */
+    --color-background:     0  0% 98%;  /* Zinc-50  #FAFAFA — canvas    */
+    --color-surface:        0  0% 100%; /* White    #FFFFFF — cards      */
+    --color-border:       240  6% 90%;  /* Zinc-200 #E4E4E7 — dividers  */
+    --color-text-primary: 240 10%  4%;  /* Zinc-950 #09090B — headings  */
+    --color-text-secondary: 240 5% 26%; /* Zinc-700 #3F3F46 — body      */
+    --color-text-tertiary:  240 4% 46%; /* Zinc-500 #71717A — muted     */
 
-    /* Typography */
+    /* ── Typography ─────────────────────────────────────────── */
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', 'Courier New', monospace;
   }
 
-  [data-theme="dark"] {
-    /* Neutrals - Dark mode */
-    --color-background: 222 47% 11%;
-    --color-surface: 217 33% 17%;
-    --color-text-primary: 0 0% 98%;
-    --color-text-secondary: 214 20% 69%;
-    --color-text-tertiary: 215 16% 47%;
+  /* ── Dark mode (Zinc dark complement) ──────────────────────── */
+  [data-theme="dark"],
+  .dark {
+    --color-background:      240  6%  10%; /* Zinc-900  #18181B — canvas */
+    --color-surface:         240  5%  15%; /* Zinc-850  #212126 — cards  */
+    --color-border:          240  4%  26%; /* Zinc-700  #3F3F46          */
+    --color-text-primary:      0  0%  98%; /* Zinc-50   #FAFAFA          */
+    --color-text-secondary:  240  5%  65%; /* Zinc-400  #A1A1AA          */
+    --color-text-tertiary:   240  4%  46%; /* Zinc-500  #71717A          */
 
-    /* Adjust primary colors for dark mode */
-    --color-primary-500: 220 85% 65%;
-    --color-primary-600: 220 80% 58%;
+    /* Lighten brand slightly in dark for legibility */
+    --color-primary-500: 263 72% 68%;
+    --color-primary-600: 262 83% 72%;
   }
 
   /* Base styles */
   body {
     @apply bg-background text-text-primary antialiased;
     font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Smooth transitions for theme switching */
@@ -224,41 +229,41 @@ a:hover > svg {
 
   /* Glassmorphism effect */
   .glass {
-    @apply bg-surface/70 backdrop-blur-glass border border-text-tertiary/20 shadow-glass;
+    @apply bg-surface/70 backdrop-blur-glass border border-border shadow-glass;
   }
 
   /* Button base styles */
   .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-medium transition-all duration-200;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-150;
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-600 focus-visible:ring-offset-2;
   }
 
   .btn-primary {
-    @apply btn bg-primary-500 text-white hover:bg-primary-600 active:bg-primary-700;
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 shadow-sm;
   }
 
   .btn-secondary {
-    @apply btn bg-surface text-text-primary border border-text-tertiary/20 hover:bg-text-tertiary/10;
+    @apply btn bg-surface text-text-primary border border-border hover:bg-background active:bg-border/40 shadow-card;
   }
 
   .btn-ghost {
-    @apply btn text-text-primary hover:bg-text-tertiary/10;
+    @apply btn text-text-secondary hover:text-text-primary hover:bg-border/30 active:bg-border/50;
   }
 
   /* Input base styles */
   .input {
-    @apply w-full px-4 py-2 rounded-lg border border-text-tertiary/20 bg-surface text-text-primary;
-    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
-    @apply placeholder:text-text-tertiary transition-all duration-200;
+    @apply w-full px-3.5 py-2 rounded-lg border border-border bg-surface text-text-primary text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-600/30 focus:border-primary-600;
+    @apply placeholder:text-text-tertiary transition-all duration-150;
   }
 
   /* Card styles */
   .card {
-    @apply bg-surface rounded-xl border border-text-tertiary/10 shadow-sm;
+    @apply bg-surface rounded-xl border border-border shadow-card;
   }
 
   .card-hover {
-    @apply card transition-all duration-200 hover:shadow-md hover:border-primary-500/20;
+    @apply card transition-all duration-200 hover:shadow-card-hover hover:border-primary-200;
   }
 }
 

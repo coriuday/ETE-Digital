@@ -134,9 +134,9 @@ async def upload_resume(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Upload or replace resume (PDF or DOCX only, max 5 MB)"""
-    import os
-    import uuid as uuid_lib
+    """Upload or replace resume (PDF or DOCX only, max 5 MB) to MinIO/S3"""
+    import io
+    from app.services.storage import storage_service
 
     # Validate file type
     allowed_exts = (".pdf", ".doc", ".docx")
@@ -146,25 +146,31 @@ async def upload_resume(
 
     # Read and validate size (5 MB max)
     contents = await file.read()
-    if len(contents) > 5 * 1024 * 1024:
+    file_size = len(contents)
+    if file_size > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File size must be under 5 MB.")
 
-    # Save to disk — uploads/ relative to backend root
-    backend_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    upload_dir = os.path.join(backend_root, "uploads", "resumes")
-    os.makedirs(upload_dir, exist_ok=True)
+    user_id = current_user["user_id"]
 
-    ext = os.path.splitext(file.filename or "resume.pdf")[1].lower() or ".pdf"
-    filename = f"{current_user['user_id']}_{uuid_lib.uuid4().hex[:8]}{ext}"
-    filepath = os.path.join(upload_dir, filename)
+    # Build S3 storage path
+    file_path = storage_service.get_file_path("resumes", user_id, file.filename or "resume.pdf")
 
-    with open(filepath, "wb") as f:
-        f.write(contents)
+    # Upload to MinIO/S3
+    resume_url = storage_service.upload_file(
+        file_data=io.BytesIO(contents),
+        file_path=file_path,
+        content_type=file.content_type or "application/pdf",
+        file_size=file_size,
+    )
 
-    resume_url = f"/uploads/resumes/{filename}"
+    if resume_url is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is not available. Configure MinIO/S3 to enable uploads.",
+        )
 
     # Update UserProfile
-    user_uuid = uuid.UUID(current_user["user_id"])
+    user_uuid = uuid.UUID(user_id)
     result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_uuid))
     profile = result.scalar_one_or_none()
     if not profile:

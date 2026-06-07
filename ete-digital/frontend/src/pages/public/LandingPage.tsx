@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Code, Zap, ShieldCheck, ChevronRight, Briefcase,
-    MapPin, Clock, ArrowRight, Building2, Search, Star,
+    MapPin, Clock, ArrowRight, Building2, Search,
     Users, TrendingUp, CheckCircle2, Sparkles
 } from 'lucide-react';
 import PublicNavbar from '../../components/layout/PublicNavbar';

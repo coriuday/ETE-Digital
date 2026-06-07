@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, Star, Trophy, ShieldCheck, Loader2, LayoutGrid } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Star, Trophy, ShieldCheck, Loader2, LayoutGrid, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -28,14 +28,14 @@ const brandPoints = [
 
 export default function LoginPage() {
     const navigate = useNavigate();
-    const { login } = useAuthStore();
-
+    const { login, completeTwoFactorLogin, requiresTwoFactor } = useAuthStore();
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [totpCode, setTotpCode] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,10 +43,29 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await login(email, password);
+            // If requiresTwoFactor becomes true, login() returned without throwing.
+            // The UI will automatically switch to the 2FA step.
+            if (!useAuthStore.getState().requiresTwoFactor) {
+                const role = useAuthStore.getState().user?.role;
+                navigate(role === 'employer' ? '/employer/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
+            }
+        } catch (err: any) {
+            setError(err?.response?.data?.detail ?? 'Invalid email or password. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleTotpSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+        try {
+            await completeTwoFactorLogin(totpCode);
             const role = useAuthStore.getState().user?.role;
             navigate(role === 'employer' ? '/employer/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
         } catch (err: any) {
-            setError(err?.response?.data?.detail ?? 'Invalid email or password. Please try again.');
+            setError(err?.response?.data?.detail ?? 'Invalid code. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -143,122 +162,191 @@ export default function LoginPage() {
                         <span className="font-extrabold text-lg text-gray-900">Jobsrow</span>
                     </Link>
 
-                    <h2 className="text-3xl font-bold mb-1 text-gray-900"
-                        style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
-                        Welcome back
-                    </h2>
-                    <p className="text-sm mb-8 text-gray-500">
-                        Sign in to continue your journey on Jobsrow
-                    </p>
-
-                    {/* Error banner */}
-                    {error && (
-                        <div className="mb-6 px-4 py-3 rounded-xl text-sm border bg-red-50 border-red-200 text-red-700">
-                            {error}
-                        </div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-5">
-
-                        {/* Email */}
-                        <div>
-                            <label className="block text-sm font-semibold mb-1.5 text-gray-700">
-                                Email address
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="you@company.com"
-                                className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <div className="flex items-center justify-between mb-1.5">
-                                <label className="block text-sm font-semibold text-gray-700">
-                                    Password
-                                </label>
-                                <Link to="/forgot-password"
-                                    className="text-xs font-medium hover:underline text-indigo-600">
-                                    Forgot password?
-                                </Link>
+                    {requiresTwoFactor ? (
+                        /* ── 2FA Step ── */
+                        <>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                                    style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)' }}>
+                                    <ShieldAlert size={20} className="text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-2xl font-bold text-gray-900"
+                                        style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
+                                        Two-Factor Auth
+                                    </h2>
+                                    <p className="text-sm text-gray-500">Enter the 6-digit code from your authenticator app</p>
+                                </div>
                             </div>
-                            <div className="relative">
-                                <input
-                                    id="password"
-                                    type={showPw ? 'text' : 'password'}
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter your password"
-                                    className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
-                                />
+
+                            {error && (
+                                <div className="mb-5 px-4 py-3 rounded-xl text-sm border bg-red-50 border-red-200 text-red-700">
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleTotpSubmit} className="space-y-5">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5 text-gray-700">
+                                        Authenticator Code
+                                    </label>
+                                    <input
+                                        id="totp-code"
+                                        type="text"
+                                        inputMode="numeric"
+                                        autoComplete="one-time-code"
+                                        pattern="\d{6}"
+                                        maxLength={6}
+                                        required
+                                        autoFocus
+                                        value={totpCode}
+                                        onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
+                                        placeholder="000000"
+                                        className="w-full px-4 py-3 rounded-xl text-center text-2xl tracking-[0.5em] font-mono outline-none transition-all placeholder:text-gray-300 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                    />
+                                </div>
+
                                 <button
-                                    type="button"
-                                    onClick={() => setShowPw(!showPw)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors text-gray-400 hover:text-gray-600">
-                                    {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
+                                    id="totp-submit"
+                                    type="submit"
+                                    disabled={loading || totpCode.length !== 6}
+                                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)', boxShadow: '0 4px 24px rgba(79,70,229,0.35)' }}>
+                                    {loading
+                                        ? <><Loader2 size={16} className="animate-spin" /> Verifying…</>
+                                        : <>Verify & Sign In <ArrowRight size={16} /></>}
                                 </button>
+                            </form>
+
+                            <p className="text-center text-sm text-gray-500 mt-6">
+                                Lost access to your app?{' '}
+                                <Link to="/login" onClick={() => window.location.reload()}
+                                    className="font-semibold hover:underline text-indigo-600">
+                                    Use a backup code
+                                </Link>
+                            </p>
+                        </>
+                    ) : (
+                        /* ── Normal Login Step ── */
+                        <>
+                            <h2 className="text-3xl font-bold mb-1 text-gray-900"
+                                style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
+                                Welcome back
+                            </h2>
+                            <p className="text-sm mb-8 text-gray-500">
+                                Sign in to continue your journey on Jobsrow
+                            </p>
+
+                            {/* Error banner */}
+                            {error && (
+                                <div className="mb-6 px-4 py-3 rounded-xl text-sm border bg-red-50 border-red-200 text-red-700">
+                                    {error}
+                                </div>
+                            )}
+
+                            <form onSubmit={handleSubmit} className="space-y-5">
+
+                                {/* Email */}
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5 text-gray-700">
+                                        Email address
+                                    </label>
+                                    <input
+                                        id="email"
+                                        type="email"
+                                        required
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        placeholder="you@company.com"
+                                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                    />
+                                </div>
+
+                                {/* Password */}
+                                <div>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-sm font-semibold text-gray-700">
+                                            Password
+                                        </label>
+                                        <Link to="/forgot-password"
+                                            className="text-xs font-medium hover:underline text-indigo-600">
+                                            Forgot password?
+                                        </Link>
+                                    </div>
+                                    <div className="relative">
+                                        <input
+                                            id="password"
+                                            type={showPw ? 'text' : 'password'}
+                                            required
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            placeholder="Enter your password"
+                                            className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPw(!showPw)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors text-gray-400 hover:text-gray-600">
+                                            {showPw ? <EyeOff size={17} /> : <Eye size={17} />}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Submit */}
+                                <button
+                                    id="login-submit"
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                    style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)', boxShadow: '0 4px 24px rgba(79,70,229,0.35)' }}
+                                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 32px rgba(124,77,255,0.5)'; }}
+                                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(79,70,229,0.35)'; }}>
+                                    {loading
+                                        ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
+                                        : <>Sign In <ArrowRight size={16} /></>}
+                                </button>
+                            </form>
+
+                            {/* Divider */}
+                            <div className="relative my-7 flex items-center gap-3">
+                                <div className="flex-1 h-px bg-gray-200" />
+                                <span className="text-xs font-medium text-gray-400">OR</span>
+                                <div className="flex-1 h-px bg-gray-200" />
                             </div>
-                        </div>
 
-                        {/* Submit */}
-                        <button
-                            id="login-submit"
-                            type="submit"
-                            disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-sm text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)', boxShadow: '0 4px 24px rgba(79,70,229,0.35)' }}
-                            onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 32px rgba(124,77,255,0.5)'; }}
-                            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 4px 24px rgba(79,70,229,0.35)'; }}>
-                            {loading
-                                ? <><Loader2 size={16} className="animate-spin" /> Signing in…</>
-                                : <>Sign In <ArrowRight size={16} /></>}
-                        </button>
-                    </form>
+                            {/* Google OAuth Buttons — role-aware */}
+                            <div className="space-y-2.5">
+                                <a
+                                    id="google-login-candidate"
+                                    href={`${BACKEND_URL}/api/auth/oauth/google?role=candidate`}
+                                    className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 bg-white font-medium text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                                >
+                                    <GoogleIcon />
+                                    Continue as Job Seeker
+                                </a>
+                                <a
+                                    id="google-login-employer"
+                                    href={`${BACKEND_URL}/api/auth/oauth/google?role=employer`}
+                                    className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-indigo-200 bg-indigo-50 font-medium text-sm text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all shadow-sm"
+                                >
+                                    <GoogleIcon />
+                                    Continue as Employer
+                                </a>
+                            </div>
 
-                    {/* Divider */}
-                    <div className="relative my-7 flex items-center gap-3">
-                        <div className="flex-1 h-px bg-gray-200" />
-                        <span className="text-xs font-medium text-gray-400">OR</span>
-                        <div className="flex-1 h-px bg-gray-200" />
-                    </div>
+                            <p className="text-center text-sm text-gray-500 mt-6">
+                                Don't have an account?{' '}
+                                <Link to="/register"
+                                    className="font-semibold hover:underline text-indigo-600">
+                                    Sign up free
+                                </Link>
+                            </p>
 
-                    {/* Google OAuth Buttons — role-aware */}
-                    <div className="space-y-2.5">
-                        <a
-                            id="google-login-candidate"
-                            href={`${BACKEND_URL}/api/auth/oauth/google?role=candidate`}
-                            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-gray-200 bg-white font-medium text-sm text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                        >
-                            <GoogleIcon />
-                            Continue as Job Seeker
-                        </a>
-                        <a
-                            id="google-login-employer"
-                            href={`${BACKEND_URL}/api/auth/oauth/google?role=employer`}
-                            className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-indigo-200 bg-indigo-50 font-medium text-sm text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all shadow-sm"
-                        >
-                            <GoogleIcon />
-                            Continue as Employer
-                        </a>
-                    </div>
-
-                    <p className="text-center text-sm text-gray-500">
-                        Don't have an account?{' '}
-                        <Link to="/register"
-                            className="font-semibold hover:underline text-indigo-600">
-                            Sign up free
-                        </Link>
-                    </p>
-
-                    <p className="text-center text-xs mt-8 text-gray-300">
-                        Jobsrow © {new Date().getFullYear()} · Building the Future of Hiring
-                    </p>
+                            <p className="text-center text-xs mt-8 text-gray-300">
+                                Jobsrow © {new Date().getFullYear()} · Building the Future of Hiring
+                            </p>
+                        </>
+                    )}
                 </div>
             </div>
         </div>

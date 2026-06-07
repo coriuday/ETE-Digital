@@ -43,11 +43,14 @@ class Base(DeclarativeBase):
 
 # Dependency for FastAPI routes
 async def get_db() -> AsyncSession:
-    """Dependency to get database session"""
+    """
+    Dependency to get database session.
+    Commits are EXPLICIT in service methods — this dependency only rolls back
+    on unhandled exceptions and ensures the session is always closed.
+    """
     async with AsyncSessionLocal() as session:
         try:
             yield session
-            await session.commit()
         except Exception:
             await session.rollback()
             raise

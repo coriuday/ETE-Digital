@@ -35,12 +35,32 @@ class UserLogin(BaseModel):
 
 
 class TokenResponse(BaseModel):
-    """Token response"""
+    """Token response (used by /refresh endpoint)"""
 
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int  # seconds
+
+
+class LoginResponse(BaseModel):
+    """
+    Login response — supports two paths:
+
+    Normal login (2FA disabled):
+        { access_token, refresh_token, token_type, expires_in, requires_2fa: false }
+
+    2FA required (user has 2FA enabled):
+        { requires_2fa: true, partial_token }
+        Frontend must call POST /api/auth/2fa/verify with { partial_token, code }.
+    """
+
+    requires_2fa: bool = False
+    partial_token: Optional[str] = None  # Short-lived token for 2FA completion
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
+    expires_in: Optional[int] = None
 
 
 class RefreshTokenRequest(BaseModel):

@@ -52,15 +52,15 @@ class AuthService:
                 detail="Email already registered",
             )
 
-        # Auto-verify unconditionally as requested to bypass email verification issues
-        is_dev = True
+        # Auto-verify only in development. In production, email verification is required.
+        is_dev = settings.ENVIRONMENT == "development"
 
         # Create user
         user = User(
             email=email,
             password_hash=hash_password(password),
             role=role,
-            is_verified=is_dev,  # True in dev, False in production
+            is_verified=is_dev,  # True only in dev; production requires email verification
             verification_token=None if is_dev else secrets.token_urlsafe(32),
             verification_token_expires=(None if is_dev else (datetime.now(timezone.utc) + timedelta(hours=24))),
         )
@@ -79,7 +79,7 @@ class AuthService:
         await db.commit()
         await db.refresh(user)
 
-        # Only send verification email in production
+        # Send verification email in production
         if not is_dev:
             verification_url = f"{settings.FRONTEND_URL}/verify-email?token={user.verification_token}"
             await asyncio.to_thread(email_service.send_verification_email, user.email, verification_url)
@@ -117,8 +117,15 @@ class AuthService:
         password: str,
         ip_address: Optional[str] = None,
         user_agent: Optional[str] = None,
-    ) -> Tuple[str, str, User]:
-        """Login user and return access and refresh tokens"""
+    ) -> Tuple[str, Optional[str], User, bool]:
+        """
+        Login user and return tokens.
+
+        Returns: (access_token_or_partial, refresh_token_or_None, user, requires_2fa)
+        - If requires_2fa=True:  access_token holds the short-lived partial_token,
+                                  refresh_token is None.
+        - If requires_2fa=False: access_token and refresh_token are full JWT tokens.
+        """
         # Get user
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
@@ -132,20 +139,26 @@ class AuthService:
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
 
-        # if not user.is_verified:
-        #     raise HTTPException(
-        #         status_code=status.HTTP_403_FORBIDDEN,
-        #         detail="Email not verified. Please check your email.",
-        #     )
-
         # Update last login
         user.last_login_at = datetime.now(timezone.utc)
+        await db.commit()
 
-        # Create tokens
+        # --- 2FA gate: issue only a partial token if 2FA is enabled ---
+        if user.totp_enabled:
+            partial_token = create_access_token(
+                data={
+                    "sub": str(user.id),
+                    "type": "2fa_partial",
+                },
+                expires_delta=timedelta(minutes=5),
+            )
+            return partial_token, None, user, True
+
+        # --- Normal login: issue full tokens ---
         token_data = {
             "sub": str(user.id),
             "email": user.email,
-            "role": user.role.value,  # encode as plain string e.g. "employer"
+            "role": user.role.value,
         }
 
         access_token = create_access_token(token_data)
@@ -162,7 +175,7 @@ class AuthService:
         db.add(refresh_token)
         await db.commit()
 
-        return access_token, refresh_token_str, user
+        return access_token, refresh_token_str, user, False
 
     async def refresh_access_token(self, db: AsyncSession, refresh_token_str: str) -> Tuple[str, str]:
         """Refresh access token using refresh token"""

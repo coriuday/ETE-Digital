@@ -31,6 +31,7 @@ router = APIRouter(prefix="/api/auth/2fa", tags=["two-factor-auth"])
 
 # ─── Schemas ────────────────────────────────────────────────
 
+
 class TOTPSetupResponse(BaseModel):
     qr_uri: str
     secret: str  # Show to user once for manual entry fallback
@@ -56,6 +57,13 @@ class TOTPBackupLoginRequest(BaseModel):
     partial_token: str = Field(..., description="Partial JWT issued after password validation")
 
 
+class TOTPVerifyLoginRequest(BaseModel):
+    """Complete 2FA login by verifying TOTP code against the partial token."""
+
+    partial_token: str = Field(..., description="Short-lived partial JWT from /api/auth/login")
+    code: str = Field(..., min_length=6, max_length=6, description="6-digit TOTP code")
+
+
 class TOTPStatusResponse(BaseModel):
     enabled: bool
     backup_codes_remaining: int
@@ -63,15 +71,87 @@ class TOTPStatusResponse(BaseModel):
 
 # ─── Endpoints ──────────────────────────────────────────────
 
+
+@router.post("/verify")
+async def totp_verify_login(
+    body: TOTPVerifyLoginRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Complete 2FA login.
+
+    Called after /api/auth/login returns { requires_2fa: true, partial_token }.
+    Verifies the TOTP code against the partial token and issues full JWT tokens.
+    """
+    import jwt as pyjwt  # noqa: PLC0415
+    from app.core.config import settings as _settings  # noqa: PLC0415
+    from app.core.security import (  # noqa: PLC0415
+        create_access_token,
+        create_refresh_token,
+        decrypt_field,
+        verify_totp_code,
+    )
+    from app.models.users import RefreshToken as RefreshTokenModel  # noqa: PLC0415
+    from datetime import timedelta  # noqa: PLC0415
+
+    # Decode partial token
+    try:
+        payload = pyjwt.decode(
+            body.partial_token,
+            _settings.JWT_SECRET_KEY,
+            algorithms=[_settings.JWT_ALGORITHM],
+        )
+        if payload.get("type") != "2fa_partial":
+            raise HTTPException(status_code=401, detail="Invalid partial token type.")
+        user_id = payload.get("sub")
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="2FA session expired. Please log in again.")
+    except pyjwt.PyJWTError:
+        raise HTTPException(status_code=401, detail="Invalid partial token.")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalars().first()
+    if not user or not user.totp_enabled:
+        raise HTTPException(status_code=400, detail="2FA not enabled for this user.")
+
+    # Verify TOTP code
+    secret = decrypt_field(user.totp_secret)
+    if not verify_totp_code(secret, body.code):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid TOTP code. Check your authenticator app and try again.",
+        )
+
+    # Issue full tokens
+    token_data = {"sub": str(user.id), "email": user.email, "role": user.role.value}
+    access_token = create_access_token(data=token_data)
+    refresh_token_str = create_refresh_token(data={"sub": str(user.id)})
+
+    db.add(
+        RefreshTokenModel(
+            user_id=user.id,
+            token=refresh_token_str,
+            expires_at=datetime.now(timezone.utc) + timedelta(days=_settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS),
+        )
+    )
+    await db.commit()
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token_str,
+        "token_type": "bearer",
+        "expires_in": _settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        "requires_2fa": False,
+    }
+
+
 @router.get("/status", response_model=TOTPStatusResponse)
 async def totp_status(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Check 2FA status for the current user."""
-    result = await db.execute(
-        select(User).where(User.id == current_user["user_id"])
-    )
+    result = await db.execute(select(User).where(User.id == current_user["user_id"]))
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -89,9 +169,7 @@ async def totp_setup(
     Initiate 2FA setup. Generates a new TOTP secret and returns the QR URI.
     The secret is saved (unactivated) until the user verifies with /enable.
     """
-    result = await db.execute(
-        select(User).where(User.id == current_user["user_id"])
-    )
+    result = await db.execute(select(User).where(User.id == current_user["user_id"]))
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -107,11 +185,7 @@ async def totp_setup(
     encrypted_secret = encrypt_field(secret)
 
     # Save the unactivated secret (will be activated in /enable)
-    await db.execute(
-        update(User)
-        .where(User.id == user.id)
-        .values(totp_secret=encrypted_secret, totp_enabled=False)
-    )
+    await db.execute(update(User).where(User.id == user.id).values(totp_secret=encrypted_secret, totp_enabled=False))
     await db.commit()
 
     qr_uri = generate_totp_qr_url(email=user.email, secret=secret)
@@ -128,9 +202,7 @@ async def totp_enable(
     Verify the TOTP code and activate 2FA.
     Also generates backup codes — shown ONCE, user must save them.
     """
-    result = await db.execute(
-        select(User).where(User.id == current_user["user_id"])
-    )
+    result = await db.execute(select(User).where(User.id == current_user["user_id"]))
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -156,20 +228,13 @@ async def totp_enable(
     plaintext_codes, hashed_codes = generate_backup_codes(count=8)
 
     # Enable 2FA and store hashed backup codes
-    await db.execute(
-        update(User)
-        .where(User.id == user.id)
-        .values(totp_enabled=True, totp_backup_codes=hashed_codes)
-    )
+    await db.execute(update(User).where(User.id == user.id).values(totp_enabled=True, totp_backup_codes=hashed_codes))
     await db.commit()
 
     return TOTPEnableResponse(
         enabled=True,
         backup_codes=plaintext_codes,
-        message=(
-            "2FA enabled successfully! Save these backup codes in a secure place. "
-            "They will NOT be shown again."
-        ),
+        message=("2FA enabled successfully! Save these backup codes in a secure place. " "They will NOT be shown again."),
     )
 
 
@@ -180,9 +245,7 @@ async def totp_disable(
     db: AsyncSession = Depends(get_db),
 ):
     """Disable 2FA. Requires current TOTP code to confirm identity."""
-    result = await db.execute(
-        select(User).where(User.id == current_user["user_id"])
-    )
+    result = await db.execute(select(User).where(User.id == current_user["user_id"]))
     user = result.scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -197,11 +260,7 @@ async def totp_disable(
             detail="Invalid TOTP code. Cannot disable 2FA without valid verification.",
         )
 
-    await db.execute(
-        update(User)
-        .where(User.id == user.id)
-        .values(totp_enabled=False, totp_secret=None, totp_backup_codes=[])
-    )
+    await db.execute(update(User).where(User.id == user.id).values(totp_enabled=False, totp_secret=None, totp_backup_codes=[]))
     await db.commit()
 
     return {"message": "2FA has been disabled.", "enabled": False}
@@ -247,23 +306,15 @@ async def verify_backup(
         )
 
     # Remove used backup code
-    await db.execute(
-        update(User)
-        .where(User.id == user.id)
-        .values(totp_backup_codes=remaining_codes)
-    )
+    await db.execute(update(User).where(User.id == user.id).values(totp_backup_codes=remaining_codes))
     await db.commit()
 
     # Issue full JWT
     from app.core.security import create_access_token, create_refresh_token
     from datetime import timedelta
 
-    access_token = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "role": user.role.value}
-    )
-    refresh_token = create_refresh_token(
-        data={"sub": str(user.id)}
-    )
+    access_token = create_access_token(data={"sub": str(user.id), "email": user.email, "role": user.role.value})
+    refresh_token = create_refresh_token(data={"sub": str(user.id)})
 
     return {
         "access_token": access_token,

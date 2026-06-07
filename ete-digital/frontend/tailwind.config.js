@@ -29,6 +29,7 @@ export default {
                 // Neutrals
                 background: 'hsl(var(--color-background))',
                 surface: 'hsl(var(--color-surface))',
+                border: 'hsl(var(--color-border))',
                 text: {
                     primary: 'hsl(var(--color-text-primary))',
                     secondary: 'hsl(var(--color-text-secondary))',
@@ -40,7 +41,10 @@ export default {
                 mono: ['var(--font-mono)', 'monospace'],
             },
             boxShadow: {
-                'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.15)',
+                'glass': '0 4px 24px 0 rgba(109, 40, 217, 0.08)',
+                'card':  '0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)',
+                'card-hover': '0 4px 16px 0 rgba(0, 0, 0, 0.1)',
+                'violet': '0 0 0 3px rgba(124, 58, 237, 0.2)',
             },
             backdropBlur: {
                 'glass': '10px',

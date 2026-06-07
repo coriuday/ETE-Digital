@@ -1,10 +1,14 @@
 /**
  * OAuth Callback Page
  * Handles the redirect from Google OAuth backend endpoint.
- * URL: /auth/callback?access_token=...&refresh_token=...&role=...
+ * URL: /auth/callback#access_token=...&refresh_token=...&role=...
+ *
+ * Tokens are passed via URL hash fragment (NOT query params) so they are
+ * never sent to the server, never logged in access logs, and never leak
+ * via the Referer header.
  *
  * This page:
- *  1. Reads tokens from URL query params
+ *  1. Reads tokens from URL hash fragment (window.location.hash)
  *  2. Saves them to the authStore
  *  3. Redirects user to their role-appropriate dashboard
  *  4. Shows error state if something went wrong
@@ -15,17 +19,15 @@ import { useAuthStore } from '../../stores/authStore';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 export default function OAuthCallbackPage() {
+    // Keep useSearchParams for legacy error params that come via query string (e.g. ?error=oauth_denied)
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { setTokensFromOAuth } = useAuthStore();
     const [error, setError] = useState('');
 
     useEffect(() => {
-        const accessToken = searchParams.get('access_token');
-        const refreshToken = searchParams.get('refresh_token');
-        const role = searchParams.get('role') ?? 'candidate';
+        // --- Error params still come via query string (backend redirects errors with ?error=...) ---
         const errorParam = searchParams.get('error');
-
         if (errorParam) {
             const messages: Record<string, string> = {
                 oauth_denied: 'You cancelled the sign-in. Please try again.',
@@ -38,10 +40,25 @@ export default function OAuthCallbackPage() {
             return;
         }
 
-        if (!accessToken || !refreshToken) {
-            setError('Invalid callback — missing authentication data.');
+        // --- Tokens come via URL hash fragment for security ---
+        const hash = window.location.hash.slice(1); // strip leading '#'
+        if (!hash) {
+            setError('Invalid callback — no authentication data received.');
             return;
         }
+
+        const params = new URLSearchParams(hash);
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        const role = params.get('role') ?? 'candidate';
+
+        if (!accessToken || !refreshToken) {
+            setError('Invalid callback — missing authentication tokens.');
+            return;
+        }
+
+        // Clear hash from URL immediately so tokens don't linger in browser history
+        window.history.replaceState(null, '', window.location.pathname);
 
         // Store tokens and hydrate user in authStore
         setTokensFromOAuth(accessToken, refreshToken, role).then(() => {

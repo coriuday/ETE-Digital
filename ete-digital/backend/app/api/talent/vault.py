@@ -13,6 +13,7 @@ from fastapi import (
     Form,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Optional
 import uuid
 import io
@@ -112,15 +113,73 @@ async def upload_vault_file(
     Upload a file to MinIO and create a vault item referencing it.
     Accepts multipart/form-data. When MinIO is not configured, returns 503.
     """
+    MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+    ALLOWED_MIME_TYPES = {
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/zip",
+        "text/plain",
+        "text/markdown",
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+    }
+
+    ALLOWED_EXTENSIONS = {
+        ".pdf",
+        ".doc",
+        ".docx",
+        ".zip",
+        ".txt",
+        ".md",
+        ".png",
+        ".jpg",
+        ".jpeg",
+        ".gif",
+        ".webp",
+    }
+
     user_id = current_user["user_id"]
+
+    # --- Extension check (fast, before reading bytes) ---
+    filename = file.filename or ""
+    ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type '{ext}' is not allowed. Permitted: {', '.join(sorted(ALLOWED_EXTENSIONS))}",
+        )
+
+    # --- MIME type check ---
+    content_type = (file.content_type or "application/octet-stream").split(";")[0].strip()
+    if content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Content type '{content_type}' is not allowed.",
+        )
 
     # Read file bytes
     content = await file.read()
     file_size = len(content)
-    content_type = file.content_type or "application/octet-stream"
+
+    # --- Size check (after reading so we have exact bytes) ---
+    if file_size > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File size {file_size / 1024 / 1024:.1f} MB exceeds the 10 MB limit.",
+        )
+
+    if file_size == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot upload an empty file.",
+        )
 
     # Build storage path
-    file_path = storage_service.get_file_path("vault", user_id, file.filename or "upload")
+    file_path = storage_service.get_file_path("vault", user_id, filename or "upload")
 
     # Upload to MinIO
     url = storage_service.upload_file(
@@ -303,13 +362,24 @@ async def revoke_share_token(
 
 @router.get("/shared/{token}", response_model=VaultAccessResponse)
 async def access_shared_vault(token: str, db: AsyncSession = Depends(get_db)):
-    """Access vault item via share token (Public endpoint)"""
+    """Access vault item via share token (Public endpoint — no auth required)"""
+    from app.models.users import UserProfile  # noqa: PLC0415
+
     item, share_token = await share_token_service.access_vault_via_token(db=db, token_str=token)
+
+    # Fetch candidate display name from their profile
+    profile_result = await db.execute(select(UserProfile).where(UserProfile.user_id == item.candidate_id))
+    profile = profile_result.scalar_one_or_none()
+    candidate_name = profile.full_name if profile and profile.full_name else None
+
     remaining_views = None
     if share_token.max_views:
         remaining_views = share_token.max_views - share_token.view_count
+
     return VaultAccessResponse(
         item=item_to_response(item),
+        candidate_name=candidate_name,
+        shared_with_company=share_token.shared_with_company,
         remaining_views=remaining_views,
         expires_at=share_token.expires_at,
     )

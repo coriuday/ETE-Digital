@@ -16,10 +16,14 @@ export interface RegisterRequest {
 }
 
 export interface AuthResponse {
-    access_token: string;
-    refresh_token: string;
-    token_type: string;
-    expires_in: number;
+    // Normal login fields
+    access_token?: string;
+    refresh_token?: string;
+    token_type?: string;
+    expires_in?: number;
+    // 2FA-pending fields
+    requires_2fa?: boolean;
+    partial_token?: string;
 }
 
 export interface UserProfile {
@@ -57,6 +61,23 @@ export const authApi = {
 
     login: async (data: LoginRequest): Promise<AuthResponse> => {
         const response = await api.post('/api/auth/login', data);
+        return response.data;
+    },
+
+    /**
+     * Complete 2FA login.
+     * Called when login() returns { requires_2fa: true, partial_token }.
+     */
+    completeTwoFactor: async (partialToken: string, code: string): Promise<{
+        access_token: string;
+        refresh_token: string;
+        token_type: string;
+        expires_in: number;
+    }> => {
+        const response = await api.post('/api/auth/2fa/verify', {
+            partial_token: partialToken,
+            code,
+        });
         return response.data;
     },
 

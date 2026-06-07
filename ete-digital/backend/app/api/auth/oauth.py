@@ -49,9 +49,10 @@ def _google_configured() -> bool:
 
 # ─── Redirect to Google ──────────────────────────────────────
 
+
 @router.get("/google")
 async def google_login(
-    role: str = Query(default="candidate", regex="^(candidate|employer)$"),
+    role: str = Query(default="candidate", pattern="^(candidate|employer)$"),
 ):
     """
     Redirect user to Google OAuth2 consent screen.
@@ -67,9 +68,7 @@ async def google_login(
     import urllib.parse
 
     # Encode the desired role in the state param (base64 JSON)
-    state_payload = base64.urlsafe_b64encode(
-        json.dumps({"role": role}).encode()
-    ).decode()
+    state_payload = base64.urlsafe_b64encode(json.dumps({"role": role}).encode()).decode()
 
     params = {
         "client_id": settings.GOOGLE_CLIENT_ID,
@@ -86,6 +85,7 @@ async def google_login(
 
 # ─── Handle Google Callback ──────────────────────────────────
 
+
 @router.get("/google/callback")
 async def google_callback(
     code: Optional[str] = None,
@@ -99,14 +99,10 @@ async def google_callback(
     """
     if error:
         # User denied consent — redirect to login with error
-        return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/login?error=oauth_denied"
-        )
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=oauth_denied")
 
     if not code:
-        return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/login?error=oauth_no_code"
-        )
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=oauth_no_code")
 
     if not _google_configured():
         raise HTTPException(status_code=503, detail="Google OAuth not configured.")
@@ -136,9 +132,7 @@ async def google_callback(
         )
 
         if token_response.status_code != 200:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=oauth_token_exchange_failed"
-            )
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=oauth_token_exchange_failed")
 
         token_data = token_response.json()
         access_token = token_data.get("access_token")
@@ -150,9 +144,7 @@ async def google_callback(
         )
 
         if userinfo_response.status_code != 200:
-            return RedirectResponse(
-                url=f"{settings.FRONTEND_URL}/login?error=oauth_userinfo_failed"
-            )
+            return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=oauth_userinfo_failed")
 
         google_user = userinfo_response.json()
 
@@ -164,17 +156,11 @@ async def google_callback(
     email_verified_by_google = google_user.get("email_verified", False)
 
     if not email or not google_id:
-        return RedirectResponse(
-            url=f"{settings.FRONTEND_URL}/login?error=oauth_missing_data"
-        )
+        return RedirectResponse(url=f"{settings.FRONTEND_URL}/login?error=oauth_missing_data")
 
     # ── Upsert User ──────────────────────────────────────────
     # Check if user exists (by OAuth ID or email)
-    result = await db.execute(
-        select(User).where(
-            (User.oauth_provider == "google") & (User.oauth_provider_id == google_id)
-        )
-    )
+    result = await db.execute(select(User).where((User.oauth_provider == "google") & (User.oauth_provider_id == google_id)))
     user = result.scalars().first()
 
     if not user:
@@ -203,7 +189,7 @@ async def google_callback(
             id=new_user_id,
             email=email,
             password_hash="OAUTH_NO_PASSWORD",  # Sentinel — cannot be used for password login
-            role=desired_role,                   # Candidate or Employer, from OAuth state
+            role=desired_role,  # Candidate or Employer, from OAuth state
             is_verified=email_verified_by_google,
             email_verified=email_verified_by_google,
             is_active=True,
@@ -226,16 +212,15 @@ async def google_callback(
 
     # Issue Jobrows JWT tokens
     role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
-    jwt_access = create_access_token(
-        data={"sub": str(user.id), "email": user.email, "role": role_value}
-    )
+    jwt_access = create_access_token(data={"sub": str(user.id), "email": user.email, "role": role_value})
     jwt_refresh = create_refresh_token(data={"sub": str(user.id)})
 
-    # Redirect to frontend with tokens in URL fragment (never in QS — stays client-side)
-    # The frontend JS picks these up and stores in authStore.
+    # Redirect to frontend using URL hash fragment.
+    # Hash fragments are NEVER sent to the server, never stored in access logs,
+    # and never included in Referer headers — tokens stay purely client-side.
     frontend_redirect = (
         f"{settings.FRONTEND_URL}/auth/callback"
-        f"?access_token={jwt_access}"
+        f"#access_token={jwt_access}"
         f"&refresh_token={jwt_refresh}"
         f"&role={role_value}"
     )
@@ -243,6 +228,7 @@ async def google_callback(
 
 
 # ─── Mobile / SPA Flow (exchange id_token directly) ─────────
+
 
 class GoogleMobileTokenRequest(BaseModel):
     id_token: str  # Google ID token from client SDK
@@ -263,9 +249,7 @@ async def google_mobile_auth(
 
     # Verify id_token with Google
     async with httpx.AsyncClient() as client:
-        resp = await client.get(
-            f"https://oauth2.googleapis.com/tokeninfo?id_token={body.id_token}"
-        )
+        resp = await client.get(f"https://oauth2.googleapis.com/tokeninfo?id_token={body.id_token}")
 
     if resp.status_code != 200:
         raise HTTPException(status_code=401, detail="Invalid Google ID token.")
@@ -286,11 +270,7 @@ async def google_mobile_auth(
         raise HTTPException(status_code=400, detail="Missing email or user ID from Google token.")
 
     # Upsert user (same logic as callback)
-    result = await db.execute(
-        select(User).where(
-            (User.oauth_provider == "google") & (User.oauth_provider_id == google_id)
-        )
-    )
+    result = await db.execute(select(User).where((User.oauth_provider == "google") & (User.oauth_provider_id == google_id)))
     user = result.scalars().first()
 
     if not user:
@@ -301,17 +281,22 @@ async def google_mobile_auth(
         await db.execute(
             update(User)
             .where(User.id == user.id)
-            .values(oauth_provider="google", oauth_provider_id=google_id,
-                    avatar_url=avatar_url, email_verified=email_verified)
+            .values(oauth_provider="google", oauth_provider_id=google_id, avatar_url=avatar_url, email_verified=email_verified)
         )
         await db.commit()
     else:
         new_id = uuid.uuid4()
         user = User(
-            id=new_id, email=email, password_hash="OAUTH_NO_PASSWORD",
-            role=UserRole.CANDIDATE, is_verified=email_verified,
-            email_verified=email_verified, is_active=True,
-            oauth_provider="google", oauth_provider_id=google_id, avatar_url=avatar_url,
+            id=new_id,
+            email=email,
+            password_hash="OAUTH_NO_PASSWORD",
+            role=UserRole.CANDIDATE,
+            is_verified=email_verified,
+            email_verified=email_verified,
+            is_active=True,
+            oauth_provider="google",
+            oauth_provider_id=google_id,
+            avatar_url=avatar_url,
         )
         db.add(user)
         await db.flush()
@@ -321,9 +306,7 @@ async def google_mobile_auth(
 
     role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
     return {
-        "access_token": create_access_token(
-            data={"sub": str(user.id), "email": user.email, "role": role_value}
-        ),
+        "access_token": create_access_token(data={"sub": str(user.id), "email": user.email, "role": role_value}),
         "refresh_token": create_refresh_token(data={"sub": str(user.id)}),
         "token_type": "bearer",
         "role": role_value,

@@ -5,6 +5,7 @@
  * WebSocket removed — it caused constant 403 errors and resource drain.
  */
 import { useState, useEffect, useCallback } from 'react';
+import { getAccessToken } from '../stores/authStore';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
 
@@ -26,9 +27,9 @@ interface UseNotificationsReturn {
     markAllRead: () => Promise<void>;
 }
 
-/** Read JWT access token from localStorage (set by authStore) */
+/** Read JWT access token from authStore */
 function getToken(): string | null {
-    return localStorage.getItem('access_token');
+    return getAccessToken();
 }
 
 export function useNotifications(): UseNotificationsReturn {

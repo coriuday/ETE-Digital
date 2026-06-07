@@ -13,6 +13,7 @@ vi.mock('../stores/authStore', () => ({
         isLoading: false,
         error: null,
     }),
+    getAccessToken: () => 'mock-jwt-token',
 }));
 
 const mockNotification = {

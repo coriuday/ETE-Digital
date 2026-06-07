@@ -12,6 +12,7 @@ from app.schemas.users import (
     UserRegister,
     UserLogin,
     TokenResponse,
+    LoginResponse,
     RefreshTokenRequest,
     EmailVerificationRequest,
     PasswordResetRequest,
@@ -69,18 +70,21 @@ async def verify_email(verification_data: EmailVerificationRequest, db: AsyncSes
     return {"message": "Email verified successfully"}
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=LoginResponse)
 @limiter.limit("5/minute")
 async def login(request: Request, login_data: UserLogin, db: AsyncSession = Depends(get_db)):
     """
-    Login with email and password
+    Login with email and password.
 
-    Returns access token and refresh token
+    Returns one of two shapes:
+    - Normal:       { access_token, refresh_token, expires_in, requires_2fa: false }
+    - 2FA required: { requires_2fa: true, partial_token }
+      → Call POST /api/auth/2fa/verify with { partial_token, code } to complete login.
     """
     ip_address = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
-    access_token, refresh_token, user = await auth_service.login(
+    access_token_or_partial, refresh_token, user, requires_2fa = await auth_service.login(
         db=db,
         email=login_data.email,
         password=login_data.password,
@@ -88,8 +92,15 @@ async def login(request: Request, login_data: UserLogin, db: AsyncSession = Depe
         user_agent=user_agent,
     )
 
-    return TokenResponse(
-        access_token=access_token,
+    if requires_2fa:
+        return LoginResponse(
+            requires_2fa=True,
+            partial_token=access_token_or_partial,
+        )
+
+    return LoginResponse(
+        requires_2fa=False,
+        access_token=access_token_or_partial,
         refresh_token=refresh_token,
         expires_in=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
