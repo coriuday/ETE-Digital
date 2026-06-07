@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { ArrowRight, CheckCircle, Circle, Loader2, LayoutGrid, Users, Briefcase, Zap } from 'lucide-react';
+import { ArrowRight, CheckCircle, Circle, Loader2, LayoutGrid, Users, Briefcase } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -30,6 +30,7 @@ const validatePasswordStrength = (password: string) => {
     };
 };
 
+/* brandPoints + stats — used in left brand panel (temporarily hidden)
 const brandPoints = [
     { icon: <Zap size={16} className="text-amber-300" />, text: 'Complete Your Profile in Minutes' },
     { icon: <Briefcase size={16} className="text-violet-300" />, text: 'Apply to Premium MNC Jobs' },
@@ -41,6 +42,7 @@ const stats = [
     { value: '1,200+', label: 'Employer Partners' },
     { value: '4 Days', label: 'Avg. Hire Time' },
 ];
+*/
 
 export default function RegisterPage() {
     const navigate = useNavigate();

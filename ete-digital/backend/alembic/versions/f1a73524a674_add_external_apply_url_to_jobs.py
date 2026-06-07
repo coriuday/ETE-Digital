@@ -42,6 +42,16 @@ def _index_exists(conn, index_name: str, table_name: str) -> bool:
     )
 
 
+def _column_exists(conn, table: str, column: str) -> bool:
+    """Check if a column exists in information_schema."""
+    return bool(
+        conn.execute(
+            sa.text("SELECT 1 FROM information_schema.columns " "WHERE table_name = :t AND column_name = :c"),
+            {"t": table, "c": column},
+        ).scalar()
+    )
+
+
 def upgrade():
     conn = op.get_bind()
 
@@ -162,24 +172,27 @@ def upgrade():
         op.drop_constraint("tryout_submissions_tryout_id_fkey", "tryout_submissions", type_="foreignkey")
 
     # ── tryouts ─────────────────────────────────────────────────────────────
-    op.alter_column(
-        "tryouts", "duration_days", existing_type=sa.INTEGER(), nullable=True, existing_server_default=sa.text("7")
-    )
-    op.alter_column(
-        "tryouts",
-        "submission_format",
-        existing_type=sa.VARCHAR(length=100),
-        type_=sa.String(length=50),
-        existing_nullable=True,
-    )
-    op.alter_column(
-        "tryouts",
-        "status",
-        existing_type=postgresql.ENUM("draft", "active", "expired", "closed", name="tryoutstatus"),
-        type_=sa.Enum("draft", "active", "expired", "closed", name="tryoutstatus", native_enum=False),
-        existing_nullable=True,
-        existing_server_default=sa.text("'active'::tryoutstatus"),
-    )
+    if _column_exists(conn, "tryouts", "duration_days"):
+        op.alter_column(
+            "tryouts", "duration_days", existing_type=sa.INTEGER(), nullable=True, existing_server_default=sa.text("7")
+        )
+    if _column_exists(conn, "tryouts", "submission_format"):
+        op.alter_column(
+            "tryouts",
+            "submission_format",
+            existing_type=sa.VARCHAR(length=100),
+            type_=sa.String(length=50),
+            existing_nullable=True,
+        )
+    if _column_exists(conn, "tryouts", "status"):
+        op.alter_column(
+            "tryouts",
+            "status",
+            existing_type=postgresql.ENUM("draft", "active", "expired", "closed", name="tryoutstatus"),
+            type_=sa.Enum("draft", "active", "expired", "closed", name="tryoutstatus", native_enum=False),
+            existing_nullable=True,
+            existing_server_default=sa.text("'active'::tryoutstatus"),
+        )
 
     if _constraint_exists(conn, "tryouts", "tryouts_job_id_fkey", "foreignkey"):
         op.drop_constraint("tryouts_job_id_fkey", "tryouts", type_="foreignkey")
@@ -188,9 +201,10 @@ def upgrade():
     if _constraint_exists(conn, "users", "users_email_key", "unique"):
         op.drop_constraint("users_email_key", "users", type_="unique")
 
+    # Drop old non-unique index, then create new unique one — idempotent
     if _index_exists(conn, "ix_users_email", "users"):
         op.drop_index("ix_users_email", table_name="users")
-
+    # After drop (or if it never existed), create the unique version
     if not _index_exists(conn, "ix_users_email", "users"):
         op.create_index(op.f("ix_users_email"), "users", ["email"], unique=True)
 

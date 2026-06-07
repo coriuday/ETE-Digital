@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, Star, Trophy, ShieldCheck, Loader2, LayoutGrid, ShieldAlert } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight, Loader2, LayoutGrid, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -20,11 +20,13 @@ const GoogleIcon = () => (
 );
 
 
+/* brandPoints — used in left brand panel (temporarily hidden)
 const brandPoints = [
     { icon: <Star size={16} className="text-violet-300" />, text: 'Real Skill-Based Job Tryouts' },
     { icon: <Trophy size={16} className="text-amber-300" />, text: 'Verified Talent Portfolio Vault' },
     { icon: <ShieldCheck size={16} className="text-emerald-400" />, text: 'Top MNC Opportunities, Proven Fast' },
 ];
+*/
 
 export default function LoginPage() {
     const navigate = useNavigate();

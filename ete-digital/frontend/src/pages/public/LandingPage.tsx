@@ -17,7 +17,7 @@ import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import { jobsApi, Job } from '../../api/jobs';
 
-/* ── Animated Counter ─────────────────────────────────────────────────────── */
+/* ── Animated Counter (temporarily hidden with stats strip) ───────────────────
 function AnimatedStat({ value, label }: { value: string; label: string }) {
     return (
         <motion.div
@@ -33,6 +33,7 @@ function AnimatedStat({ value, label }: { value: string; label: string }) {
         </motion.div>
     );
 }
+*/
 
 /* ── Job Card ─────────────────────────────────────────────────────────────── */
 function FeaturedJobCard({ job, index }: { job: Job; index: number }) {
