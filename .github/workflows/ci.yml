@@ -245,6 +245,8 @@ jobs:
           POSTGRES_PASSWORD: ci-placeholder-not-real
           JWT_SECRET_KEY: ci-placeholder-jwt-secret-key-minimum-32-chars
           ENCRYPTION_KEY: ci-placeholder-encryption-key-minimum-32-chars
+          MINIO_ACCESS_KEY: ci-placeholder-minio-access-key
+          MINIO_SECRET_KEY: ci-placeholder-minio-secret-key
         run: docker compose config --quiet
 
       - name: Set up Docker Buildx
