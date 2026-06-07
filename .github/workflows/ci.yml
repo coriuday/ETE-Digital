@@ -241,6 +241,10 @@ jobs:
 
       - name: Validate Docker Compose syntax
         working-directory: ./ete-digital
+        env:
+          POSTGRES_PASSWORD: ci-placeholder-not-real
+          JWT_SECRET_KEY: ci-placeholder-jwt-secret-key-minimum-32-chars
+          ENCRYPTION_KEY: ci-placeholder-encryption-key-minimum-32-chars
         run: docker compose config --quiet
 
       - name: Set up Docker Buildx
