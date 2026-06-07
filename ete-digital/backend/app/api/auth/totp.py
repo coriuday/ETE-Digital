@@ -117,7 +117,7 @@ async def totp_verify_login(
         raise HTTPException(status_code=400, detail="2FA not enabled for this user.")
 
     # Verify TOTP code
-    secret = decrypt_field(user.totp_secret)
+    secret = decrypt_field(str(user.totp_secret))
     if not verify_totp_code(secret, body.code):
         raise HTTPException(
             status_code=400,
@@ -159,7 +159,7 @@ async def totp_status(
         raise HTTPException(status_code=404, detail="User not found")
 
     backup_count = len(user.totp_backup_codes or [])
-    return TOTPStatusResponse(enabled=user.totp_enabled, backup_codes_remaining=backup_count)
+    return TOTPStatusResponse(enabled=bool(user.totp_enabled), backup_codes_remaining=backup_count)
 
 
 @router.post("/setup", response_model=TOTPSetupResponse)
@@ -190,7 +190,7 @@ async def totp_setup(
     await db.execute(update(User).where(User.id == user.id).values(totp_secret=encrypted_secret, totp_enabled=False))
     await db.commit()
 
-    qr_uri = generate_totp_qr_url(email=user.email, secret=secret)
+    qr_uri = generate_totp_qr_url(email=str(user.email), secret=secret)
     return TOTPSetupResponse(qr_uri=qr_uri, secret=secret)
 
 
@@ -219,7 +219,7 @@ async def totp_enable(
         raise HTTPException(status_code=400, detail="2FA is already active.")
 
     # Decrypt stored secret and verify code
-    secret = decrypt_field(user.totp_secret)
+    secret = decrypt_field(str(user.totp_secret))
     if not verify_totp_code(secret, body.code):
         raise HTTPException(
             status_code=400,
@@ -255,7 +255,7 @@ async def totp_disable(
     if not user.totp_enabled:
         raise HTTPException(status_code=400, detail="2FA is not enabled.")
 
-    secret = decrypt_field(user.totp_secret)
+    secret = decrypt_field(str(user.totp_secret))
     if not verify_totp_code(secret, body.code):
         raise HTTPException(
             status_code=400,
@@ -298,7 +298,7 @@ async def verify_backup(
     if not user or not user.totp_enabled:
         raise HTTPException(status_code=400, detail="2FA not enabled for this user.")
 
-    hashed_codes = user.totp_backup_codes or []
+    hashed_codes: list[str] = list(user.totp_backup_codes or [])
     is_valid, remaining_codes = verify_backup_code(body.backup_code, hashed_codes)
 
     if not is_valid:
