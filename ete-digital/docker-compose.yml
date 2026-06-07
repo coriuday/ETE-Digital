@@ -5,8 +5,14 @@
 #   Production:   docker compose up -d
 #   Dev override: docker compose -f docker-compose.yml -f docker-compose.override.yml up
 #
-# Required env vars (copy .env.example → .env and fill in):
-#   POSTGRES_PASSWORD, JWT_SECRET_KEY, ENCRYPTION_KEY
+# Required env vars (copy backend/.env.example → backend/.env and fill in):
+#   POSTGRES_PASSWORD, JWT_SECRET_KEY, ENCRYPTION_KEY,
+#   MINIO_ACCESS_KEY, MINIO_SECRET_KEY
+#
+# VPS-specific env vars (set in .env for self-hosted deployment):
+#   CADDY_DOMAIN   — your domain e.g. jobsrow.com (enables Caddy TLS termination)
+#   DEPLOY_MODE    — set to 'vps' to enable gunicorn multi-worker mode
+#   WORKERS        — number of gunicorn workers (default: auto from CPU count)
 # ============================================================
 
 name: ete-digital
@@ -56,8 +62,9 @@ services:
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER:     ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin123}
+      # ⚠️  CHANGE these before going live — never use defaults in production.
+      MINIO_ROOT_USER:     ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be set}
     volumes:
       - minio_data:/data
     networks:
@@ -76,7 +83,7 @@ services:
   # Uncomment in docker-compose.override.yml for local dev.
   # Not included here so production compose doesn't spin it up.
 
-  # ─── Backend (FastAPI + Uvicorn) ─────────────────────────────────────────────
+  # ─── Backend (FastAPI + Uvicorn / Gunicorn) ───────────────────────────────────
   backend:
     build:
       context: ./backend
@@ -91,14 +98,20 @@ services:
       REDIS_URL:    redis://redis:6379/0
       MINIO_ENDPOINT: minio
       MINIO_PORT:     "9000"
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be set}
       MINIO_SECURE: "false"
       # Email — uses MailHog in override; set production SMTP vars in .env
       SMTP_HOST: ${SMTP_HOST:-mailhog}
       SMTP_PORT: ${SMTP_PORT:-1025}
+      # VPS deployment mode: 'vps' → gunicorn multi-worker; 'render' → uvicorn single
+      DEPLOY_MODE: ${DEPLOY_MODE:-render}
+      WORKERS:     ${WORKERS:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
+    volumes:
+      # Persist uploaded files across container restarts (resumes, avatars, etc.)
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -139,11 +152,46 @@ services:
       retries: 3
       start_period: 10s
 
+  # ─── Caddy (Reverse Proxy + Automatic TLS) ────────────────────────────────────
+  # Only activated on VPS. On Render/Vercel, skip by not using --profile vps.
+  #
+  # To enable on VPS:
+  #   1. Set CADDY_DOMAIN=yourdomain.com in .env
+  #   2. Point A/AAAA DNS records to your VPS IP
+  #   3. docker compose --profile vps up -d
+  #
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    profiles:
+      - vps   # Only starts with: docker compose --profile vps up
+    ports:
+      - "443:443"
+      - "443:443/udp"   # HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - frontend-net
+    depends_on:
+      - frontend
+      - backend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:2019/metrics"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
 # ─── Named volumes ────────────────────────────────────────────────────────────
 volumes:
   postgres_data:
   redis_data:
   minio_data:
+  uploads_data:   # Persistent storage for uploaded files (resumes, avatars)
+  caddy_data:     # Caddy TLS certificates and state
+  caddy_config:   # Caddy configuration cache
 
 # ─── Networks ─────────────────────────────────────────────────────────────────
 networks:

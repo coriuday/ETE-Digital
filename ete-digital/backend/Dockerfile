@@ -49,6 +49,12 @@ USER appuser
 
 EXPOSE 8000
 
-# Default: run migrations then start the server.
-# Override CMD in docker-compose for production (e.g. gunicorn).
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 1"]
+# Default: run start.sh which:
+#   1. Waits for DB to be ready
+#   2. Applies Alembic migrations (alembic upgrade head)
+#   3. Starts the server in the appropriate mode:
+#      - DEPLOY_MODE=render → uvicorn single-worker (default, Render-compatible)
+#      - DEPLOY_MODE=vps    → gunicorn multi-worker (VPS production)
+#
+# Override CMD in docker-compose for custom entrypoints (e.g. worker processes).
+CMD ["bash", "start.sh"]

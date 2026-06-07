@@ -83,11 +83,21 @@ alembic current
 
 # ── 5. Start server ───────────────────────────────────────────────────────────
 PORT="${PORT:-8000}"
-log "Starting Uvicorn on 0.0.0.0:${PORT}..."
+DEPLOY_MODE="${DEPLOY_MODE:-render}"  # 'render' (single uvicorn) | 'vps' (gunicorn multi-worker)
 
-exec uvicorn app.main:app \
-    --host 0.0.0.0 \
-    --port "$PORT" \
-    --workers 1 \
-    --log-level info \
-    --access-log
+if [ "$DEPLOY_MODE" = "vps" ]; then
+    # VPS: use gunicorn with multiple uvicorn workers (gunicorn.conf.py controls workers/timeout)
+    log "Starting Gunicorn (VPS mode) on 0.0.0.0:${PORT}..."
+    exec gunicorn app.main:app \
+        -c gunicorn.conf.py \
+        --bind "0.0.0.0:${PORT}"
+else
+    # Render / single-instance: uvicorn direct (simpler, no extra process overhead)
+    log "Starting Uvicorn (Render mode) on 0.0.0.0:${PORT}..."
+    exec uvicorn app.main:app \
+        --host 0.0.0.0 \
+        --port "$PORT" \
+        --workers 1 \
+        --log-level info \
+        --access-log
+fi

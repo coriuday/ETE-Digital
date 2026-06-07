@@ -23,16 +23,31 @@ export default defineConfig({
     build: {
         outDir: 'dist',
         sourcemap: 'hidden', // generates maps for Sentry/error tracking but does NOT serve them publicly
-        chunkSizeWarningLimit: 1000,
+        chunkSizeWarningLimit: 800,
         rollupOptions: {
             output: {
+                // Strategic named chunks for optimal caching:
+                // - react-core: rarely changes (cache long)
+                // - ui-libs:    framer-motion + lucide (visual only, cache medium)
+                // - data-libs:  tanstack-query + axios + zustand (app logic, cache medium)
+                // - recharts:   large chart lib loaded only on analytics pages
                 manualChunks(id) {
                     if (id.includes('node_modules')) {
-                        const segments = id.toString().split('node_modules/')[1].split('/');
-                        if (segments[0].startsWith('@')) {
-                            return `${segments[0]}/${segments[1]}`;
+                        if (id.includes('react-dom') || id.includes('react-router')) {
+                            return 'chunk-react-core';
                         }
-                        return segments[0];
+                        if (id.includes('framer-motion') || id.includes('lucide-react')) {
+                            return 'chunk-ui-libs';
+                        }
+                        if (id.includes('@tanstack') || id.includes('axios') || id.includes('zustand')) {
+                            return 'chunk-data-libs';
+                        }
+                        if (id.includes('recharts') || id.includes('d3-')) {
+                            return 'chunk-charts';
+                        }
+                        if (id.includes('zod') || id.includes('react-hook-form') || id.includes('@hookform')) {
+                            return 'chunk-forms';
+                        }
                     }
                 }
             }

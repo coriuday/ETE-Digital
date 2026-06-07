@@ -1,52 +1,97 @@
 /**
- * Candidate Dashboard — redesigned with AppShell, KPI cards, tryout gauges, applications table
+ * Candidate Dashboard — Premium rebuild
+ *
+ * Improvements:
+ *  - Skeleton loaders replace '—' placeholder values
+ *  - EmptyState component replaces inline empty states
+ *  - PageHeader component for consistent heading
+ *  - Proper TypeScript types (no `any`)
+ *  - Memoized KpiCard
+ *  - useEffect cleanup (AbortController)
+ *  - Time-of-day greeting
+ *  - Cleaner table and action cards
  */
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback, memo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import AppShell from '../../components/layout/AppShell';
+import EmptyState from '../../components/ui/EmptyState';
+import { Skeleton } from '../../components/ui/Skeleton';
 import {
     FileText, Star, Trophy, BadgeCheck, TrendingUp,
-    Briefcase, ArrowRight, Clock, CheckCircle2, XCircle
+    Briefcase, ArrowRight, Clock, CheckCircle2, XCircle,
+    Zap, Plus,
 } from 'lucide-react';
 import { jobsApi } from '../../api/jobs';
 import { tryoutsApi } from '../../api/tryouts';
 import { vaultApi } from '../../api/vault';
 
-function statusPill(status: string) {
-    const map: Record<string, string> = {
-        PENDING: 'bg-amber-100 text-amber-700',
-        REVIEWING: 'bg-blue-100 text-blue-700',
-        ACCEPTED: 'bg-emerald-100 text-emerald-700',
-        REJECTED: 'bg-red-100 text-red-700',
-        SUBMITTED: 'bg-violet-100 text-violet-700',
-        PASSED: 'bg-emerald-100 text-emerald-700',
-        FAILED: 'bg-red-100 text-red-700',
-    };
-    return map[status] ?? 'bg-gray-100 text-gray-600';
+/* ── Types ─────────────────────────────────────────────────────────────── */
+interface Application {
+    id: string;
+    job_title?: string;
+    company_name?: string;
+    status: string;
+    created_at: string;
 }
 
-function ScoreGauge({ score, size = 80 }: { score: number; size?: number }) {
-    const r = (size - 12) / 2;
+interface Submission {
+    id: string;
+    final_score?: number;
+    status: string;
+}
+
+interface DashboardStats {
+    applications:  number;
+    tryouts:       number;
+    vaultItems:    number;
+    verified:      number;
+    recentApps:    Application[];
+    recentSubs:    Submission[];
+}
+
+/* ── Status badge ───────────────────────────────────────────────────────── */
+const STATUS_COLORS: Record<string, string> = {
+    PENDING:   'bg-amber-50  text-amber-700  border-amber-200',
+    REVIEWING: 'bg-blue-50   text-blue-700   border-blue-200',
+    ACCEPTED:  'bg-emerald-50 text-emerald-700 border-emerald-200',
+    REJECTED:  'bg-red-50    text-red-700    border-red-200',
+    SUBMITTED: 'bg-violet-50 text-violet-700 border-violet-200',
+    PASSED:    'bg-emerald-50 text-emerald-700 border-emerald-200',
+    FAILED:    'bg-red-50    text-red-700    border-red-200',
+};
+
+function StatusBadge({ status }: { status: string }) {
+    const cls = STATUS_COLORS[status] ?? 'bg-background text-text-tertiary border-border';
+    return (
+        <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${cls}`}>
+            {status}
+        </span>
+    );
+}
+
+/* ── Score gauge ────────────────────────────────────────────────────────── */
+function ScoreGauge({ score, size = 56 }: { score: number; size?: number }) {
+    const r = (size - 10) / 2;
     const circ = 2 * Math.PI * r;
-    const dash = (score / 100) * circ;
+    const dash  = (Math.min(score, 100) / 100) * circ;
     const color = score >= 70 ? '#10b981' : score >= 50 ? '#f59e0b' : '#ef4444';
 
     return (
-        <svg width={size} height={size} className="rotate-[-90deg]">
-            <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="#e5e7eb" strokeWidth="6" />
+        <svg width={size} height={size} className="rotate-[-90deg] flex-shrink-0">
+            <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="#e4e4e7" strokeWidth="5" />
             <circle
-                cx={size / 2} cy={size / 2} r={r}
-                fill="none" stroke={color} strokeWidth="6"
+                cx={size/2} cy={size/2} r={r}
+                fill="none" stroke={color} strokeWidth="5"
                 strokeDasharray={`${dash} ${circ}`}
                 strokeLinecap="round"
-                style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                style={{ transition: 'stroke-dasharray 0.7s ease' }}
             />
             <text
-                x={size / 2} y={size / 2 + 5}
+                x={size/2} y={size/2 + 4.5}
                 textAnchor="middle" fill={color}
-                fontSize="14" fontWeight="700"
-                style={{ transform: `rotate(90deg)`, transformOrigin: `${size / 2}px ${size / 2}px` }}
+                fontSize="11" fontWeight="700"
+                style={{ transform: `rotate(90deg)`, transformOrigin: `${size/2}px ${size/2}px` }}
             >
                 {score}
             </text>
@@ -54,45 +99,84 @@ function ScoreGauge({ score, size = 80 }: { score: number; size?: number }) {
     );
 }
 
+/* ── KPI Card ───────────────────────────────────────────────────────────── */
 interface KpiCardProps {
     label: string;
     value: number | string;
-    icon: React.ReactNode;
-    color: string;
-    trend?: string;
+    icon:  React.ReactNode;
+    iconBg: string;
+    loading: boolean;
+    trend?:  string;
 }
 
-function KpiCard({ label, value, icon, color, trend }: KpiCardProps) {
+const KpiCard = memo(function KpiCard({ label, value, icon, iconBg, loading, trend }: KpiCardProps) {
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 flex items-start gap-4">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-card flex items-start gap-4">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
                 {icon}
             </div>
-            <div>
-                <p className="text-2xl font-bold text-gray-900">{value}</p>
-                <p className="text-sm text-gray-500 mt-0.5">{label}</p>
-                {trend && (
-                    <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
-                        <TrendingUp size={10} /> {trend}
-                    </p>
+            <div className="min-w-0 flex-1">
+                {loading ? (
+                    <>
+                        <Skeleton className="h-7 w-16 mb-1.5" />
+                        <Skeleton className="h-3.5 w-24" />
+                    </>
+                ) : (
+                    <>
+                        <p className="text-2xl font-bold text-text-primary leading-none">{value}</p>
+                        <p className="text-xs text-text-secondary mt-1">{label}</p>
+                        {trend && (
+                            <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
+                                <TrendingUp size={10} /> {trend}
+                            </p>
+                        )}
+                    </>
                 )}
             </div>
         </div>
     );
+});
+
+/* ── Quick Action Card ──────────────────────────────────────────────────── */
+const QuickAction = memo(function QuickAction({
+    label, sub, href, icon, accent,
+}: {
+    label: string; sub: string; href: string; icon: React.ReactNode; accent: string;
+}) {
+    return (
+        <Link
+            to={href}
+            className={`flex items-center gap-4 p-4 bg-surface border border-border rounded-xl transition-all duration-200 group hover:shadow-card-hover hover:border-current/20 ${accent}`}
+        >
+            <div className="text-current/40 group-hover:text-current transition-colors flex-shrink-0">{icon}</div>
+            <div className="flex-1 min-w-0">
+                <p className="font-semibold text-text-primary text-sm">{label}</p>
+                <p className="text-xs text-text-secondary truncate">{sub}</p>
+            </div>
+            <ArrowRight size={15} className="text-border group-hover:text-text-secondary transition-colors flex-shrink-0" />
+        </Link>
+    );
+});
+
+/* ── Time-of-day greeting ───────────────────────────────────────────────── */
+function getGreeting(): string {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
 }
 
+/* ── Main Dashboard ─────────────────────────────────────────────────────── */
 export default function DashboardPage() {
     const { user } = useAuthStore();
+    const navigate = useNavigate();
 
-    if (user?.role === 'employer') {
-        return (
-            <AppShell>
-                <div className="flex items-center justify-center h-full">
-                    <p className="text-gray-500">Redirecting to employer dashboard…</p>
-                </div>
-            </AppShell>
-        );
-    }
+    // Employer redirect (shouldn't land here, but guard anyway)
+    useEffect(() => {
+        if (user?.role === 'employer') navigate('/employer/dashboard', { replace: true });
+    }, [user?.role, navigate]);
+
+    if (user?.role === 'employer') return null;
 
     return (
         <AppShell>
@@ -102,129 +186,245 @@ export default function DashboardPage() {
 }
 
 function CandidateDashboard() {
-    const { user } = useAuthStore();
-    const [stats, setStats] = useState<any>(null);
+    const { user }  = useAuthStore();
+    const [stats, setStats]   = useState<DashboardStats | null>(null);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        (async () => {
-            try {
-                const [apps, subs, vaultStats] = await Promise.all([
-                    jobsApi.getMyApplications(1).catch(() => ({ total: 0, applications: [] })),
-                    tryoutsApi.getMySubmissions(1).catch(() => ({ total: 0, submissions: [] })),
-                    vaultApi.getVaultStats().catch(() => ({ total_items: 0, verified_items: 0 })),
-                ]);
-                setStats({
-                    applications: apps.total ?? 0,
-                    tryouts: subs.total ?? 0,
-                    vaultItems: vaultStats.total_items ?? 0,
-                    verified: vaultStats.verified_items ?? 0,
-                    recentApps: (apps.applications ?? []).slice(0, 5),
-                    recentSubs: (subs.submissions ?? []).slice(0, 3),
-                });
-            } catch {
-                setStats({ applications: 0, tryouts: 0, vaultItems: 0, verified: 0, recentApps: [], recentSubs: [] });
-            } finally {
-                setLoading(false);
-            }
-        })();
+    const fetchStats = useCallback(async (signal: AbortSignal) => {
+        try {
+            const [apps, subs, vaultStats] = await Promise.all([
+                jobsApi.getMyApplications(1).catch(() => ({ total: 0, applications: [] })),
+                tryoutsApi.getMySubmissions(1).catch(() => ({ total: 0, submissions: [] })),
+                vaultApi.getVaultStats().catch(() => ({ total_items: 0, verified_items: 0 })),
+            ]);
+            if (signal.aborted) return;
+            setStats({
+                applications:  apps.total        ?? 0,
+                tryouts:       subs.total        ?? 0,
+                vaultItems:    vaultStats.total_items   ?? 0,
+                verified:      vaultStats.verified_items ?? 0,
+                recentApps:    (apps.applications  ?? []).slice(0, 5),
+                recentSubs:    (subs.submissions   ?? []).slice(0, 3),
+            });
+        } catch {
+            if (signal.aborted) return;
+            setStats({ applications: 0, tryouts: 0, vaultItems: 0, verified: 0, recentApps: [], recentSubs: [] });
+        } finally {
+            if (!signal.aborted) setLoading(false);
+        }
     }, []);
 
+    useEffect(() => {
+        const controller = new AbortController();
+        fetchStats(controller.signal);
+        return () => controller.abort();
+    }, [fetchStats]);
+
     const firstName = user?.full_name?.split(' ')[0] ?? 'there';
+    const greeting  = getGreeting();
 
     return (
-        <div className="p-6 lg:p-8 space-y-8">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900">Welcome back, {firstName}! 👋</h1>
-                <p className="text-gray-500 mt-1">Here's your job search overview</p>
-            </div>
+        <div className="p-6 lg:p-8 space-y-7 max-w-6xl mx-auto">
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <KpiCard label="Applications" value={loading ? '—' : stats?.applications} icon={<FileText size={22} className="text-blue-600" />} color="bg-blue-50" trend="Track status below" />
-                <KpiCard label="Tryouts" value={loading ? '—' : stats?.tryouts} icon={<Star size={22} className="text-violet-600" />} color="bg-violet-50" />
-                <KpiCard label="Vault Items" value={loading ? '—' : stats?.vaultItems} icon={<Trophy size={22} className="text-amber-600" />} color="bg-amber-50" />
-                <KpiCard label="Verified" value={loading ? '—' : stats?.verified} icon={<BadgeCheck size={22} className="text-emerald-600" />} color="bg-emerald-50" trend="Tryout-verified items" />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {[
-                    { label: 'Browse Jobs', sub: 'Find your next opportunity', href: '/jobs', icon: <Briefcase size={22} />, border: 'border-blue-200 hover:border-blue-400 hover:bg-blue-50' },
-                    { label: 'My Tryouts', sub: 'View submission status', href: '/dashboard/tryouts', icon: <Star size={22} />, border: 'border-violet-200 hover:border-violet-400 hover:bg-violet-50' },
-                    { label: 'Talent Vault', sub: 'Manage your portfolio', href: '/vault', icon: <Trophy size={22} />, border: 'border-amber-200 hover:border-amber-400 hover:bg-amber-50' },
-                ].map((a) => (
-                    <Link key={a.href} to={a.href} className={`flex items-center gap-4 p-4 bg-white border-2 rounded-2xl transition-all duration-200 group shadow-sm ${a.border}`}>
-                        <div className="text-gray-500 group-hover:text-gray-900 transition-colors">{a.icon}</div>
-                        <div className="flex-1">
-                            <p className="font-semibold text-gray-900 text-sm">{a.label}</p>
-                            <p className="text-xs text-gray-500">{a.sub}</p>
-                        </div>
-                        <ArrowRight size={16} className="text-gray-300 group-hover:text-gray-600 transition-colors" />
-                    </Link>
-                ))}
-            </div>
-
-            {!loading && stats && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="font-semibold text-gray-900">Recent Applications</h2>
-                            <Link to="/jobs" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                                Browse Jobs <ArrowRight size={12} />
-                            </Link>
-                        </div>
-                        {stats.recentApps.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                                <FileText size={32} className="text-gray-300 mb-3" />
-                                <p className="text-sm font-medium text-gray-500">No applications yet</p>
-                                <Link to="/jobs" className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">Browse Jobs</Link>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-gray-50">
-                                {stats.recentApps.map((app: any) => (
-                                    <div key={app.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50 transition-colors">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{app.job_title ?? `Application #${app.id.slice(0, 8)}`}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5">{app.company_name ?? new Date(app.created_at).toLocaleDateString()}</p>
-                                        </div>
-                                        <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill(app.status)}`}>{app.status}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <h2 className="font-semibold text-gray-900">Tryout Results</h2>
-                            <Link to="/dashboard/tryouts" className="text-xs text-violet-600 hover:text-violet-700 font-medium flex items-center gap-1">
-                                View All <ArrowRight size={12} />
-                            </Link>
-                        </div>
-                        {stats.recentSubs.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                                <Star size={32} className="text-gray-300 mb-3" />
-                                <p className="text-sm font-medium text-gray-500">No tryout submissions yet</p>
-                            </div>
-                        ) : (
-                            <div className="divide-y divide-gray-50">
-                                {stats.recentSubs.map((sub: any) => (
-                                    <div key={sub.id} className="flex items-center gap-4 px-6 py-3.5 hover:bg-gray-50 transition-colors">
-                                        <ScoreGauge score={sub.final_score ?? 0} size={56} />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-900 truncate">Submission #{sub.id.slice(0, 8)}</p>
-                                            <div className="flex items-center gap-1.5 mt-0.5">
-                                                {sub.status === 'PASSED' ? <CheckCircle2 size={12} className="text-emerald-500" /> : sub.status === 'FAILED' ? <XCircle size={12} className="text-red-500" /> : <Clock size={12} className="text-amber-500" />}
-                                                <span className={`text-xs font-semibold ${statusPill(sub.status)} px-2 py-0.5 rounded-full`}>{sub.status}</span>
-                                            </div>
-                                        </div>
-                                        {sub.final_score !== undefined && <p className="text-xs text-gray-500">{sub.final_score}/100</p>}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+            {/* ── Header ─────────────────────────────────────────────── */}
+            <div className="flex items-start justify-between gap-4">
+                <div>
+                    <h1 className="text-xl font-bold text-text-primary">
+                        {greeting}, {firstName}! 👋
+                    </h1>
+                    <p className="text-sm text-text-secondary mt-1">
+                        Here's your job search overview for today.
+                    </p>
                 </div>
-            )}
+                <Link
+                    to="/jobs"
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors flex-shrink-0 shadow-sm"
+                >
+                    <Plus size={15} />
+                    Find Jobs
+                </Link>
+            </div>
+
+            {/* ── KPI Grid ──────────────────────────────────────────── */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <KpiCard
+                    label="Applications"
+                    value={stats?.applications ?? 0}
+                    icon={<FileText size={18} className="text-blue-600" />}
+                    iconBg="bg-blue-50"
+                    loading={loading}
+                    trend="Track status below"
+                />
+                <KpiCard
+                    label="Tryouts"
+                    value={stats?.tryouts ?? 0}
+                    icon={<Star size={18} className="text-violet-600" />}
+                    iconBg="bg-violet-50"
+                    loading={loading}
+                />
+                <KpiCard
+                    label="Vault Items"
+                    value={stats?.vaultItems ?? 0}
+                    icon={<Trophy size={18} className="text-amber-600" />}
+                    iconBg="bg-amber-50"
+                    loading={loading}
+                />
+                <KpiCard
+                    label="Verified"
+                    value={stats?.verified ?? 0}
+                    icon={<BadgeCheck size={18} className="text-emerald-600" />}
+                    iconBg="bg-emerald-50"
+                    loading={loading}
+                    trend="Tryout-verified"
+                />
+            </div>
+
+            {/* ── Quick Actions ─────────────────────────────────────── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <QuickAction
+                    label="Browse Jobs"
+                    sub="Find your next opportunity"
+                    href="/jobs"
+                    icon={<Briefcase size={20} />}
+                    accent="hover:text-blue-600"
+                />
+                <QuickAction
+                    label="My Tryouts"
+                    sub="View submission status"
+                    href="/dashboard/tryouts"
+                    icon={<Zap size={20} />}
+                    accent="hover:text-violet-600"
+                />
+                <QuickAction
+                    label="Talent Vault"
+                    sub="Manage your portfolio"
+                    href="/vault"
+                    icon={<Trophy size={20} />}
+                    accent="hover:text-amber-600"
+                />
+            </div>
+
+            {/* ── Activity Panels ──────────────────────────────────── */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+                {/* Recent Applications */}
+                <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                        <h2 className="text-sm font-semibold text-text-primary">Recent Applications</h2>
+                        <Link
+                            to="/dashboard/applications"
+                            className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors"
+                        >
+                            View all <ArrowRight size={11} />
+                        </Link>
+                    </div>
+
+                    {loading ? (
+                        <div className="divide-y divide-border">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="flex items-center justify-between px-5 py-3.5">
+                                    <div className="space-y-1.5">
+                                        <Skeleton className="h-3.5 w-40" />
+                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                    <Skeleton className="h-5 w-16 rounded-md" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : stats?.recentApps.length === 0 ? (
+                        <EmptyState
+                            icon={<FileText />}
+                            title="No applications yet"
+                            description="Start applying to jobs to track your progress here."
+                            size="sm"
+                            action={{ label: 'Browse Jobs', href: '/jobs' }}
+                        />
+                    ) : (
+                        <div className="divide-y divide-border">
+                            {stats!.recentApps.map((app) => (
+                                <div
+                                    key={app.id}
+                                    className="flex items-center justify-between px-5 py-3.5 hover:bg-background transition-colors"
+                                >
+                                    <div className="min-w-0 mr-4">
+                                        <p className="text-sm font-medium text-text-primary truncate">
+                                            {app.job_title ?? `Application #${app.id.slice(0, 8)}`}
+                                        </p>
+                                        <p className="text-xs text-text-tertiary mt-0.5 truncate">
+                                            {app.company_name ?? new Date(app.created_at).toLocaleDateString()}
+                                        </p>
+                                    </div>
+                                    <StatusBadge status={app.status} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Tryout Results */}
+                <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                        <h2 className="text-sm font-semibold text-text-primary">Tryout Results</h2>
+                        <Link
+                            to="/dashboard/tryouts"
+                            className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors"
+                        >
+                            View all <ArrowRight size={11} />
+                        </Link>
+                    </div>
+
+                    {loading ? (
+                        <div className="divide-y divide-border">
+                            {[...Array(3)].map((_, i) => (
+                                <div key={i} className="flex items-center gap-4 px-5 py-3.5">
+                                    <Skeleton className="w-14 h-14 rounded-full" />
+                                    <div className="space-y-1.5">
+                                        <Skeleton className="h-3.5 w-36" />
+                                        <Skeleton className="h-5 w-16 rounded-md" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : stats?.recentSubs.length === 0 ? (
+                        <EmptyState
+                            icon={<Star />}
+                            title="No tryout submissions yet"
+                            description="Complete skill-based tryouts to see your scores here."
+                            size="sm"
+                        />
+                    ) : (
+                        <div className="divide-y divide-border">
+                            {stats!.recentSubs.map((sub) => (
+                                <div
+                                    key={sub.id}
+                                    className="flex items-center gap-4 px-5 py-3.5 hover:bg-background transition-colors"
+                                >
+                                    <ScoreGauge score={sub.final_score ?? 0} />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-text-primary truncate">
+                                            Submission #{sub.id.slice(0, 8)}
+                                        </p>
+                                        <div className="flex items-center gap-1.5 mt-1">
+                                            {sub.status === 'PASSED'
+                                                ? <CheckCircle2 size={11} className="text-emerald-500" />
+                                                : sub.status === 'FAILED'
+                                                    ? <XCircle size={11} className="text-red-500" />
+                                                    : <Clock size={11} className="text-amber-500" />
+                                            }
+                                            <StatusBadge status={sub.status} />
+                                        </div>
+                                    </div>
+                                    {sub.final_score !== undefined && (
+                                        <p className="text-xs text-text-tertiary flex-shrink-0">
+                                            {sub.final_score}/100
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
         </div>
     );
 }

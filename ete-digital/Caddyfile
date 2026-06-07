@@ -1,0 +1,91 @@
+# ============================================================
+# Caddyfile — ETE Digital / Jobrows VPS Reverse Proxy
+# ============================================================
+# Place this file at: ete-digital/Caddyfile
+#
+# Caddy automatically obtains and renews TLS certificates from
+# Let's Encrypt. No manual cert management needed.
+#
+# Prerequisites:
+#   1. Set CADDY_DOMAIN in your .env (e.g. CADDY_DOMAIN=jobsrow.com)
+#   2. DNS A record pointing yourdomain.com → VPS IP
+#   3. Ports 80 and 443 open on the VPS firewall
+#
+# Start Caddy:
+#   docker compose --profile vps up -d caddy
+# ============================================================
+
+# Replace {$CADDY_DOMAIN} with your actual domain (read from env var).
+# Caddy reads env vars from the shell environment of the process that
+# starts it — pass via docker-compose environment: or .env file.
+
+{$CADDY_DOMAIN} {
+    # ── API traffic → FastAPI backend ───────────────────────────────────────
+    handle /api/* {
+        reverse_proxy backend:8000 {
+            # WebSocket support (for /api/ws/*)
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+
+            # Health-check before routing
+            health_uri    /health
+            health_status 200
+
+            # Timeouts
+            transport http {
+                read_buffer_size  4096
+                write_buffer_size 4096
+                dial_timeout      10s
+            }
+        }
+    }
+
+    # ── WebSocket upgrade for real-time notifications ────────────────────────
+    handle /api/ws/* {
+        reverse_proxy backend:8000 {
+            header_up Connection {http.request.header.Connection}
+            header_up Upgrade    {http.request.header.Upgrade}
+        }
+    }
+
+    # ── Health check endpoints (no auth required) ────────────────────────────
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    # ── All other traffic → React SPA (nginx) ───────────────────────────────
+    handle {
+        reverse_proxy frontend:80 {
+            header_up Host {host}
+        }
+    }
+
+    # ── Security headers ─────────────────────────────────────────────────────
+    header {
+        # HSTS: force HTTPS for 1 year including subdomains
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        # Already set by FastAPI middleware — Caddy adds as fallback
+        X-Frame-Options           "DENY"
+        X-Content-Type-Options    "nosniff"
+        # Remove server fingerprinting
+        -Server
+        defer
+    }
+
+    # ── Logging ──────────────────────────────────────────────────────────────
+    log {
+        output stdout
+        format json
+        level  INFO
+    }
+
+    # ── Compression ──────────────────────────────────────────────────────────
+    encode gzip zstd
+}
+
+# ── Optional: www → non-www redirect ────────────────────────────────────────
+www.{$CADDY_DOMAIN} {
+    redir https://{$CADDY_DOMAIN}{uri} permanent
+}

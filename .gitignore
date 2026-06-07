@@ -79,6 +79,8 @@ coverage/
 # Keep example env files
 !.env.example
 !**/.env.example
+!.env.vps.example
+!**/.env.vps.example
 
 # ==========================================
 # IDEs and Editors
@@ -162,6 +164,10 @@ frontend/public/uploads/
 infra/docker/minio_data/
 infra/docker/postgres_data/
 infra/docker/redis_data/
+
+# Caddy TLS certificates and state (never commit these)
+caddy_data/
+caddy_config/
 
 # Redis dump
 dump.rdb

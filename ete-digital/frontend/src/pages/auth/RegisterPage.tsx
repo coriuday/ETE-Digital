@@ -94,24 +94,20 @@ export default function RegisterPage() {
     return (
         <div className="min-h-screen flex font-['Inter',sans-serif]">
 
-            {/* ── LEFT BRAND PANEL ─────────────────────────────────────────── */}
+            {/* ── LEFT BRAND PANEL (temporarily hidden) ──────────────────────────────
             <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col"
                 style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' }}>
 
-                {/* Decorative blurred orbs */}
                 <div className="absolute top-[-60px] right-[-60px] w-80 h-80 rounded-full opacity-25"
                     style={{ background: 'radial-gradient(circle, #7c4dff, transparent)' }} />
                 <div className="absolute bottom-[-80px] left-[-40px] w-96 h-96 rounded-full opacity-20"
                     style={{ background: 'radial-gradient(circle, #4338ca, transparent)' }} />
 
-                {/* Dot grid texture */}
                 <div className="absolute inset-0 opacity-10"
                     style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
-                {/* Content */}
                 <div className="relative z-10 flex flex-col justify-between h-full p-12">
 
-                    {/* Logo */}
                     <Link to="/" className="flex items-center gap-2.5 w-fit">
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                             style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}>
@@ -123,7 +119,6 @@ export default function RegisterPage() {
                         </div>
                     </Link>
 
-                    {/* Hero copy */}
                     <div className="py-6">
                         <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-4">Join 50,000+ Professionals</p>
                         <h1 className="text-4xl font-bold text-white leading-tight mb-5"
@@ -136,7 +131,6 @@ export default function RegisterPage() {
                             India's premier platform where earning your next role means proving it — not just claiming it.
                         </p>
 
-                        {/* Feature callouts */}
                         <div className="space-y-3 mb-8">
                             {brandPoints.map((p) => (
                                 <div key={p.text}
@@ -148,7 +142,6 @@ export default function RegisterPage() {
                             ))}
                         </div>
 
-                        {/* Stats bar */}
                         <div className="grid grid-cols-3 gap-3">
                             {stats.map((s) => (
                                 <div key={s.label}
@@ -161,7 +154,6 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    {/* Testimonial */}
                     <div className="rounded-2xl p-5"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)' }}>
                         <p className="text-violet-100 text-sm italic leading-relaxed mb-4">
@@ -178,6 +170,7 @@ export default function RegisterPage() {
                     </div>
                 </div>
             </div>
+            ── END LEFT BRAND PANEL ─────────────────────────────────────── */}
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────────── */}
             <div className="flex-1 flex items-center justify-center px-6 py-10 bg-gray-50">

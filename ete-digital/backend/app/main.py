@@ -43,6 +43,18 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+
+        # Build connect-src: include localhost only in non-production environments
+        _backend_url = "https://ete-digital-backend.onrender.com"
+        if settings.ENVIRONMENT == "production":
+            _connect_src = f"connect-src 'self' ws: wss: {_backend_url} " f"https://*.supabase.co https://accounts.google.com;"
+        else:
+            _connect_src = (
+                f"connect-src 'self' ws: wss: "
+                f"http://localhost:8000 http://127.0.0.1:8000 {_backend_url} "
+                f"https://*.supabase.co https://accounts.google.com;"
+            )
+
         response.headers["Content-Security-Policy"] = (
             f"default-src 'self'; "
             f"script-src 'self' 'nonce-{nonce}' https://accounts.google.com https://apis.google.com; "
@@ -50,7 +62,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             f"font-src 'self' https://fonts.gstatic.com; "
             f"img-src 'self' data: https:; "
             f"frame-src https://accounts.google.com; "
-            f"connect-src 'self' ws: wss: http://localhost:8000 http://127.0.0.1:8000 https://ete-digital-backend.onrender.com https://*.supabase.co https://accounts.google.com;"
+            f"{_connect_src}"
         )
         if settings.ENVIRONMENT == "production":
             response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"

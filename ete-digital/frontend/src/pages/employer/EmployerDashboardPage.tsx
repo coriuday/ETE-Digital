@@ -1,320 +1,381 @@
 /**
- * Employer Dashboard — KPI cards, applications table with match scores, quick actions
+ * Employer Dashboard — Premium rebuild
+ *
+ * Improvements:
+ *  - Design system tokens throughout (no raw gray-* / bg-white)
+ *  - Skeleton loaders replace '—' flashes on KPI cards
+ *  - AbortController useEffect cleanup (no memory leaks)
+ *  - Proper TypeScript types (no `any`)
+ *  - EmptyState component replaces inline empties
+ *  - memoized KpiCard
+ *  - Match bar uses design-system colors
+ *  - Consistent border/shadow usage
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
+import EmptyState from '../../components/ui/EmptyState';
+import { Skeleton } from '../../components/ui/Skeleton';
 import {
     Briefcase, Users, Star, UserCheck, TrendingUp,
     PlusCircle, ClipboardList, BarChart2, ArrowRight,
-    Eye, CheckCircle2, XCircle
+    Eye, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { jobsApi } from '../../api/jobs';
 
-function statusPill(status: string) {
-    const map: Record<string, string> = {
-        PENDING: 'bg-amber-100 text-amber-700',
-        REVIEWING: 'bg-blue-100 text-blue-700',
-        ACCEPTED: 'bg-emerald-100 text-emerald-700',
-        REJECTED: 'bg-red-100 text-red-700',
-        SHORTLISTED: 'bg-violet-100 text-violet-700',
-    };
-    return map[status] ?? 'bg-gray-100 text-gray-600';
+/* ── Types ─────────────────────────────────────────────────────────────── */
+interface Application {
+    id: string;
+    candidate_name?: string;
+    applicant_name?: string;
+    candidate_email?: string;
+    job_title?: string;
+    match_score?: number;
+    status: string;
+    created_at: string;
+    tryout_submitted?: boolean;
 }
 
+interface Job {
+    id: string;
+    title: string;
+    location?: string | null;
+    job_type?: string | null;
+    status: string;
+    application_count?: number;
+    applications_count?: number;
+}
+
+interface DashboardStats {
+    jobs: number;
+    applications: number;
+    tryouts: number;
+    hired: number;
+}
+
+
+/* ── Status pill ────────────────────────────────────────────────────────── */
+const STATUS_PILLS: Record<string, string> = {
+    PENDING:     'bg-amber-50 text-amber-700 border border-amber-200',
+    REVIEWING:   'bg-blue-50 text-blue-700 border border-blue-200',
+    ACCEPTED:    'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    REJECTED:    'bg-red-50 text-red-700 border border-red-200',
+    SHORTLISTED: 'bg-violet-50 text-violet-700 border border-violet-200',
+};
+
+/* ── Match bar ──────────────────────────────────────────────────────────── */
 function MatchBar({ score }: { score: number }) {
     const color = score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-amber-500' : 'bg-red-400';
     return (
-        <div className="flex items-center gap-2">
-            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div className={`h-full ${color} rounded-full`} style={{ width: `${score}%` }} />
+        <div className="flex items-center gap-2 w-32">
+            <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                <div
+                    className={`h-full ${color} rounded-full transition-all duration-700`}
+                    style={{ width: `${score}%` }}
+                />
             </div>
-            <span className="text-xs font-semibold text-gray-700 w-8">{score}%</span>
+            <span className="text-xs font-semibold text-text-secondary tabular-nums w-8">{score}%</span>
         </div>
     );
 }
 
+/* ── KPI Card ───────────────────────────────────────────────────────────── */
 interface KpiCardProps {
     label: string;
     value: number | string;
     icon: React.ReactNode;
-    gradient: string;
+    iconBg: string;
     trend?: string;
+    loading: boolean;
 }
 
-function KpiCard({ label, value, icon, gradient, trend }: KpiCardProps) {
+const KpiCard = memo(function KpiCard({ label, value, icon, iconBg, trend, loading }: KpiCardProps) {
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-            <div className="flex items-center justify-between mb-4">
-                <p className="text-sm font-medium text-gray-500">{label}</p>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${gradient}`}>
-                    {icon}
-                </div>
+        <div className="bg-surface rounded-xl p-5 border border-border shadow-card flex items-start gap-4">
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${iconBg}`}>
+                {icon}
             </div>
-            <p className="text-3xl font-bold text-gray-900">{value}</p>
-            {trend && (
-                <p className="text-xs text-emerald-600 flex items-center gap-1 mt-2">
-                    <TrendingUp size={10} /> {trend}
-                </p>
-            )}
+            <div className="min-w-0 flex-1">
+                {loading ? (
+                    <>
+                        <Skeleton className="h-7 w-16 mb-1.5" />
+                        <Skeleton className="h-3.5 w-24" />
+                    </>
+                ) : (
+                    <>
+                        <p className="text-2xl font-bold text-text-primary leading-none">{value}</p>
+                        <p className="text-xs text-text-secondary mt-1">{label}</p>
+                        {trend && (
+                            <p className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
+                                <TrendingUp size={10} /> {trend}
+                            </p>
+                        )}
+                    </>
+                )}
+            </div>
+        </div>
+    );
+});
+
+/* ── Candidate avatar initials ──────────────────────────────────────────── */
+function CandidateAvatar({ name }: { name: string }) {
+    const initial = (name || 'C').charAt(0).toUpperCase();
+    return (
+        <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {initial}
         </div>
     );
 }
 
+/* ── Main Dashboard ─────────────────────────────────────────────────────── */
 export default function EmployerDashboardPage() {
-    const [jobs, setJobs] = useState<any[]>([]);
-    const [applications, setApplications] = useState<any[]>([]);
-    const [stats, setStats] = useState({ jobs: 0, applications: 0, tryouts: 0, hired: 0 });
-    const [loading, setLoading] = useState(true);
+    const [jobs, setJobs]           = useState<Job[]>([]);
+    const [applications, setApplications] = useState<Application[]>([]);
+    const [stats, setStats]         = useState<DashboardStats>({ jobs: 0, applications: 0, tryouts: 0, hired: 0 });
+    const [loading, setLoading]     = useState(true);
+
+    const fetchData = useCallback(async (signal: AbortSignal) => {
+        try {
+            const jobsData = await jobsApi.getEmployerJobs().catch(() => ({ total: 0, jobs: [] }));
+            const jobList: Job[] = jobsData.jobs ?? [];
+
+            let appList: Application[] = [];
+            if (jobList.length > 0) {
+                const appsData = await jobsApi.getJobApplications(jobList[0].id, 1)
+                    .catch(() => ({ total: 0, applications: [] }));
+                appList = appsData.applications ?? [];
+            }
+
+            if (signal.aborted) return;
+
+            setJobs(jobList.slice(0, 3));
+            setApplications(appList.slice(0, 5));
+            setStats({
+                jobs:         jobsData.total ?? jobList.length,
+                applications: appList.length,
+                tryouts:      appList.filter(a => a.tryout_submitted).length,
+                hired:        appList.filter(a => a.status === 'ACCEPTED').length,
+            });
+        } catch {
+            // keep defaults on error
+        } finally {
+            if (!signal.aborted) setLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const jobsData = await jobsApi.getEmployerJobs().catch(() => ({ total: 0, jobs: [] }));
-                const jobList: any[] = jobsData.jobs ?? [];
-
-                // Fetch applications only from the first job if exists, otherwise empty
-                let appList: any[] = [];
-                if (jobList.length > 0) {
-                    const appsData = await jobsApi.getJobApplications(jobList[0].id, 1)
-                        .catch(() => ({ total: 0, applications: [] }));
-                    appList = appsData.applications ?? [];
-                }
-
-                setJobs(jobList.slice(0, 3));
-                setApplications(appList.slice(0, 5));
-                setStats({
-                    jobs: jobsData.total ?? jobList.length,
-                    applications: appList.length,
-                    tryouts: appList.filter((a: any) => a.tryout_submitted).length,
-                    hired: appList.filter((a: any) => a.status === 'ACCEPTED').length,
-                });
-            } catch {
-                // keep defaults
-            } finally {
-                setLoading(false);
-            }
-        })();
-    }, []);
+        const controller = new AbortController();
+        fetchData(controller.signal);
+        return () => controller.abort();
+    }, [fetchData]);
 
     return (
         <AppShell>
-            <div className="p-6 lg:p-8 space-y-8">
+            <div className="p-6 lg:p-8 space-y-7 max-w-6xl mx-auto">
 
-                {/* Welcome */}
-                <div className="flex items-center justify-between">
+                {/* ── Header ─────────────────────────────────────────── */}
+                <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Employer Dashboard</h1>
-                        <p className="text-gray-500 mt-1">Manage your postings and review candidates</p>
+                        <h1 className="text-xl font-bold text-text-primary">Employer Dashboard</h1>
+                        <p className="text-sm text-text-secondary mt-1">Manage your postings and review candidates</p>
                     </div>
                     <Link
                         to="/employer/jobs/create"
-                        className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-xl hover:bg-blue-700 transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors shadow-sm flex-shrink-0"
                     >
-                        <PlusCircle size={16} /> Post a Job
+                        <PlusCircle size={15} /> Post a Job
                     </Link>
                 </div>
 
-                {/* KPI Cards */}
+                {/* ── KPI Cards ─────────────────────────────────────── */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <KpiCard
                         label="Active Jobs"
-                        value={loading ? '—' : stats.jobs}
-                        icon={<Briefcase size={20} className="text-blue-600" />}
-                        gradient="bg-blue-50"
+                        value={stats.jobs}
+                        icon={<Briefcase size={18} className="text-blue-600" />}
+                        iconBg="bg-blue-50"
                         trend="Live listings"
+                        loading={loading}
                     />
                     <KpiCard
                         label="Applications"
-                        value={loading ? '—' : stats.applications}
-                        icon={<Users size={20} className="text-violet-600" />}
-                        gradient="bg-violet-50"
+                        value={stats.applications}
+                        icon={<Users size={18} className="text-violet-600" />}
+                        iconBg="bg-violet-50"
+                        loading={loading}
                     />
                     <KpiCard
                         label="Tryouts"
-                        value={loading ? '—' : stats.tryouts}
-                        icon={<Star size={20} className="text-amber-600" />}
-                        gradient="bg-amber-50"
+                        value={stats.tryouts}
+                        icon={<Star size={18} className="text-amber-600" />}
+                        iconBg="bg-amber-50"
+                        loading={loading}
                     />
                     <KpiCard
                         label="Candidates Hired"
-                        value={loading ? '—' : stats.hired}
-                        icon={<UserCheck size={20} className="text-emerald-600" />}
-                        gradient="bg-emerald-50"
+                        value={stats.hired}
+                        icon={<UserCheck size={18} className="text-emerald-600" />}
+                        iconBg="bg-emerald-50"
                         trend="All time"
+                        loading={loading}
                     />
                 </div>
 
-                {/* Quick Actions */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* ── Quick Actions ─────────────────────────────────── */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
-                        { label: 'Post a Job', sub: 'Create new listing', href: '/employer/jobs/create', icon: <PlusCircle size={20} />, cls: 'border-blue-200 hover:border-blue-400 hover:bg-blue-50' },
-                        { label: 'Review Applications', sub: 'View & respond to candidates', href: '/employer/applications', icon: <ClipboardList size={20} />, cls: 'border-violet-200 hover:border-violet-400 hover:bg-violet-50' },
-                        { label: 'Analytics', sub: 'Track performance', href: '/employer/analytics', icon: <BarChart2 size={20} />, cls: 'border-amber-200 hover:border-amber-400 hover:bg-amber-50' },
-                    ].map((a) => (
+                        { label: 'Post a Job', sub: 'Create new listing', href: '/employer/jobs/create', icon: <PlusCircle size={19} />, color: 'text-primary-600', hover: 'hover:bg-primary-50 hover:border-primary-200' },
+                        { label: 'Review Applications', sub: 'View & respond to candidates', href: '/employer/applications', icon: <ClipboardList size={19} />, color: 'text-violet-600', hover: 'hover:bg-violet-50 hover:border-violet-200' },
+                        { label: 'Analytics', sub: 'Track performance', href: '/employer/analytics', icon: <BarChart2 size={19} />, color: 'text-amber-600', hover: 'hover:bg-amber-50 hover:border-amber-200' },
+                    ].map(a => (
                         <Link
                             key={a.href}
                             to={a.href}
-                            className={`flex items-center gap-4 p-4 bg-white border-2 rounded-2xl transition-all duration-200 group shadow-sm ${a.cls}`}
+                            className={`flex items-center gap-4 p-4 bg-surface border border-border rounded-xl transition-all duration-150 group shadow-card ${a.hover}`}
                         >
-                            <div className="text-gray-400 group-hover:text-gray-700 transition-colors">{a.icon}</div>
-                            <div className="flex-1">
-                                <p className="font-semibold text-gray-900 text-sm">{a.label}</p>
-                                <p className="text-xs text-gray-500">{a.sub}</p>
+                            <span className={`${a.color} flex-shrink-0`}>{a.icon}</span>
+                            <div className="flex-1 min-w-0">
+                                <p className="font-semibold text-text-primary text-sm">{a.label}</p>
+                                <p className="text-xs text-text-secondary truncate">{a.sub}</p>
                             </div>
-                            <ArrowRight size={16} className="text-gray-300 group-hover:text-gray-600 transition-colors" />
+                            <ArrowRight size={14} className="text-border group-hover:text-text-secondary transition-colors flex-shrink-0" />
                         </Link>
                     ))}
                 </div>
 
-                {/* Recent Applications Table */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-900">Recent Applications</h2>
-                        <Link to="/employer/applications" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                            View All <ArrowRight size={12} />
-                        </Link>
-                    </div>
+                {/* ── Panels Row ────────────────────────────────────── */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                    {loading ? (
-                        <div className="divide-y divide-gray-50">
-                            {[...Array(3)].map((_, i) => (
-                                <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
-                                    <div className="w-9 h-9 bg-gray-200 rounded-full" />
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-3 bg-gray-200 rounded w-32" />
-                                        <div className="h-2 bg-gray-100 rounded w-20" />
-                                    </div>
-                                    <div className="h-3 bg-gray-200 rounded w-16" />
-                                </div>
-                            ))}
-                        </div>
-                    ) : applications.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-                            <ClipboardList size={36} className="text-gray-300 mb-3" />
-                            <p className="text-sm font-medium text-gray-500">No applications yet</p>
-                            <p className="text-xs text-gray-400 mt-1">Post a job to start receiving applications</p>
-                            <Link to="/employer/jobs/create"
-                                className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">
-                                Post a Job
+                    {/* Recent Applications */}
+                    <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                            <h2 className="text-sm font-semibold text-text-primary">Recent Applications</h2>
+                            <Link to="/employer/applications" className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
+                                View all <ArrowRight size={11} />
                             </Link>
                         </div>
-                    ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full">
-                                <thead>
-                                    <tr className="bg-gray-50 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        <th className="text-left px-6 py-3">Candidate</th>
-                                        <th className="text-left px-6 py-3">Job</th>
-                                        <th className="text-left px-6 py-3">Match</th>
-                                        <th className="text-left px-6 py-3">Status</th>
-                                        <th className="text-left px-6 py-3">Applied</th>
-                                        <th className="text-left px-6 py-3">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {applications.map((app: any) => (
-                                        <tr key={app.id} className="hover:bg-gray-50 transition-colors">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                                                        {(app.candidate_name ?? app.applicant_name ?? 'C').charAt(0).toUpperCase()}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-medium text-gray-900">{app.candidate_name ?? app.applicant_name ?? `Applicant`}</p>
-                                                        <p className="text-xs text-gray-400">{app.candidate_email ?? ''}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <p className="text-sm text-gray-700 font-medium">{app.job_title ?? '—'}</p>
-                                            </td>
-                                            <td className="px-6 py-4 w-36">
-                                                <MatchBar score={app.match_score ?? Math.floor(Math.random() * 30) + 60} />
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${statusPill(app.status)}`}>
+
+                        {loading ? (
+                            <div className="divide-y divide-border">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="flex items-center gap-4 px-5 py-3.5">
+                                        <Skeleton className="w-8 h-8 rounded-full" />
+                                        <div className="flex-1 space-y-1.5">
+                                            <Skeleton className="h-3.5 w-36" />
+                                            <Skeleton className="h-3 w-20" />
+                                        </div>
+                                        <Skeleton className="h-5 w-16 rounded-md" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : applications.length === 0 ? (
+                            <EmptyState
+                                icon={<ClipboardList />}
+                                title="No applications yet"
+                                description="Post a job to start receiving candidates"
+                                size="sm"
+                                action={{ label: 'Post a Job', href: '/employer/jobs/create' }}
+                            />
+                        ) : (
+                            <div className="divide-y divide-border">
+                                {applications.map(app => {
+                                    const name = app.candidate_name ?? app.applicant_name ?? 'Candidate';
+                                    const pill = STATUS_PILLS[app.status] ?? 'bg-background text-text-tertiary border border-border';
+                                    return (
+                                        <div key={app.id} className="flex items-center gap-3 px-5 py-3 hover:bg-background transition-colors">
+                                            <CandidateAvatar name={name} />
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-text-primary truncate">{name}</p>
+                                                <p className="text-xs text-text-tertiary truncate">{app.job_title ?? app.candidate_email ?? ''}</p>
+                                            </div>
+                                            <div className="flex items-center gap-2 flex-shrink-0">
+                                                <MatchBar score={app.match_score ?? 70} />
+                                                <span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${pill}`}>
                                                     {app.status}
                                                 </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-xs text-gray-400">
-                                                {new Date(app.created_at).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-2">
-                                                    <Link
-                                                        to={`/employer/applications/${app.id}`}
-                                                        className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                                        title="View"
-                                                    >
-                                                        <Eye size={15} />
-                                                    </Link>
-                                                    <button
-                                                        className="p-1.5 rounded-lg text-gray-400 hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
-                                                        title="Accept"
-                                                    >
-                                                        <CheckCircle2 size={15} />
-                                                    </button>
-                                                    <button
-                                                        className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                                                        title="Reject"
-                                                    >
-                                                        <XCircle size={15} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </div>
-
-                {/* Active Jobs */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                    <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                        <h2 className="font-semibold text-gray-900">Active Job Listings</h2>
-                        <Link to="/employer/jobs" className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1">
-                            Manage <ArrowRight size={12} />
-                        </Link>
+                                                <Link
+                                                    to={`/employer/applications/${app.id}`}
+                                                    className="p-1 rounded-md text-text-tertiary hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                                                    title="View application"
+                                                >
+                                                    <Eye size={14} />
+                                                </Link>
+                                                <button className="p-1 rounded-md text-text-tertiary hover:bg-emerald-50 hover:text-emerald-600 transition-colors" title="Accept">
+                                                    <CheckCircle2 size={14} />
+                                                </button>
+                                                <button className="p-1 rounded-md text-text-tertiary hover:bg-red-50 hover:text-red-500 transition-colors" title="Reject">
+                                                    <XCircle size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
-                    {loading ? (
-                        <div className="p-6 animate-pulse space-y-3">
-                            {[...Array(3)].map((_, i) => <div key={i} className="h-12 bg-gray-100 rounded-xl" />)}
-                        </div>
-                    ) : jobs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-12 text-center px-6">
-                            <Briefcase size={32} className="text-gray-300 mb-3" />
-                            <p className="text-sm font-medium text-gray-500">No active jobs</p>
-                            <Link to="/employer/jobs/create"
-                                className="mt-4 px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors">
-                                Post Your First Job
+
+                    {/* Active Job Listings */}
+                    <div className="bg-surface rounded-xl border border-border overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+                            <h2 className="text-sm font-semibold text-text-primary">Active Job Listings</h2>
+                            <Link to="/employer/jobs" className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
+                                Manage <ArrowRight size={11} />
                             </Link>
                         </div>
-                    ) : (
-                        <div className="divide-y divide-gray-50">
-                            {jobs.map((job: any) => (
-                                <div key={job.id} className="flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
-                                    <div>
-                                        <p className="text-sm font-semibold text-gray-900">{job.title}</p>
-                                        <p className="text-xs text-gray-400 mt-0.5">{job.location ?? 'Remote'} · {job.job_type ?? 'Full-time'}</p>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="text-right">
-                                            <p className="text-xs font-semibold text-gray-700">{job.application_count ?? 0} applicants</p>
-                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${job.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
-                                                {job.status}
-                                            </span>
+
+                        {loading ? (
+                            <div className="divide-y divide-border">
+                                {[...Array(3)].map((_, i) => (
+                                    <div key={i} className="flex items-center justify-between px-5 py-4">
+                                        <div className="space-y-1.5">
+                                            <Skeleton className="h-3.5 w-40" />
+                                            <Skeleton className="h-3 w-28" />
                                         </div>
-                                        <Link to={`/employer/applications?job=${job.id}`} className="p-1.5 rounded-lg text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors">
-                                            <ArrowRight size={15} />
-                                        </Link>
+                                        <Skeleton className="h-5 w-20 rounded-md" />
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                                ))}
+                            </div>
+                        ) : jobs.length === 0 ? (
+                            <EmptyState
+                                icon={<Briefcase />}
+                                title="No active jobs"
+                                description="Post your first job to start hiring"
+                                size="sm"
+                                action={{ label: 'Post Your First Job', href: '/employer/jobs/create' }}
+                            />
+                        ) : (
+                            <div className="divide-y divide-border">
+                                {jobs.map(job => {
+                                    const appCount = job.application_count ?? job.applications_count ?? 0;
+                                    return (
+                                        <div key={job.id} className="flex items-center justify-between px-5 py-4 hover:bg-background transition-colors">
+                                            <div className="min-w-0 mr-4">
+                                                <p className="text-sm font-semibold text-text-primary truncate">{job.title}</p>
+                                                <p className="text-xs text-text-tertiary mt-0.5">
+                                                    {job.location ?? 'Remote'} · {job.job_type ?? 'Full-time'}
+                                                </p>
+                                            </div>
+                                            <div className="flex items-center gap-3 flex-shrink-0">
+                                                <div className="text-right">
+                                                    <p className="text-xs font-semibold text-text-primary">{appCount} applicants</p>
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${job.status === 'ACTIVE' || job.status === 'active' ? 'bg-emerald-50 text-emerald-700' : 'bg-background text-text-tertiary'}`}>
+                                                        {job.status}
+                                                    </span>
+                                                </div>
+                                                <Link
+                                                    to={`/employer/applications?job=${job.id}`}
+                                                    className="p-1.5 rounded-lg text-text-tertiary hover:bg-primary-50 hover:text-primary-600 transition-colors"
+                                                    title="View applications"
+                                                >
+                                                    <ArrowRight size={14} />
+                                                </Link>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
 
             </div>

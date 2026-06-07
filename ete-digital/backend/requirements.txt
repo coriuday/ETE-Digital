@@ -57,3 +57,7 @@ google-generativeai>=0.8.0
 
 # Monitoring
 sentry-sdk[fastapi]==2.19.2
+
+# Production server (gunicorn manages uvicorn workers for VPS/multi-core deployments)
+# On Render, start.sh uses uvicorn directly; on VPS, gunicorn.conf.py is used.
+gunicorn>=21.2.0,<24.0.0

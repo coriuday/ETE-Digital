@@ -74,11 +74,10 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex font-['Inter',sans-serif]">
 
-            {/* ── LEFT BRAND PANEL ─────────────────────────────────────────── */}
+            {/* ── LEFT BRAND PANEL (temporarily hidden) ──────────────────────────────
             <div className="hidden lg:flex lg:w-[45%] relative overflow-hidden flex-col"
                 style={{ background: 'linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%)' }}>
 
-                {/* Decorative blurred orbs */}
                 <div className="absolute top-[-80px] left-[-80px] w-72 h-72 rounded-full opacity-30"
                     style={{ background: 'radial-gradient(circle, #7c4dff, transparent)' }} />
                 <div className="absolute bottom-[-60px] right-[-60px] w-96 h-96 rounded-full opacity-20"
@@ -86,14 +85,11 @@ export default function LoginPage() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 rounded-full opacity-10"
                     style={{ background: 'radial-gradient(circle, #a78bfa, transparent)' }} />
 
-                {/* Dot grid texture */}
                 <div className="absolute inset-0 opacity-10"
                     style={{ backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px)', backgroundSize: '28px 28px' }} />
 
-                {/* Content */}
                 <div className="relative z-10 flex flex-col justify-between h-full p-12">
 
-                    {/* Logo */}
                     <Link to="/" className="flex items-center gap-2.5 w-fit group">
                         <div className="w-9 h-9 rounded-xl flex items-center justify-center"
                             style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}>
@@ -105,7 +101,6 @@ export default function LoginPage() {
                         </div>
                     </Link>
 
-                    {/* Hero copy */}
                     <div className="py-8">
                         <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-4">India's Most Result-Oriented Platform</p>
                         <h1 className="text-4xl font-bold text-white leading-tight mb-5"
@@ -118,7 +113,6 @@ export default function LoginPage() {
                             Join India's platform where talent is proven through action — not just résumés.
                         </p>
 
-                        {/* Feature callouts */}
                         <div className="space-y-3">
                             {brandPoints.map((p) => (
                                 <div key={p.text}
@@ -131,7 +125,6 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* Testimonial card */}
                     <div className="rounded-2xl p-5"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)' }}>
                         <p className="text-violet-100 text-sm italic leading-relaxed mb-4">
@@ -148,6 +141,7 @@ export default function LoginPage() {
                     </div>
                 </div>
             </div>
+            ── END LEFT BRAND PANEL ─────────────────────────────────────── */}
 
             {/* ── RIGHT FORM PANEL ─────────────────────────────────────────── */}
             <div className="flex-1 flex items-center justify-center px-6 py-12 bg-gray-50">

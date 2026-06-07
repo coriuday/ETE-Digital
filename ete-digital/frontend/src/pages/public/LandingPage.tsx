@@ -159,20 +159,29 @@ export default function LandingPage() {
     const [jobsLoading, setJobsLoading] = useState(true);
 
     useEffect(() => {
+        const controller = new AbortController();
+        setJobsLoading(true);
         jobsApi.searchJobs({ page_size: 6, sort_by: 'created_at', sort_order: 'desc' })
-            .then(data => setFeaturedJobs(data.jobs))
-            .catch(() => setFeaturedJobs([]))
-            .finally(() => setJobsLoading(false));
+            .then(data => {
+                if (!controller.signal.aborted) setFeaturedJobs(data.jobs);
+            })
+            .catch(() => {
+                if (!controller.signal.aborted) setFeaturedJobs([]);
+            })
+            .finally(() => {
+                if (!controller.signal.aborted) setJobsLoading(false);
+            });
+        return () => controller.abort();
     }, []);
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 overflow-hidden font-sans transition-colors duration-300">
 
-            {/* ── Ambient Background Glows (dark only) ── */}
-            <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/20 dark:bg-violet-600/20 rounded-full blur-[128px] animate-pulse" />
-                <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-indigo-500/15 dark:bg-indigo-600/20 rounded-full blur-[128px] animate-pulse" style={{ animationDelay: '2s' }} />
-                <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-blue-500/10 dark:bg-blue-600/15 rounded-full blur-[100px]" />
+            {/* ── Ambient Background Glows (GPU-composited for perf) ── */}
+            <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px] animate-pulse" style={{ willChange: 'transform' }} />
+                <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-indigo-500/8 rounded-full blur-[128px] animate-pulse" style={{ willChange: 'transform', animationDelay: '2s' }} />
+                <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-blue-500/6 rounded-full blur-[100px]" />
             </div>
 
             <PublicNavbar />
@@ -242,7 +251,7 @@ export default function LandingPage() {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.6, delay: 0.3 }}
-                        className="max-w-3xl mx-auto mb-20"
+                        className="max-w-3xl mx-auto"
                     >
                         <Link
                             to="/jobs"
@@ -258,7 +267,7 @@ export default function LandingPage() {
                         </Link>
                     </motion.div>
 
-                    {/* Stats Strip */}
+                    {/* Stats Strip
                     <motion.div
                         initial={{ opacity: 0, y: 40 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -271,7 +280,7 @@ export default function LandingPage() {
                             <AnimatedStat value="40k+" label="Tryouts Taken" />
                             <AnimatedStat value="94%" label="Hire Rate" />
                         </div>
-                    </motion.div>
+                    </motion.div> */}
                 </div>
             </main>
 

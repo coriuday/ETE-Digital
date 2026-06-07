@@ -28,21 +28,21 @@ export default function AccountSettingsPage() {
 
     return (
         <AppShell>
-        <div className="min-h-full py-8 px-4 bg-gray-50">
+        <div className="min-h-full py-8 px-4 bg-background">
             <div className="max-w-3xl mx-auto">
-                <h1 className="text-2xl font-bold mb-2 text-gray-900">Account Settings</h1>
-                <p className="text-sm mb-8 text-gray-500">Manage your account information and preferences.</p>
+                <h1 className="text-xl font-bold mb-1 text-text-primary">Account Settings</h1>
+                <p className="text-sm mb-7 text-text-secondary">Manage your account information and preferences.</p>
 
                 {/* Tabs */}
-                <div className="flex gap-1 mb-6 rounded-xl p-1.5 border w-fit shadow-sm bg-white border-gray-200">
+                <div className="flex gap-1 mb-6 rounded-xl p-1.5 border w-fit shadow-card bg-surface border-border">
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
                             onClick={() => setActiveTab(tab.key)}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                 activeTab === tab.key
-                                    ? 'bg-violet-600 text-white shadow-sm'
-                                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    ? 'bg-primary-600 text-white shadow-sm'
+                                    : 'text-text-secondary hover:text-text-primary hover:bg-background'
                             }`}
                         >
                             {tab.icon}
@@ -138,8 +138,8 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
 
     if (loadingProfile) {
         return (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow-soft p-10 flex items-center justify-center">
-                <Loader2 className="w-6 h-6 animate-spin text-primary-500" />
+            <div className="bg-surface rounded-xl border border-border shadow-card p-10 flex items-center justify-center">
+                <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
             </div>
         );
     }
@@ -147,37 +147,31 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
     const displayName = form.fullName || user?.email?.split('@')[0] || 'User';
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
+        <div className="bg-surface rounded-xl border border-border shadow-card overflow-hidden">
 
             {/* Employer Visibility Badge — Indeed style */}
             <VisibilityToggle />
 
             {/* Avatar Section */}
-            <div className="p-6 border-b border-gray-100 flex items-center gap-6">
+            <div className="p-6 border-b border-border flex items-center gap-6">
                 <div className="relative">
-                    <div className="w-20 h-20 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center text-white text-2xl font-bold">
+                    <div className="w-20 h-20 bg-primary-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
                         {displayName[0]?.toUpperCase() || '?'}
                     </div>
-                    <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-white border-2 border-gray-200 rounded-lg shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors">
-                        <Camera className="w-3.5 h-3.5 text-gray-600" />
+                    <button className="absolute -bottom-1 -right-1 w-7 h-7 bg-surface border-2 border-border rounded-lg shadow-card flex items-center justify-center hover:bg-background transition-colors">
+                        <Camera className="w-3.5 h-3.5 text-text-secondary" />
                     </button>
                 </div>
                 <div>
-                    <h3 className="font-semibold text-gray-900">{displayName}</h3>
-                    <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
-                        <span>✉</span> {user?.email}
-                    </p>
+                    <h3 className="font-semibold text-text-primary">{displayName}</h3>
+                    <p className="text-sm text-text-secondary mt-0.5">{user?.email}</p>
                     {form.phone && (
-                        <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
-                            <span>📞</span> {form.phone}
-                        </p>
+                        <p className="text-sm text-text-secondary mt-0.5">{form.phone}</p>
                     )}
                     {form.location && (
-                        <p className="text-sm text-gray-500 flex items-center gap-1.5 mt-0.5">
-                            <span>📍</span> {form.location}
-                        </p>
+                        <p className="text-sm text-text-secondary mt-0.5">📍 {form.location}</p>
                     )}
-                    <span className="inline-block mt-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-medium capitalize">
+                    <span className="inline-block mt-2 text-xs bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full font-medium capitalize border border-primary-200">
                         {user?.role}
                     </span>
                 </div>
@@ -187,46 +181,46 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
             <form onSubmit={handleSubmit} className="p-6 space-y-5">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">Full Name</label>
                         <input type="text" name="fullName" value={form.fullName} onChange={handleChange}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                            className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-text-primary bg-surface placeholder:text-text-tertiary focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none transition-colors" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">Location</label>
                         <input type="text" name="location" value={form.location} onChange={handleChange}
                             placeholder="e.g. Bengaluru, India"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                            className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-text-primary bg-surface placeholder:text-text-tertiary focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none transition-colors" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">Phone</label>
                         <input type="tel" name="phone" value={form.phone} onChange={handleChange}
                             placeholder="+91 9876543210"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                            className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-text-primary bg-surface placeholder:text-text-tertiary focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none transition-colors" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                        <label className="block text-sm font-medium text-text-primary mb-1.5">Website</label>
                         <input type="url" name="website" value={form.website} onChange={handleChange}
                             placeholder="https://yourwebsite.com"
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                            className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-text-primary bg-surface placeholder:text-text-tertiary focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none transition-colors" />
                     </div>
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn URL</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1.5">LinkedIn URL</label>
                     <input type="url" name="linkedin_url" value={form.linkedin_url} onChange={handleChange}
                         placeholder="https://linkedin.com/in/yourusername"
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none" />
+                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-text-primary bg-surface placeholder:text-text-tertiary focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none transition-colors" />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                    <label className="block text-sm font-medium text-text-primary mb-1.5">Bio</label>
                     <textarea name="bio" value={form.bio} onChange={handleChange} rows={3}
                         placeholder="Tell employers a bit about yourself..."
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none" />
+                        className="w-full px-3.5 py-2.5 border border-border rounded-lg text-sm text-text-primary bg-surface placeholder:text-text-tertiary focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 outline-none resize-none transition-colors" />
                 </div>
 
                 {error && (
-                    <div className="flex items-center gap-2 text-red-700 bg-red-50 rounded-xl px-3 py-2 text-sm">
+                    <div className="flex items-center gap-2 text-error bg-red-50 border border-red-200 rounded-lg px-3 py-2.5 text-sm">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         {error}
                     </div>
@@ -234,11 +228,11 @@ function ProfileTab({ user, fetchUser }: { user: any; fetchUser: () => Promise<v
 
                 <div className="flex items-center gap-3 pt-2">
                     <button type="submit" disabled={saving}
-                        className="px-6 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-2">
+                        className="px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60 flex items-center gap-2 shadow-sm">
                         {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Save Changes'}
                     </button>
                     {success && (
-                        <div className="flex items-center gap-1.5 text-green-600 text-sm">
+                        <div className="flex items-center gap-1.5 text-emerald-600 text-sm">
                             <CheckCircle className="w-4 h-4" />
                             Saved! Sidebar updated.
                         </div>
@@ -355,7 +349,7 @@ function ResumeUploadSection({ fetchUser }: { fetchUser: () => Promise<void> }) 
                 </div>
             )}
 
-            <p className="text-xs text-gray-400 mt-3">By continuing, you agree to receive job opportunities from Jobsrow.</p>
+            <p className="text-xs text-text-tertiary mt-3">By continuing, you agree to receive job opportunities from JobsRow.com.</p>
         </div>
     );
 }
@@ -417,8 +411,8 @@ function PasswordTab() {
     );
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow-soft p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Change Password</h2>
+        <div className="bg-surface rounded-xl border border-border shadow-card p-6">
+            <h2 className="text-base font-bold text-text-primary mb-6">Change Password</h2>
             {success ? (
                 <div className="flex items-center gap-3 bg-green-50 text-green-700 rounded-xl px-4 py-3">
                     <CheckCircle className="w-5 h-5" />
@@ -445,7 +439,7 @@ function PasswordTab() {
                         </div>
                     )}
                     <button type="submit" disabled={saving}
-                        className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-2">
+                        className="px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60 flex items-center gap-2 shadow-sm">
                         {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</> : 'Update Password'}
                     </button>
                 </form>
@@ -496,8 +490,8 @@ function DangerZoneTab() {
     }
 
     return (
-        <div className="bg-white rounded-2xl border-2 border-red-200 shadow-soft p-6">
-            <h2 className="text-lg font-bold text-red-700 mb-2 flex items-center gap-2">
+        <div className="bg-surface rounded-xl border-2 border-red-200 shadow-card p-6">
+            <h2 className="text-base font-bold text-red-700 mb-2 flex items-center gap-2">
                 <Trash2 className="w-5 h-5" />
                 Danger Zone
             </h2>
