@@ -23,6 +23,10 @@ interface AuthState {
     requiresTwoFactor: boolean;
     /** Short-lived partial token used to complete 2FA verification */
     partialToken: string | null;
+    /** Email address of the most recently registered user (for post-registration UX) */
+    registrationEmail: string | null;
+    /** True when the backend requires email verification after registration */
+    registrationRequiresVerification: boolean;
 
     // Actions
     login: (email: string, password: string) => Promise<void>;
@@ -50,6 +54,8 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             requiresTwoFactor: false,
             partialToken: null,
+            registrationEmail: null,
+            registrationRequiresVerification: false,
 
             setTokens: (accessToken: string, refreshToken?: string) => {
                 const updates: Partial<AuthState> = { accessToken };
@@ -126,16 +132,20 @@ export const useAuthStore = create<AuthState>()(
             },
 
             register: async (email: string, password: string, fullName: string, role: 'candidate' | 'employer') => {
-                set({ isLoading: true, error: null });
+                set({ isLoading: true, error: null, registrationEmail: null, registrationRequiresVerification: false });
                 try {
-                    await authApi.register({
+                    const response = await authApi.register({
                         email,
                         password,
                         full_name: fullName,
                         role,
-                    });
+                    }) as { message: string; email: string; requires_verification: boolean };
 
-                    set({ isLoading: false });
+                    set({
+                        isLoading: false,
+                        registrationEmail: response.email ?? email,
+                        registrationRequiresVerification: response.requires_verification ?? true,
+                    });
                 } catch (error: any) {
                     const message = error.response?.data?.detail || 'Registration failed';
                     set({

@@ -9,7 +9,6 @@ from typing import Optional
 from app.core.database import get_db
 from app.core.config import settings
 from app.schemas.users import (
-    UserRegister,
     UserLogin,
     TokenResponse,
     LoginResponse,
@@ -17,7 +16,7 @@ from app.schemas.users import (
     EmailVerificationRequest,
     PasswordResetRequest,
     PasswordResetConfirm,
-    UserResponse,
+    UserRegister,
 )
 from app.services.auth import auth_service
 from app.core.limiter import limiter
@@ -32,16 +31,15 @@ class OptionalRefreshRequest(BaseModel):
     refresh_token: Optional[str] = None
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", status_code=status.HTTP_201_CREATED)
 @limiter.limit("5/minute")
 async def register(request: Request, user_data: UserRegister, db: AsyncSession = Depends(get_db)):
     """
-    Register a new user
+    Register a new user.
 
-    - **email**: Valid email address
-    - **password**: Strong password (min 8 chars, uppercase, lowercase, digit, special char)
-    - **role**: User role (candidate or employer)
-    - **full_name**: Optional full name
+    Returns a confirmation object (not the full user record) to avoid
+    leaking sensitive fields. In production, email verification is required
+    before the user can log in.
     """
     user = await auth_service.register_user(
         db=db,
@@ -51,14 +49,17 @@ async def register(request: Request, user_data: UserRegister, db: AsyncSession =
         full_name=user_data.full_name,
     )
 
-    return UserResponse(
-        id=str(user.id),
-        email=user.email,
-        role=user.role,
-        is_verified=user.is_verified,
-        is_active=user.is_active,
-        created_at=user.created_at,
-    )
+    requires_verification = not user.is_verified  # True in production, False in dev
+
+    return {
+        "message": (
+            "Registration successful. Please check your email to verify your account."
+            if requires_verification
+            else "Registration successful. You can now log in."
+        ),
+        "email": user.email,
+        "requires_verification": requires_verification,
+    }
 
 
 @router.post("/verify-email", response_model=dict)

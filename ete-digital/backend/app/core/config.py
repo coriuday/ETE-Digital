@@ -5,7 +5,7 @@ Centralized settings management using Pydantic BaseSettings
 
 import os
 from typing import List, Optional
-from pydantic import PostgresDsn, model_validator
+from pydantic import PostgresDsn, model_validator, field_validator
 from pydantic_settings import BaseSettings
 
 # ✅ ALWAYS override first
@@ -56,7 +56,7 @@ class Settings(BaseSettings):
     # CORS — allow frontend origins
     # NOTE: FastAPI/Starlette CORSMiddleware does EXACT string matching only.
     # Wildcards like *.vercel.app are NOT supported — list every origin explicitly.
-    # Can be overridden with CORS_ORIGINS env var (comma-separated list)
+    # Override via .env: CORS_ORIGINS=https://jobsrow.com,https://www.jobsrow.com
     CORS_ORIGINS: List[str] = [
         # Local development
         "http://localhost:5173",
@@ -75,6 +75,30 @@ class Settings(BaseSettings):
     CORS_ALLOW_CREDENTIALS: bool = True
     CORS_ALLOW_METHODS: List[str] = ["*"]
     CORS_ALLOW_HEADERS: List[str] = ["*"]
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def _parse_cors_origins(cls, v):
+        """
+        Allow CORS_ORIGINS to be set as a comma-separated string in .env:
+            CORS_ORIGINS=https://jobsrow.com,https://www.jobsrow.com
+        Or as a JSON array:
+            CORS_ORIGINS=["https://jobsrow.com","https://www.jobsrow.com"]
+        If it's already a list (default), pass it through unchanged.
+        """
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("["):
+                import json
+
+                try:
+                    return json.loads(v)
+                except json.JSONDecodeError:
+                    pass
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
 
     # OAuth2 - Google
     GOOGLE_CLIENT_ID: Optional[str] = None

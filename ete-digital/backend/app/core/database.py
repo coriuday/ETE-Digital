@@ -21,12 +21,44 @@ def _make_asyncpg_url(url: str) -> str:
 
 DATABASE_URL = _make_asyncpg_url(os.getenv("TEST_DATABASE_URL") or settings.DATABASE_URL)
 
-print(f"[DB] FINAL DATABASE URL: {DATABASE_URL}")
+# Log DB host only — never log credentials
+_db_host = DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "unknown"
+print(f"[DB] Connecting to: {_db_host}")
+
+# asyncpg does NOT accept ?ssl=require or ?sslmode=require as URL query params.
+# SSL must be passed exclusively via connect_args (not both URL + connect_args).
+# We detect the ssl requirement from the URL, strip it, then pass ssl via connect_args.
+_connect_args: dict = {}
+_needs_ssl = (
+    "ssl=require" in DATABASE_URL
+    or "sslmode=require" in DATABASE_URL
+    or "supabase.com" in DATABASE_URL  # Supabase always requires SSL
+)
+if _needs_ssl:
+    # Remove SSL params from URL — asyncpg handles them via connect_args only
+    DATABASE_URL = (
+        DATABASE_URL.replace("?ssl=require", "")
+        .replace("&ssl=require", "")
+        .replace("?sslmode=require", "")
+        .replace("&sslmode=require", "")
+    )
+    _connect_args["ssl"] = "require"
+
 
 engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
+    # Pool settings tuned for Supabase session pooler:
+    # - pool_size: concurrent connections kept open
+    # - max_overflow: extra connections allowed under burst load
+    # - pool_pre_ping: validates connections before use (detects stale connections)
+    # - pool_recycle: recycle connections after 10 min (Supabase closes idle after ~5 min)
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,
+    pool_recycle=600,
+    connect_args=_connect_args,
 )
 
 AsyncSessionLocal = sessionmaker(

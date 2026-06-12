@@ -26,7 +26,8 @@ services:
     environment:
       POSTGRES_DB:       ${POSTGRES_DB:-ete_digital}
       POSTGRES_USER:     ${POSTGRES_USER:-ete_user}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      # Default avoids hard startup failure; override in .env for production
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme_in_env}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
@@ -94,19 +95,22 @@ services:
       - path: ./backend/.env
         required: false   # Present on VPS; skipped in CI where .env is not committed
     environment:
-      # These override .env so container-to-container hostnames work
-      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}@postgres:5432/${POSTGRES_DB:-ete_digital}
+      # ── Container-to-container service hostnames ──────────────────────────────
+      # DATABASE_URL is intentionally NOT overridden here so that backend/.env
+      # controls which database is used (Supabase vs local postgres).
+      # If you want local Docker postgres, uncomment the line below:
+      # DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ete_digital}
       REDIS_URL:    redis://redis:6379/0
       MINIO_ENDPOINT: minio
       MINIO_PORT:     "9000"
-      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:?MINIO_ACCESS_KEY must be set}
-      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:?MINIO_SECRET_KEY must be set}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin123}
       MINIO_SECURE: "false"
       # Email — uses MailHog in override; set production SMTP vars in .env
       SMTP_HOST: ${SMTP_HOST:-mailhog}
       SMTP_PORT: ${SMTP_PORT:-1025}
       # VPS deployment mode: 'vps' → gunicorn multi-worker; 'render' → uvicorn single
-      DEPLOY_MODE: ${DEPLOY_MODE:-render}
+      DEPLOY_MODE: ${DEPLOY_MODE:-vps}
       WORKERS:     ${WORKERS:-}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
