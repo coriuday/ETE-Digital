@@ -13,6 +13,9 @@ export default defineConfig({
     server: {
         host: true,
         port: 5173,
+        // Allow production domain when nginx proxies to this Vite dev server.
+        // Without this, Vite rejects requests with Host: jobsrow.com (security feature).
+        allowedHosts: ['jobsrow.com', 'www.jobsrow.com', 'localhost'],
         proxy: {
             '/api': {
                 target: process.env.VITE_API_URL || 'http://localhost:8000',
