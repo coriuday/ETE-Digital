@@ -57,7 +57,9 @@ async def register(request: Request, user_data: UserRegister, db: AsyncSession =
             if requires_verification
             else "Registration successful. You can now log in."
         ),
+        "id": str(user.id),
         "email": user.email,
+        "role": user.role.value if hasattr(user.role, "value") else user.role,
         "requires_verification": requires_verification,
     }
 

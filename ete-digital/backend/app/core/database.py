@@ -45,21 +45,29 @@ if _needs_ssl:
     _connect_args["ssl"] = "require"
 
 
-engine = create_async_engine(
-    DATABASE_URL,
-    echo=False,
-    future=True,
-    # Pool settings tuned for Supabase session pooler:
-    # - pool_size: concurrent connections kept open
-    # - max_overflow: extra connections allowed under burst load
-    # - pool_pre_ping: validates connections before use (detects stale connections)
-    # - pool_recycle: recycle connections after 10 min (Supabase closes idle after ~5 min)
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,
-    pool_recycle=600,
-    connect_args=_connect_args,
-)
+_is_sqlite = DATABASE_URL.startswith("sqlite")
+
+# Pool settings tuned for Supabase session pooler (not applicable to SQLite):
+# - pool_size: concurrent connections kept open
+# - max_overflow: extra connections allowed under burst load
+# - pool_pre_ping: validates connections before use (detects stale connections)
+# - pool_recycle: recycle connections after 10 min (Supabase closes idle after ~5 min)
+_engine_kwargs: dict = {
+    "echo": False,
+    "future": True,
+    "connect_args": _connect_args,
+}
+if not _is_sqlite:
+    _engine_kwargs.update(
+        {
+            "pool_size": 5,
+            "max_overflow": 10,
+            "pool_pre_ping": True,
+            "pool_recycle": 600,
+        }
+    )
+
+engine = create_async_engine(DATABASE_URL, **_engine_kwargs)
 
 AsyncSessionLocal = sessionmaker(
     bind=engine,
