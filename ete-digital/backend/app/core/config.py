@@ -182,6 +182,9 @@ class Settings(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
         case_sensitive = True
+        # Ignore env vars not defined in Settings (e.g. DEPLOY_MODE, POSTGRES_PASSWORD)
+        # so the app doesn't crash when deployment-specific vars are present in .env
+        extra = "ignore"
 
 
 import logging
