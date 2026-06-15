@@ -91,12 +91,25 @@ export default function AnalyticsDashboardPage() {
     const lineData = data?.applications_over_time?.map(p => ({ name: p.date.slice(5), applications: p.value })) ?? mockLineData;
     const barData = data?.top_jobs?.map(j => ({ name: j.title, applications: j.applications })) ?? mockBarData;
 
+    // Real funnel data from API; fallback to mocks
+    const funnelColors = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe'];
+    const funnelData = data?.application_funnel?.length
+        ? data.application_funnel.map((s: any, i: number) => ({
+              name: s.stage,
+              value: s.count,
+              pct: s.pct,
+              fill: funnelColors[i % funnelColors.length],
+          }))
+        : mockFunnelData.map((s) => ({ ...s, pct: 0 }));
+
     const kpiValues = {
-        views: data?.kpis?.find(k => k.label === 'Total Jobs')?.value ?? '—',
+        views:        data?.kpis?.find(k => k.label === 'Total Jobs')?.value ?? '—',
         applications: data?.kpis?.find(k => k.label === 'Applications')?.value ?? '—',
-        shortlisted: data?.kpis?.find(k => k.label === 'Shortlisted')?.value ?? '—',
-        hired: data?.kpis?.find(k => k.label === 'Hired')?.value ?? '—',
+        shortlisted:  data?.kpis?.find(k => k.label === 'Shortlisted')?.value ?? '—',
+        hired:        data?.kpis?.find(k => k.label === 'Hired')?.value ?? '—',
     };
+
+    const appChangePct = data?.kpis?.find(k => k.label === 'Applications')?.change_pct ?? 0;
 
     return (
         <AppShell>
@@ -126,10 +139,10 @@ export default function AnalyticsDashboardPage() {
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <KpiCard label="Total Jobs" value={kpiValues.views} icon={<BarChart2 size={18} className="text-blue-600" />} color="bg-blue-50" trend={data ? '' : '+18%'} />
-                    <KpiCard label="Applications" value={kpiValues.applications} icon={<Users size={18} className="text-violet-600" />} color="bg-violet-50" trend={data ? `${data.kpis?.find((k: any) => k.label === 'Applications')?.change_pct ?? 0}%` : '+12%'} />
-                    <KpiCard label="Shortlisted" value={kpiValues.shortlisted} icon={<Briefcase size={18} className="text-amber-600" />} color="bg-amber-50" trend={data ? '' : '+2'} />
-                    <KpiCard label="Hired" value={kpiValues.hired} icon={<Star size={18} className="text-emerald-600" />} color="bg-emerald-50" trend={data ? '' : '+3'} />
+                    <KpiCard label="Total Jobs"   value={kpiValues.views}        icon={<BarChart2 size={18} className="text-blue-600" />}    color="bg-blue-50"   trend={data ? '' : '+18%'} />
+                    <KpiCard label="Applications" value={kpiValues.applications} icon={<Users size={18} className="text-violet-600" />}    color="bg-violet-50" trend={data ? `${appChangePct > 0 ? '+' : ''}${appChangePct}%` : '+12%'} />
+                    <KpiCard label="Shortlisted"  value={kpiValues.shortlisted}  icon={<Briefcase size={18} className="text-amber-600" />}  color="bg-amber-50"  trend={data ? '' : '+2'} />
+                    <KpiCard label="Hired"         value={kpiValues.hired}        icon={<Star size={18} className="text-emerald-600" />}     color="bg-emerald-50" trend={data ? '' : '+3'} />
                 </div>
 
                 {/* Applications Over Time + Top Jobs */}
@@ -198,19 +211,21 @@ export default function AnalyticsDashboardPage() {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
                         <h2 className="font-semibold text-gray-900 mb-6">Application Funnel</h2>
                         <div className="space-y-2">
-                            {mockFunnelData.map((stage) => {
-                                const max = mockFunnelData[0].value;
-                                const pct = Math.round((stage.value / max) * 100);
+                            {funnelData.map((stage) => {
+                                const maxVal = funnelData[0]?.value || 1;
+                                const barPct = Math.round((stage.value / maxVal) * 100);
                                 return (
                                     <div key={stage.name} className="flex items-center gap-3">
                                         <span className="text-xs text-gray-500 w-20 text-right">{stage.name}</span>
                                         <div className="flex-1 h-7 bg-gray-100 rounded-lg overflow-hidden">
                                             <div className="h-full rounded-lg flex items-center px-2 transition-all duration-700"
-                                                style={{ width: `${pct}%`, backgroundColor: stage.fill }}>
+                                                style={{ width: `${barPct}%`, backgroundColor: stage.fill }}>
                                                 <span className="text-xs font-semibold text-white">{stage.value}</span>
                                             </div>
                                         </div>
-                                        <span className="text-xs text-gray-400 w-8">{pct}%</span>
+                                        <span className="text-xs text-gray-400 w-10 text-right">
+                                            {stage.pct ? `${stage.pct}%` : `${barPct}%`}
+                                        </span>
                                     </div>
                                 );
                             })}

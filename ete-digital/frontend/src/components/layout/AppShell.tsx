@@ -17,12 +17,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../utils/useNotifications';
+import NotificationDrawer from '../ui/NotificationDrawer';
 import {
     LayoutDashboard, Search, Briefcase, FileText, Trophy,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X,
-    PlusCircle, ClipboardList, Star, UserCheck, CheckCheck,
-    ChevronDown, User,
+    PlusCircle, ClipboardList, Star, UserCheck,
+    ChevronDown, User, Globe,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
@@ -50,6 +51,7 @@ const hrNav: NavItem[] = [
     { label: 'Applications',   icon: <ClipboardList size={18} />,   href: '/hr/applications' },
     { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/hr/tryouts/grade' },
     { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/hr/analytics' },
+    { label: 'Domain Verify',  icon: <Globe size={18} />,           href: '/hr/domain-verify' },
 ];
 
 const adminNav: NavItem[] = [
@@ -162,7 +164,7 @@ export default function AppShell({ children }: AppShellProps) {
     const notifRef   = useRef<HTMLDivElement>(null);
     const profileRef = useRef<HTMLDivElement>(null);
 
-    const { notifications, unreadCount, markRead, markAllRead } = useNotifications();
+    const { notifications, unreadCount, isConnected, loading, markRead, markAllRead, dismiss } = useNotifications();
 
     const nav        = useMemo(() => getNav(user?.role),      [user?.role]);
     const roleLabel  = useMemo(() => getRoleLabel(user?.role), [user?.role]);
@@ -407,110 +409,26 @@ export default function AppShell({ children }: AppShellProps) {
                     {/* Spacer */}
                     <div className="flex-1" />
 
-                    {/* Notification Bell */}
-                    <div className="relative" ref={notifRef}>
-                        <button
-                            id="notification-bell"
-                            onClick={() => setNotifOpen(o => !o)}
-                            className={[
-                                'relative p-2 rounded-lg transition-colors',
-                                notifOpen
-                                    ? 'bg-primary-50 text-primary-600'
-                                    : 'text-text-secondary hover:bg-background hover:text-text-primary',
-                            ].join(' ')}
-                            aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
-                            aria-expanded={notifOpen}
-                        >
-                            <Bell size={19} />
-                            {unreadCount > 0 && (
-                                <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-primary-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
-                                    {unreadCount > 99 ? '99+' : unreadCount}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* Notification Dropdown */}
-                        <AnimatePresence>
-                            {notifOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                                    transition={{ duration: 0.15, ease: 'easeOut' }}
-                                    className="absolute right-0 top-[calc(100%+8px)] w-80 bg-surface rounded-xl shadow-card-hover border border-border z-50 overflow-hidden"
-                                    role="region"
-                                    aria-label="Notifications panel"
-                                >
-                                    <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-                                        <h3 className="text-sm font-semibold text-text-primary">Notifications</h3>
-                                        {unreadCount > 0 && (
-                                            <button
-                                                onClick={() => markAllRead()}
-                                                className="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                                            >
-                                                <CheckCheck size={12} />
-                                                Mark all read
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    <div
-                                        className="max-h-72 overflow-y-auto divide-y divide-border"
-                                        role="list"
-                                        aria-live="polite"
-                                    >
-                                        {notifications.length === 0 ? (
-                                            <div className="flex flex-col items-center py-10 px-4 text-center">
-                                                <Bell size={28} className="text-border mb-2" />
-                                                <p className="text-sm text-text-tertiary">No notifications yet</p>
-                                            </div>
-                                        ) : (
-                                            notifications.slice(0, 10).map((n) => (
-                                                <div
-                                                    key={n.id}
-                                                    role="listitem"
-                                                    className={[
-                                                        'px-4 py-3 cursor-pointer transition-colors',
-                                                        !n.is_read
-                                                            ? 'bg-primary-50/60 hover:bg-primary-50'
-                                                            : 'hover:bg-background',
-                                                    ].join(' ')}
-                                                    onClick={() => {
-                                                        markRead(n.id);
-                                                        if (n.link) navigate(n.link);
-                                                        setNotifOpen(false);
-                                                    }}
-                                                >
-                                                    <div className="flex items-start gap-2.5">
-                                                        {!n.is_read && (
-                                                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
-                                                        )}
-                                                        <div className={!n.is_read ? '' : 'ml-4'}>
-                                                            <p className="text-xs font-semibold text-text-primary leading-snug">{n.title}</p>
-                                                            <p className="text-xs text-text-secondary mt-0.5 leading-relaxed">{n.message}</p>
-                                                            <p className="text-[10px] text-text-tertiary mt-1">
-                                                                {new Date(n.created_at).toLocaleString()}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))
-                                        )}
-                                    </div>
-
-                                    <div className="border-t border-border px-4 py-2.5 text-center">
-                                        <Link
-                                            to="/settings/notifications"
-                                            onClick={() => setNotifOpen(false)}
-                                            className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                                        >
-                                            Notification settings
-                                        </Link>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    {/* Notification Bell → opens slide-in drawer */}
+                    <button
+                        id="notification-bell"
+                        onClick={() => setNotifOpen(o => !o)}
+                        className={[
+                            'relative p-2 rounded-lg transition-colors',
+                            notifOpen
+                                ? 'bg-primary-50 text-primary-600'
+                                : 'text-text-secondary hover:bg-background hover:text-text-primary',
+                        ].join(' ')}
+                        aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                        aria-expanded={notifOpen}
+                    >
+                        <Bell size={19} />
+                        {unreadCount > 0 && (
+                            <span className="absolute top-1.5 right-1.5 min-w-[16px] h-4 px-1 bg-primary-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                            </span>
+                        )}
+                    </button>
 
                     {/* Profile Avatar Dropdown */}
                     <div className="relative" ref={profileRef}>
@@ -586,6 +504,19 @@ export default function AppShell({ children }: AppShellProps) {
                     {children}
                 </main>
             </div>
+
+            {/* ── Notification Drawer (slide-in from right) ─────────────── */}
+            <NotificationDrawer
+                open={notifOpen}
+                onClose={() => setNotifOpen(false)}
+                notifications={notifications}
+                unreadCount={unreadCount}
+                isConnected={isConnected}
+                loading={loading}
+                markRead={markRead}
+                markAllRead={markAllRead}
+                dismiss={dismiss}
+            />
         </div>
     );
 }

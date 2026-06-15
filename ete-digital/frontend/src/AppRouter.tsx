@@ -37,6 +37,7 @@ const JobDetailsPage = lazy(() => import('./pages/jobs/JobDetailsPage'));
 // ---- Candidate Pages ----
 const TryoutDetailsPage = lazy(() => import('./pages/candidate/TryoutDetailsPage'));
 const MyTryoutsPage = lazy(() => import('./pages/candidate/MyTryoutsPage'));
+const TryoutPaymentPage = lazy(() => import('./pages/candidate/TryoutPaymentPage'));
 const VaultDashboardPage = lazy(() => import('./pages/candidate/VaultDashboardPage'));
 const VaultItemFormPage = lazy(() => import('./pages/candidate/VaultItemFormPage'));
 const ShareManagementPage = lazy(() => import('./pages/candidate/ShareManagementPage'));
@@ -57,6 +58,7 @@ const CreateTryoutPage = lazy(() => import('./pages/hr/CreateTryoutPage'));
 const GradeTryoutsPage = lazy(() => import('./pages/hr/GradeTryoutsPage'));
 const GradeSubmissionPage = lazy(() => import('./pages/hr/GradeSubmissionPage'));
 const AnalyticsDashboardPage = lazy(() => import('./pages/hr/AnalyticsDashboardPage'));
+const DomainVerificationPage = lazy(() => import('./pages/hr/DomainVerificationPage'));
 
 // ---- Admin Pages ----
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -194,6 +196,7 @@ export default function AppRouter() {
                         <Route path="/dashboard/tryouts" element={<MyTryoutsPage />} />
                         <Route path="/tryouts/job/:jobId" element={<TryoutDetailsPage />} />
                         <Route path="/tryouts/:tryoutId" element={<TryoutDetailsPage />} />
+                        <Route path="/tryouts/:submissionId/payment" element={<TryoutPaymentPage />} />
                         <Route path="/vault" element={<VaultDashboardPage />} />
                         <Route path="/vault/add" element={<VaultItemFormPage />} />
                         <Route path="/vault/edit/:itemId" element={<VaultItemFormPage />} />
@@ -213,6 +216,7 @@ export default function AppRouter() {
                         <Route path="/hr/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />
                         <Route path="/hr/analytics" element={<AnalyticsDashboardPage />} />
                         <Route path="/hr/dashboard" element={<HRDashboardPage />} />
+                        <Route path="/hr/domain-verify" element={<DomainVerificationPage />} />
 
                         {/* Legacy redirects — keep old /employer/* links working */}
                         <Route path="/employer/dashboard" element={<Navigate to="/hr/dashboard" replace />} />

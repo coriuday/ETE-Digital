@@ -137,6 +137,7 @@ class TryoutSubmission(Base):
         SQLEnum(PaymentStatus, native_enum=False, values_callable=lambda x: [e.value for e in x]),
         default=PaymentStatus.PENDING,
     )
+    payment_intent_id = Column(String(255), nullable=True)  # Stripe PaymentIntent ID
     payment_transaction_id = Column(String(255))
 
     # Timestamps

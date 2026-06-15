@@ -286,6 +286,68 @@ class ApplicationService:
 
         await db.commit()
         await db.refresh(application)
+
+        # ── Background: generate Gemini LLM explanation ───────────────────────
+        # Non-blocking — fires after the response is already sent to the candidate.
+        # Uses the rules-engine breakdown (already computed above) to build the prompt.
+        if match_score is not None and breakdown_dict is not None:
+            import asyncio  # noqa: PLC0415
+
+            app_id_str = str(application.id)
+
+            async def _run_llm_explanation():
+                """Background task: call Gemini, write explanation to DB."""
+                try:
+                    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+                    from app.services.matching import (  # noqa: PLC0415
+                        generate_llm_explanation,
+                        CandidateProfile,
+                        JobSnapshot,
+                        ScoreBreakdown,
+                    )
+                    from app.models.jobs import Application as AppModel  # noqa: PLC0415
+
+                    # Rebuild lightweight objects from already-computed data
+                    cand = CandidateProfile(
+                        user_id=str(candidate_id),
+                        skills=breakdown_dict.get("matched_skills", []) + breakdown_dict.get("missing_skills", []),
+                        experience_years=None,
+                    )
+                    job_snap = JobSnapshot(
+                        job_id=str(job.id),
+                        title=job.title,
+                        skills_required=job.skills_required or [],
+                        experience_required=job.experience_required,
+                        location=job.location,
+                        remote_ok=job.remote_ok or False,
+                    )
+                    bd = ScoreBreakdown(
+                        total=breakdown_dict.get("total", match_score),
+                        skill_score=breakdown_dict.get("skill_score", 0),
+                        experience_score=breakdown_dict.get("experience_score", 0),
+                        location_score=breakdown_dict.get("location_score", 0),
+                        salary_score=breakdown_dict.get("salary_score", 0),
+                        freshness_score=breakdown_dict.get("freshness_score", 0),
+                        matched_skills=breakdown_dict.get("matched_skills", []),
+                        missing_skills=breakdown_dict.get("missing_skills", []),
+                        explanation_hint=breakdown_dict.get("hint", ""),
+                    )
+                    explanation_text = await generate_llm_explanation(cand, job_snap, bd)
+
+                    async with AsyncSessionLocal() as bg_db:
+                        result = await bg_db.execute(select(AppModel).where(AppModel.id == uuid.UUID(app_id_str)))
+                        app_row = result.scalar_one_or_none()
+                        if app_row:
+                            existing = app_row.match_explanation or {}
+                            existing["llm_explanation"] = explanation_text
+                            app_row.match_explanation = existing
+                            await bg_db.commit()
+                            logger.info("[AI Screening] Explanation written for application %s", app_id_str)
+                except Exception as exc:
+                    logger.warning("[AI Screening] Background LLM task failed: %s", exc)
+
+            asyncio.create_task(_run_llm_explanation())
+
         return application
 
     async def get_application(self, db: AsyncSession, application_id: uuid.UUID) -> Optional[Application]:

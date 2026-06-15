@@ -176,8 +176,8 @@ from app.api.auth import totp as totp_router  # noqa: E402
 from app.api.auth import oauth as oauth_router  # noqa: E402
 from app.api.users import users  # noqa: E402
 from app.api.jobs import jobs, analytics  # noqa: E402
-from app.api.talent import tryouts, vault  # noqa: E402
-from app.api.platform import notifications, admin, websocket, companies  # noqa: E402
+from app.api.talent import tryouts, vault, payments  # noqa: E402
+from app.api.platform import notifications, admin, websocket, companies, organizations  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(totp_router.router, tags=["Two-Factor Auth"])  # prefix in router: /api/auth/2fa
@@ -185,12 +185,14 @@ app.include_router(oauth_router.router, tags=["OAuth"])  # prefix in router: /ap
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])
+app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 app.include_router(vault.router, prefix="/api/vault", tags=["Talent Vault"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
 app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
+app.include_router(organizations.router, prefix="/api/organizations", tags=["Domain Verification"])
 
 # Serve uploaded files (resumes, avatars)
 _uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
