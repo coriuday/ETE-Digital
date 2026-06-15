@@ -10,7 +10,6 @@ from sqlalchemy import (
     Integer,
     Enum as SQLEnum,
     Text,
-    NullType,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
