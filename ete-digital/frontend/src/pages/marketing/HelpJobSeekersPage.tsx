@@ -27,7 +27,7 @@ const categories = [
             {
                 id: 'profile-setup',
                 q: 'How do I set up my profile?',
-                a: 'Go to Settings > Profile to complete your profile. Add your full name, professional summary, work experience, education, and skills. A complete profile is essential for employers to consider you for roles. You can also link your LinkedIn profile for faster setup.',
+                a: 'Go to Settings > Profile to complete your profile. Add your full name, professional summary, work experience, education, and skills. A complete profile is essential for HR Managers to consider you for roles. You can also link your LinkedIn profile for faster setup.',
             },
         ],
     },

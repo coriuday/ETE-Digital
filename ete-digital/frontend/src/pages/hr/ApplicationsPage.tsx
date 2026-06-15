@@ -287,7 +287,7 @@ export default function ApplicationsPage() {
                                                 {/* Actions */}
                                                 <div className="flex flex-col gap-2 flex-shrink-0">
                                                     <Link
-                                                        to={`/employer/applications/${app.id}`}
+                                                        to={`/hr/applications/${app.id}`}
                                                         className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-violet-600 to-indigo-600 text-white text-xs font-semibold rounded-xl hover:opacity-90 transition-opacity whitespace-nowrap"
                                                     >
                                                         Review <ChevronRight size={13} />

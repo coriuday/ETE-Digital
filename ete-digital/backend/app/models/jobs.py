@@ -10,6 +10,7 @@ from sqlalchemy import (
     Integer,
     Enum as SQLEnum,
     Text,
+    NullType,
 )
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
@@ -95,6 +96,10 @@ class Job(Base):
     published_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True))
 
+    # Full-text search vector (populated by DB trigger; use NullType so SQLAlchemy
+    # doesn't try to cast the tsvector — queries use Job.fts_vector.op("@@")(...)
+    fts_vector = Column(NullType, nullable=True)
+
     def __repr__(self):
         return f"<Job {self.title}>"
 
@@ -137,7 +142,7 @@ class Application(Base):
     match_score = Column(Integer)  # 0-100
     match_explanation = Column(JSONB)  # Explainable matching details
 
-    # Employer notes (internal)
+    # HR notes (internal, visible only to the HR/reviewer who owns the job)
     employer_notes = Column(Text)
 
     # Timestamps

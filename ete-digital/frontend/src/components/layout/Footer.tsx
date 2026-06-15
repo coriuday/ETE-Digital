@@ -18,9 +18,9 @@ const footerSections = {
     ],
     'Employers Zone': [
         { label: 'Post a Job for Free', href: '/register?role=employer' },
-        { label: 'Browse Candidates', href: '/employer/applications' },
-        { label: 'Grade Tryouts', href: '/employer/tryouts/grade' },
-        { label: 'Analytics Dashboard', href: '/employer/analytics' },
+        { label: 'Browse Candidates', href: '/hr/applications' },
+        { label: 'Grade Tryouts', href: '/hr/tryouts/grade' },
+        { label: 'Analytics Dashboard', href: '/hr/analytics' },
         { label: 'Employer FAQ', href: '/help/employers' },
         { label: 'Contact Sales', href: '/contact' },
     ],

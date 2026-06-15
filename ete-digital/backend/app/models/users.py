@@ -10,7 +10,15 @@ import uuid
 from datetime import datetime
 from typing import Any, List, Optional
 
-from sqlalchemy import Boolean, DateTime, Enum as SQLEnum, ForeignKey, Integer, String, Text
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Enum as SQLEnum,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)  # noqa: F401 (Text unused but kept for future use)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -22,7 +30,7 @@ class UserRole(str, enum.Enum):
     """User role enumeration"""
 
     CANDIDATE = "candidate"
-    EMPLOYER = "employer"
+    HR = "employer"  # DB value stays 'employer'; Python constant renamed to HR
     ADMIN = "admin"
 
 
@@ -69,6 +77,17 @@ class User(Base):
     oauth_provider_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
 
+    # Organization / HR Domain Auth (Phase 1 — domain-based onboarding)
+    work_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    email_domain: Mapped[Optional[str]] = mapped_column(String(100), nullable=True, index=True)
+    organization_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    onboarding_complete: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
     # ORM relationships
     profile: Mapped[Optional["UserProfile"]] = relationship(
         "UserProfile",
@@ -98,6 +117,7 @@ class UserProfile(Base):
     phone: Mapped[Optional[str]] = mapped_column(String(20))
     location: Mapped[Optional[str]] = mapped_column(String(255))
     bio: Mapped[Optional[str]] = mapped_column(String(1000))
+    headline: Mapped[Optional[str]] = mapped_column(String(150), nullable=True)  # e.g. "Senior React Engineer"
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500))
     resume_url: Mapped[Optional[str]] = mapped_column(String(500))
 

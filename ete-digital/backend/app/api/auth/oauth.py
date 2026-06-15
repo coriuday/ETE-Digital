@@ -114,7 +114,7 @@ async def google_callback(
             state_data = json.loads(base64.urlsafe_b64decode(state.encode()).decode())
             role_str = state_data.get("role", "candidate")
             if role_str == "employer":
-                desired_role = UserRole.EMPLOYER
+                desired_role = UserRole.HR
         except Exception:
             pass  # Malformed state — fall back to candidate
 

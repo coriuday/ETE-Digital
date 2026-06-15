@@ -45,7 +45,7 @@ By accessing or using Jobsrow, you agree to be bound by these Terms. If you do n
         content: 'Jobsrow provides:',
         list: [
             'Job search and application tools for job seekers',
-            'Job posting and recruitment tools for employers',
+            'Job posting and recruitment tools for HR Managers',
             'Communication tools between job seekers and employers',
         ],
         note: 'Jobsrow is not an employer or recruitment agency and does not guarantee job placement or candidate selection.',
@@ -108,7 +108,7 @@ By accessing or using Jobsrow, you agree to be bound by these Terms. If you do n
     {
         id: 'payments',
         num: '10',
-        title: 'Payments & Billing (For Employers)',
+        title: 'Payments & Billing (for HR Managers)',
         list: [
             'Certain services may be paid',
             'You agree to provide valid payment details',

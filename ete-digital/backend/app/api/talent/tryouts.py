@@ -79,7 +79,7 @@ def submission_to_response(sub):
 @router.post("/", response_model=TryoutResponse, status_code=status.HTTP_201_CREATED)
 async def create_tryout(
     tryout_data: TryoutCreate,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Create a new tryout for a job (Employers only)"""
@@ -116,7 +116,7 @@ async def get_tryout(tryout_id: str, db: AsyncSession = Depends(get_db)):
 async def update_tryout(
     tryout_id: str,
     tryout_data: TryoutUpdate,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Update tryout (Employer only, must own the job)"""
@@ -132,7 +132,7 @@ async def update_tryout(
 @router.post("/{tryout_id}/activate", response_model=TryoutResponse)
 async def activate_tryout(
     tryout_id: str,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Activate a draft tryout (make it available for submissions)"""
@@ -195,7 +195,7 @@ async def get_tryout_submissions(
     tryout_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all submissions for a tryout (Employer only, must own the job)"""
@@ -218,7 +218,7 @@ async def get_tryout_submissions(
 async def review_submission(
     submission_id: str,
     review_data: SubmissionReview,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Review and grade submission (Employer only, must own the job)"""

@@ -234,7 +234,7 @@ export default function RegisterPage() {
                                                 ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
                                                 : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'}`}>
                                         {r === 'candidate' ? <Users size={15} /> : <Briefcase size={15} />}
-                                        {r === 'candidate' ? 'Job Seeker' : 'Employer'}
+                                        {r === 'candidate' ? 'Job Seeker' : 'HR Manager'}
                                     </button>
                                 ))}
                             </div>

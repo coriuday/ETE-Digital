@@ -106,6 +106,7 @@ class UserProfileUpdate(BaseModel):
     phone: Optional[str] = Field(None, max_length=20)
     location: Optional[str] = Field(None, max_length=255)
     bio: Optional[str] = Field(None, max_length=1000)
+    headline: Optional[str] = Field(None, max_length=150)
     skills: Optional[List[str]] = None
     experience_years: Optional[str] = None
     social_links: Optional[dict] = None
@@ -120,6 +121,7 @@ class UserProfileResponse(BaseModel):
     phone: Optional[str]
     location: Optional[str]
     bio: Optional[str]
+    headline: Optional[str] = None
     avatar_url: Optional[str]
     resume_url: Optional[str]
     skills: List[str]
@@ -140,6 +142,7 @@ class UserResponse(BaseModel):
     role: UserRole
     is_verified: bool
     is_active: bool
+    onboarding_complete: bool = False
     created_at: datetime
     profile: Optional[UserProfileResponse] = None
 

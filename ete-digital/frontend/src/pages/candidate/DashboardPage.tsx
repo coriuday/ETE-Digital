@@ -17,14 +17,14 @@ import { useAuthStore } from '../../stores/authStore';
 import AppShell from '../../components/layout/AppShell';
 import EmptyState from '../../components/ui/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton';
-import {
-    FileText, Star, Trophy, BadgeCheck, TrendingUp,
+import { FileText, Star, Trophy, BadgeCheck, TrendingUp,
     Briefcase, ArrowRight, Clock, CheckCircle2, XCircle,
     Zap, Plus,
 } from 'lucide-react';
 import { jobsApi } from '../../api/jobs';
 import { tryoutsApi } from '../../api/tryouts';
 import { vaultApi } from '../../api/vault';
+import ProfileCompletionCard from '../../components/ui/ProfileCompletionCard';
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Application {
@@ -173,7 +173,7 @@ export default function DashboardPage() {
 
     // Employer redirect (shouldn't land here, but guard anyway)
     useEffect(() => {
-        if (user?.role === 'employer') navigate('/employer/dashboard', { replace: true });
+        if (user?.role === 'employer') navigate('/hr/dashboard', { replace: true });
     }, [user?.role, navigate]);
 
     if (user?.role === 'employer') return null;
@@ -278,6 +278,9 @@ function CandidateDashboard() {
                     trend="Tryout-verified"
                 />
             </div>
+
+            {/* ── Profile Completion Card (only shown when incomplete) ── */}
+            <ProfileCompletionCard profile={user?.profile} />
 
             {/* ── Quick Actions ─────────────────────────────────────── */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">

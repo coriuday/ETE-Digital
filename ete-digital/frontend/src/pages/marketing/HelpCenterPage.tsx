@@ -153,7 +153,7 @@ export default function HelpCenterPage() {
                             <div className="w-12 h-12 bg-[#5e37b3] rounded-xl flex items-center justify-center mb-4">
                                 <Briefcase className="w-6 h-6 text-white" />
                             </div>
-                            <h2 className="text-xl font-bold text-[#23005c] mb-1.5">Help for Employers</h2>
+                            <h2 className="text-xl font-bold text-[#23005c] mb-1.5">Help for HR Managers</h2>
                             <p className="text-sm text-[#522aa7] leading-relaxed">
                                 Post jobs, review applications, set up tryouts, grade candidates, and find the best talent for your team.
                             </p>

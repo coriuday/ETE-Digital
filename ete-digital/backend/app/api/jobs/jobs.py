@@ -167,7 +167,7 @@ async def get_ranked_job_feed(
 @router.post("/", response_model=JobResponse, status_code=status.HTTP_201_CREATED)
 async def create_job(
     job_data: JobCreate,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """
@@ -276,7 +276,7 @@ async def search_jobs(
 async def get_my_jobs(
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all jobs posted by current employer"""
@@ -382,7 +382,7 @@ async def get_my_applications(
 @router.get("/applications/{application_id}", response_model=ApplicationDetailResponse)
 async def get_application_detail(
     application_id: str,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Get full application detail (Employer only) — includes candidate name, email, job title"""
@@ -437,7 +437,7 @@ async def get_application_detail(
 async def update_application_status(
     application_id: str,
     status_data: ApplicationStatusUpdate,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Update application status (Employer only, must own the job)"""
@@ -524,7 +524,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
 async def update_job(
     job_id: str,
     job_data: JobUpdate,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Update job posting (Employer only, must own the job)"""
@@ -567,7 +567,7 @@ async def update_job(
 @router.post("/{job_id}/publish", response_model=JobResponse)
 async def publish_job(
     job_id: str,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Publish a draft job (make it active and visible to candidates)"""
@@ -605,7 +605,7 @@ async def publish_job(
 @router.delete("/{job_id}", response_model=dict)
 async def delete_job(
     job_id: str,
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Delete job posting (soft delete - marks as CLOSED)"""
@@ -727,7 +727,7 @@ async def get_job_applications(
     job_id: str,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Get all applications for a job (Employer only, must own the job)"""

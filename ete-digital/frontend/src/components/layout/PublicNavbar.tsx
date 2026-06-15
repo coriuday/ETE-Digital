@@ -27,7 +27,7 @@ export default function PublicNavbar() {
         { label: 'Help',         href: '/help' },
     ];
 
-    const dashboardHref = user?.role === 'employer' ? '/employer/dashboard' : '/dashboard';
+    const dashboardHref = user?.role === 'employer' ? '/hr/dashboard' : '/dashboard';
 
     const isActive = (href: string) => location.pathname === href;
 

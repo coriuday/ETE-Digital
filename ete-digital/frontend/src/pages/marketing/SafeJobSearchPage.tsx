@@ -36,7 +36,7 @@ const dontTips = [
         desc: 'Jobsrow does not require any payment for applying to jobs. Requests for fees are often a warning sign of fraud.',
     },
     {
-        title: 'Avoid handling money for employers',
+        title: 'Avoid handling money for HR Managers',
         desc: 'Do not agree to transfer funds, deposit checks, or manage financial transactions on behalf of a company. These are common scam tactics.',
     },
     {

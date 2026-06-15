@@ -19,13 +19,13 @@ const categories = [
         ],
     },
     {
-        title: 'For Employers',
+        title: 'for HR Managers',
         faqs: [
             { q: 'How is Jobsrow different from LinkedIn or Indeed?', a: 'Traditional platforms help you find CVs. Jobsrow helps you hire based on actual work. Our paid tryout system means you see real performance before making a hiring decision—not just polished resumes.' },
             { q: 'How much do tryouts cost?', a: 'You set the compensation for each tryout. Typically, employers offer ₹2,000–₹20,000 depending on task complexity. Jobsrow charges a 10% platform fee on top of the tryout amount.' },
             { q: 'What if no one completes the tryout?', a: 'If no candidate is selected within 14 days, the escrow amount is fully refunded to your account.' },
             { q: 'Can I post jobs without tryouts?', a: 'Yes. You can post traditional job listings. However, attaching a tryout significantly improves candidate quality and drastically reduces mis-hires.' },
-            { q: 'What plans are available for employers?', a: 'We offer a Pro plan (₹9,999/month) for growing teams and custom Enterprise pricing for larger organizations. See our Pricing page for details.' },
+            { q: 'What plans are available for HR Managers?', a: 'We offer a Pro plan (₹9,999/month) for growing teams and custom Enterprise pricing for larger organizations. See our Pricing page for details.' },
         ],
     },
     {

@@ -29,13 +29,14 @@ export interface AuthResponse {
 export interface UserProfile {
     user_id: string;
     full_name: string | null;
+    headline: string | null;
     phone: string | null;
     location: string | null;
     bio: string | null;
     avatar_url: string | null;
     resume_url: string | null;
     skills: string[];
-    experience_years: number | null;
+    experience_years: string | null;
     social_links: Record<string, string>;
     preferences: Record<string, any>;
 }
@@ -45,6 +46,7 @@ export interface User {
     email: string;
     role: 'candidate' | 'employer' | 'admin';
     is_verified: boolean;
+    onboarding_complete: boolean;
     created_at: string;
     profile: UserProfile | null;
     // Flattened convenience fields (populated by getCurrentUser)

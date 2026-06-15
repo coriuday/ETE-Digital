@@ -1,5 +1,5 @@
 /**
- * Help for Employers Page
+ * Help for HR Managers Page
  * Stitch-designed: "Structured Sanctuary" aesthetic — Employer purple theme
  * Light mode only | Tertiary #5e37b3 | Font: Inter
  */
@@ -166,7 +166,7 @@ export default function HelpEmployersPage() {
                             <Briefcase className="w-6 h-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-3xl font-extrabold text-white tracking-tight">Help for Employers</h1>
+                            <h1 className="text-3xl font-extrabold text-white tracking-tight">Help for HR Managers</h1>
                             <p className="text-purple-100 text-sm mt-1">Everything you need to post jobs, find talent, and hire smarter.</p>
                         </div>
                     </div>

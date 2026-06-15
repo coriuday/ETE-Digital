@@ -13,7 +13,7 @@ import ScrollToTop from './components/layout/ScrollToTop';
 const LoadingFallback = () => (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex flex-col items-center justify-center">
         <div className="w-10 h-10 border-4 border-violet-600 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading Jobrows...</p>
+        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Loading JobsRow...</p>
     </div>
 );
 
@@ -47,16 +47,16 @@ const SharedVaultPage = lazy(() => import('./pages/public/SharedVaultPage'));
 const CopyrightPage = lazy(() => import('./pages/public/CopyrightPage'));
 const HowItWorksPage = lazy(() => import('./pages/public/HowItWorksPage'));
 
-// ---- Employer Pages ----
-const EmployerJobsPage = lazy(() => import('./pages/employer/EmployerJobsPage'));
-const EmployerDashboardPage = lazy(() => import('./pages/employer/EmployerDashboardPage'));
-const CreateJobPage = lazy(() => import('./pages/employer/CreateJobPage'));
-const ApplicationsPage = lazy(() => import('./pages/employer/ApplicationsPage'));
-const ApplicationDetailsPage = lazy(() => import('./pages/employer/ApplicationDetailsPage'));
-const CreateTryoutPage = lazy(() => import('./pages/employer/CreateTryoutPage'));
-const GradeTryoutsPage = lazy(() => import('./pages/employer/GradeTryoutsPage'));
-const GradeSubmissionPage = lazy(() => import('./pages/employer/GradeSubmissionPage'));
-const AnalyticsDashboardPage = lazy(() => import('./pages/employer/AnalyticsDashboardPage'));
+// ---- HR Pages (formerly Employer) ----
+const HRJobsPage = lazy(() => import('./pages/hr/EmployerJobsPage'));
+const HRDashboardPage = lazy(() => import('./pages/hr/EmployerDashboardPage'));
+const CreateJobPage = lazy(() => import('./pages/hr/CreateJobPage'));
+const ApplicationsPage = lazy(() => import('./pages/hr/ApplicationsPage'));
+const ApplicationDetailsPage = lazy(() => import('./pages/hr/ApplicationDetailsPage'));
+const CreateTryoutPage = lazy(() => import('./pages/hr/CreateTryoutPage'));
+const GradeTryoutsPage = lazy(() => import('./pages/hr/GradeTryoutsPage'));
+const GradeSubmissionPage = lazy(() => import('./pages/hr/GradeSubmissionPage'));
+const AnalyticsDashboardPage = lazy(() => import('./pages/hr/AnalyticsDashboardPage'));
 
 // ---- Admin Pages ----
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -84,14 +84,27 @@ const AccountSettingsPage = lazy(() => import('./pages/settings/AccountSettingsP
 const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage'));
 const TwoFactorPage = lazy(() => import('./pages/settings/TwoFactorPage'));
 
+// ---- Onboarding ----
+const OnboardingWizard = lazy(() => import('./pages/candidate/OnboardingWizard'));
+
+// ---- Company Page ----
+const CompanyPage = lazy(() => import('./pages/public/CompanyPage'));
+
 export default function AppRouter() {
     const { isAuthenticated, user } = useAuthStore();
 
     // Redirect authenticated users to their role-appropriate dashboard
     const roleHome =
-        user?.role === 'employer' ? '/employer/dashboard'
+        user?.role === 'employer' ? '/hr/dashboard'  // 'employer' is the DB value for HR role
         : user?.role === 'admin'  ? '/admin'
         : '/dashboard'; // candidate (default)
+
+    // Gate: new users who haven't completed onboarding are redirected to /onboarding.
+    // Admins are exempt (they have no onboarding flow).
+    const needsOnboarding =
+        isAuthenticated &&
+        user?.role !== 'admin' &&
+        user?.onboarding_complete === false;
 
     return (
         <BrowserRouter>
@@ -116,6 +129,20 @@ export default function AppRouter() {
                     />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                     <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+                    {/* Onboarding Wizard (authenticated but onboarding_complete=false) */}
+                    <Route
+                        path="/onboarding"
+                        element={
+                            isAuthenticated
+                                ? <OnboardingWizard />
+                                : <Navigate to="/login" replace />
+                        }
+                    />
+
+                    {/* Public Company Pages */}
+                    <Route path="/companies/:slug" element={<CompanyPage />} />
+
                     <Route path="/verify-email" element={<EmailVerificationPage />} />
 
                     {/* OAuth Callback — must be public (no auth guard) */}
@@ -147,8 +174,14 @@ export default function AppRouter() {
                     <Route path="/copyright" element={<CopyrightPage />} />
                     <Route path="/safe-job-search" element={<SafeJobSearchPage />} />
 
-                    {/* Protected Routes */}
-                    <Route element={<ProtectedRoute />}>
+                    {/* Protected Routes — gate onboarding before any protected content */}
+                    <Route
+                        element={
+                            needsOnboarding
+                                ? <Navigate to="/onboarding" replace />
+                                : <ProtectedRoute />
+                        }
+                    >
                         <Route path="/dashboard" element={<DashboardPage />} />
 
                         {/* Settings */}
@@ -166,18 +199,26 @@ export default function AppRouter() {
                         <Route path="/vault/edit/:itemId" element={<VaultItemFormPage />} />
                         <Route path="/vault/shares" element={<ShareManagementPage />} />
 
-                        {/* Employer Routes */}
-                        <Route path="/employer/jobs" element={<EmployerJobsPage />} />
-                        <Route path="/employer/jobs/create" element={<CreateJobPage />} />
-                        <Route path="/employer/applications" element={<ApplicationsPage />} />
-                        <Route path="/employer/applications/:applicationId" element={<ApplicationDetailsPage />} />
-                        <Route path="/employer/tryouts/create" element={<CreateTryoutPage />} />
-                        <Route path="/employer/tryouts/grade" element={<GradeTryoutsPage />} />
-                        <Route path="/employer/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />
-                        <Route path="/employer/analytics" element={<AnalyticsDashboardPage />} />
+                        {/* ── HR Routes (DB role value: 'employer'; Admins also pass through) ── */}
+                    </Route>
 
-                        {/* Employer Dashboard */}
-                        <Route path="/employer/dashboard" element={<EmployerDashboardPage />} />
+                    {/* HR-only routes — candidates redirected to /dashboard */}
+                    <Route element={<ProtectedRoute requiredRole="employer" />}>
+                        <Route path="/hr/jobs" element={<HRJobsPage />} />
+                        <Route path="/hr/jobs/create" element={<CreateJobPage />} />
+                        <Route path="/hr/applications" element={<ApplicationsPage />} />
+                        <Route path="/hr/applications/:applicationId" element={<ApplicationDetailsPage />} />
+                        <Route path="/hr/tryouts/create" element={<CreateTryoutPage />} />
+                        <Route path="/hr/tryouts/grade" element={<GradeTryoutsPage />} />
+                        <Route path="/hr/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />
+                        <Route path="/hr/analytics" element={<AnalyticsDashboardPage />} />
+                        <Route path="/hr/dashboard" element={<HRDashboardPage />} />
+
+                        {/* Legacy redirects — keep old /employer/* links working */}
+                        <Route path="/employer/dashboard" element={<Navigate to="/hr/dashboard" replace />} />
+                        <Route path="/employer/jobs" element={<Navigate to="/hr/jobs" replace />} />
+                        <Route path="/employer/applications" element={<Navigate to="/hr/applications" replace />} />
+                        <Route path="/employer/analytics" element={<Navigate to="/hr/analytics" replace />} />
                     </Route>
 
                     {/* Admin-only Routes */}

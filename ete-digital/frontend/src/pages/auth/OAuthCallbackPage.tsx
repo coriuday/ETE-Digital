@@ -63,7 +63,7 @@ export default function OAuthCallbackPage() {
         // Store tokens and hydrate user in authStore
         setTokensFromOAuth(accessToken, refreshToken, role).then(() => {
             const dashboardMap: Record<string, string> = {
-                employer: '/employer/dashboard',
+                employer: '/hr/dashboard',
                 admin: '/admin',
                 candidate: '/dashboard',
             };

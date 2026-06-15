@@ -29,6 +29,8 @@ from app.models import (
     AuditLog,
     CompanyProfile,
     Interview,
+    Organization,
+    OrganizationMember,
 )
 
 # ── Alembic config ────────────────────────────────────────────────────────────

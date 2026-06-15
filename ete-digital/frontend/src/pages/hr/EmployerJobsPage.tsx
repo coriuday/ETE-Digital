@@ -98,7 +98,7 @@ export default function EmployerJobsPage() {
                         <p className="text-sm text-text-secondary mt-0.5">Manage your job postings</p>
                     </div>
                     <Link
-                        to="/employer/jobs/create"
+                        to="/hr/jobs/create"
                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors shadow-sm flex-shrink-0"
                     >
                         <Plus size={15} /> Post New Job
@@ -159,7 +159,7 @@ export default function EmployerJobsPage() {
                             icon={<Briefcase />}
                             title={filterStatus === 'all' ? 'No jobs posted yet' : `No ${STATUS_CFG[filterStatus]?.label ?? filterStatus} jobs`}
                             description={filterStatus === 'all' ? 'Start by posting your first job to attract candidates' : `Switch filter to see other jobs`}
-                            action={filterStatus === 'all' ? { label: 'Post a Job', href: '/employer/jobs/create' } : undefined}
+                            action={filterStatus === 'all' ? { label: 'Post a Job', href: '/hr/jobs/create' } : undefined}
                             size="md"
                         />
                     </div>
@@ -224,21 +224,21 @@ export default function EmployerJobsPage() {
                                         {/* Action Buttons */}
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <Link
-                                                to={`/employer/applications?job=${job.id}`}
+                                                to={`/hr/applications?job=${job.id}`}
                                                 className="flex items-center gap-1.5 px-3.5 py-2 bg-primary-50 text-primary-600 border border-primary-200 rounded-lg text-xs font-semibold hover:bg-primary-100 transition-colors"
                                             >
                                                 <Users size={12} /> Applications
                                             </Link>
                                             {job.has_tryout && (
                                                 <Link
-                                                    to={`/employer/tryouts/grade?jobId=${job.id}`}
+                                                    to={`/hr/tryouts/grade?jobId=${job.id}`}
                                                     className="flex items-center gap-1.5 px-3.5 py-2 bg-violet-50 text-violet-600 border border-violet-200 rounded-lg text-xs font-semibold hover:bg-violet-100 transition-colors"
                                                 >
                                                     <Zap size={12} /> Grade
                                                 </Link>
                                             )}
                                             <Link
-                                                to={`/employer/jobs/${job.id}/edit`}
+                                                to={`/hr/jobs/${job.id}/edit`}
                                                 className="flex items-center gap-1.5 px-3 py-2 bg-background text-text-secondary border border-border rounded-lg text-xs font-semibold hover:bg-surface hover:text-text-primary transition-colors"
                                                 title="Edit job"
                                             >

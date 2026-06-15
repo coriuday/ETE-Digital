@@ -6,7 +6,7 @@ Business logic for job CRUD, search, and application management
 import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, or_, and_
+from sqlalchemy import select, func, or_, and_, text
 from datetime import datetime, timezone
 from typing import Optional, List, Tuple
 import uuid
@@ -112,16 +112,22 @@ class JobService:
         """Search jobs with filters"""
         query = select(Job).where(Job.status == JobStatus.ACTIVE)
 
-        # Apply filters
+        # Full-text search (uses GIN index on fts_vector; falls back to ilike if column missing)
         if filters.get("query"):
-            search_term = f"%{filters['query']}%"
-            query = query.where(
-                or_(
-                    Job.title.ilike(search_term),
-                    Job.description.ilike(search_term),
-                    Job.company.ilike(search_term),
+            q = filters["query"].strip()
+            try:
+                # plainto_tsquery handles multi-word phrases and ignores stop-words
+                query = query.where(Job.fts_vector.op("@@")(func.plainto_tsquery("english", q)))
+            except Exception:
+                # Fallback: plain ilike (e.g. during the migration transition window)
+                search_term = f"%{q}%"
+                query = query.where(
+                    or_(
+                        Job.title.ilike(search_term),
+                        Job.description.ilike(search_term),
+                        Job.company.ilike(search_term),
+                    )
                 )
-            )
 
         if filters.get("job_type"):
             query = query.where(Job.job_type == filters["job_type"])

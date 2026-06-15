@@ -180,3 +180,66 @@ async def upload_resume(
     await db.commit()
 
     return {"resume_url": resume_url, "filename": file.filename}
+
+
+# ─── Onboarding Endpoints (Task 1.3) ──────────────────────────────────────────
+
+
+class OnboardingPayload(BaseModel):
+    """Payload from the 5-step onboarding wizard."""
+
+    full_name: Optional[str] = None
+    headline: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
+    skills: Optional[list] = None
+    experience_years: Optional[str] = None
+
+
+@router.get("/me/onboarding-status")
+async def get_onboarding_status(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return whether the current user has completed onboarding."""
+    user_id = uuid.UUID(current_user["user_id"])
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"onboarding_complete": user.onboarding_complete, "role": user.role}
+
+
+@router.post("/me/onboarding-complete", response_model=dict)
+async def complete_onboarding(
+    payload: OnboardingPayload,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Mark onboarding as done and upsert profile fields collected during the wizard.
+    Idempotent — safe to call multiple times.
+    """
+    user_id = uuid.UUID(current_user["user_id"])
+
+    # Update User.onboarding_complete
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.onboarding_complete = True
+
+    # Upsert UserProfile with wizard data
+    profile_result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
+    profile = profile_result.scalar_one_or_none()
+    if not profile:
+        profile = UserProfile(user_id=user_id)
+        db.add(profile)
+
+    fields = payload.model_dump(exclude_unset=True, exclude_none=True)
+    for field, value in fields.items():
+        if hasattr(profile, field):
+            setattr(profile, field, value)
+
+    await db.commit()
+    return {"success": True, "onboarding_complete": True}

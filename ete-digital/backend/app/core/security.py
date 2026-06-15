@@ -291,7 +291,7 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
 def require_role(*allowed_roles):
     """
     FastAPI dependency factory to require specific roles.
-    Usage: current_user: dict = Depends(require_role(UserRole.EMPLOYER))
+    Usage: current_user: dict = Depends(require_role(UserRole.HR))
 
     Returns a dependency function that FastAPI can inject, which validates
     the user's role and returns the current_user dict.

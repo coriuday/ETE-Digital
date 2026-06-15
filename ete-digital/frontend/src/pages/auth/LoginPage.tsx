@@ -49,7 +49,7 @@ export default function LoginPage() {
             // The UI will automatically switch to the 2FA step.
             if (!useAuthStore.getState().requiresTwoFactor) {
                 const role = useAuthStore.getState().user?.role;
-                navigate(role === 'employer' ? '/employer/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
+                navigate(role === 'employer' ? '/hr/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
             }
         } catch (err: any) {
             setError(err?.response?.data?.detail ?? 'Invalid email or password. Please try again.');
@@ -65,7 +65,7 @@ export default function LoginPage() {
         try {
             await completeTwoFactorLogin(totpCode);
             const role = useAuthStore.getState().user?.role;
-            navigate(role === 'employer' ? '/employer/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
+            navigate(role === 'employer' ? '/hr/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
         } catch (err: any) {
             setError(err?.response?.data?.detail ?? 'Invalid code. Please try again.');
         } finally {

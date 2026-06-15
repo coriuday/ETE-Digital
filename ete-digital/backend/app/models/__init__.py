@@ -8,6 +8,8 @@ from app.models.tryouts import Tryout, TryoutSubmission
 from app.models.vault import TalentVaultItem, VaultShareToken
 from app.models.notifications import Notification, AuditLog
 from app.models.company import CompanyProfile, Interview
+from app.models.organization import Organization
+from app.models.organization_member import OrganizationMember
 
 __all__ = [
     "User",
@@ -23,4 +25,6 @@ __all__ = [
     "AuditLog",
     "CompanyProfile",
     "Interview",
+    "Organization",
+    "OrganizationMember",
 ]

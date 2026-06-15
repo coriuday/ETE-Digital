@@ -122,7 +122,7 @@ export default function CreateJobPage() {
             if (formData.external_apply_url.trim()) jobData.external_apply_url = formData.external_apply_url.trim();
 
             await jobsApi.createJob(jobData);
-            navigate('/employer/jobs');
+            navigate('/hr/jobs');
         } catch (err: any) {
             const detail = err.response?.data?.detail;
             const msg = Array.isArray(detail)
@@ -351,7 +351,7 @@ export default function CreateJobPage() {
                         {/* Actions */}
                         <div className={`flex items-center justify-between gap-4 pt-2`}>
                             <button
-                                type="button" onClick={() => navigate('/employer/jobs')}
+                                type="button" onClick={() => navigate('/hr/jobs')}
                                 className={`px-6 py-2.5 rounded-xl text-sm font-medium transition-colors ${
                                     'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}

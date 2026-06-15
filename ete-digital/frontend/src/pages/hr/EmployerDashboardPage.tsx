@@ -1,5 +1,5 @@
 /**
- * Employer Dashboard — Premium rebuild
+ * HR Dashboard — Premium rebuild
  *
  * Improvements:
  *  - Design system tokens throughout (no raw gray-* / bg-white)
@@ -176,11 +176,11 @@ export default function EmployerDashboardPage() {
                 {/* ── Header ─────────────────────────────────────────── */}
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <h1 className="text-xl font-bold text-text-primary">Employer Dashboard</h1>
+                        <h1 className="text-xl font-bold text-text-primary">HR Dashboard</h1>
                         <p className="text-sm text-text-secondary mt-1">Manage your postings and review candidates</p>
                     </div>
                     <Link
-                        to="/employer/jobs/create"
+                        to="/hr/jobs/create"
                         className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition-colors shadow-sm flex-shrink-0"
                     >
                         <PlusCircle size={15} /> Post a Job
@@ -224,9 +224,9 @@ export default function EmployerDashboardPage() {
                 {/* ── Quick Actions ─────────────────────────────────── */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     {[
-                        { label: 'Post a Job', sub: 'Create new listing', href: '/employer/jobs/create', icon: <PlusCircle size={19} />, color: 'text-primary-600', hover: 'hover:bg-primary-50 hover:border-primary-200' },
-                        { label: 'Review Applications', sub: 'View & respond to candidates', href: '/employer/applications', icon: <ClipboardList size={19} />, color: 'text-violet-600', hover: 'hover:bg-violet-50 hover:border-violet-200' },
-                        { label: 'Analytics', sub: 'Track performance', href: '/employer/analytics', icon: <BarChart2 size={19} />, color: 'text-amber-600', hover: 'hover:bg-amber-50 hover:border-amber-200' },
+                        { label: 'Post a Job', sub: 'Create new listing', href: '/hr/jobs/create', icon: <PlusCircle size={19} />, color: 'text-primary-600', hover: 'hover:bg-primary-50 hover:border-primary-200' },
+                        { label: 'Review Applications', sub: 'View & respond to candidates', href: '/hr/applications', icon: <ClipboardList size={19} />, color: 'text-violet-600', hover: 'hover:bg-violet-50 hover:border-violet-200' },
+                        { label: 'Analytics', sub: 'Track performance', href: '/hr/analytics', icon: <BarChart2 size={19} />, color: 'text-amber-600', hover: 'hover:bg-amber-50 hover:border-amber-200' },
                     ].map(a => (
                         <Link
                             key={a.href}
@@ -250,7 +250,7 @@ export default function EmployerDashboardPage() {
                     <div className="bg-surface rounded-xl border border-border overflow-hidden">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                             <h2 className="text-sm font-semibold text-text-primary">Recent Applications</h2>
-                            <Link to="/employer/applications" className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
+                            <Link to="/hr/applications" className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
                                 View all <ArrowRight size={11} />
                             </Link>
                         </div>
@@ -274,7 +274,7 @@ export default function EmployerDashboardPage() {
                                 title="No applications yet"
                                 description="Post a job to start receiving candidates"
                                 size="sm"
-                                action={{ label: 'Post a Job', href: '/employer/jobs/create' }}
+                                action={{ label: 'Post a Job', href: '/hr/jobs/create' }}
                             />
                         ) : (
                             <div className="divide-y divide-border">
@@ -294,7 +294,7 @@ export default function EmployerDashboardPage() {
                                                     {app.status}
                                                 </span>
                                                 <Link
-                                                    to={`/employer/applications/${app.id}`}
+                                                    to={`/hr/applications/${app.id}`}
                                                     className="p-1 rounded-md text-text-tertiary hover:bg-primary-50 hover:text-primary-600 transition-colors"
                                                     title="View application"
                                                 >
@@ -318,7 +318,7 @@ export default function EmployerDashboardPage() {
                     <div className="bg-surface rounded-xl border border-border overflow-hidden">
                         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                             <h2 className="text-sm font-semibold text-text-primary">Active Job Listings</h2>
-                            <Link to="/employer/jobs" className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
+                            <Link to="/hr/jobs" className="text-xs text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors">
                                 Manage <ArrowRight size={11} />
                             </Link>
                         </div>
@@ -341,7 +341,7 @@ export default function EmployerDashboardPage() {
                                 title="No active jobs"
                                 description="Post your first job to start hiring"
                                 size="sm"
-                                action={{ label: 'Post Your First Job', href: '/employer/jobs/create' }}
+                                action={{ label: 'Post Your First Job', href: '/hr/jobs/create' }}
                             />
                         ) : (
                             <div className="divide-y divide-border">
@@ -363,7 +363,7 @@ export default function EmployerDashboardPage() {
                                                     </span>
                                                 </div>
                                                 <Link
-                                                    to={`/employer/applications?job=${job.id}`}
+                                                    to={`/hr/applications?job=${job.id}`}
                                                     className="p-1.5 rounded-lg text-text-tertiary hover:bg-primary-50 hover:text-primary-600 transition-colors"
                                                     title="View applications"
                                                 >

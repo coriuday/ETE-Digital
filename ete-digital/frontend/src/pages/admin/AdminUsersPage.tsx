@@ -87,7 +87,7 @@ export default function AdminUsersPage() {
                     >
                         <option value="">All Roles</option>
                         <option value="candidate">Candidate</option>
-                        <option value="employer">Employer</option>
+                        <option value="employer">HR Manager</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>

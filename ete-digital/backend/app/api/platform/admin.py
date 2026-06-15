@@ -93,7 +93,7 @@ async def get_platform_stats(
     """Get platform-wide statistics (Admin only)"""
     total_users = (await db.execute(select(func.count(User.id)))).scalar() or 0
     total_candidates = (await db.execute(select(func.count(User.id)).where(User.role == UserRole.CANDIDATE))).scalar() or 0
-    total_employers = (await db.execute(select(func.count(User.id)).where(User.role == UserRole.EMPLOYER))).scalar() or 0
+    total_employers = (await db.execute(select(func.count(User.id)).where(User.role == UserRole.HR))).scalar() or 0
     total_jobs = (await db.execute(select(func.count(Job.id)))).scalar() or 0
     active_jobs = (await db.execute(select(func.count(Job.id)).where(Job.status == JobStatus.ACTIVE))).scalar() or 0
     total_applications = (await db.execute(select(func.count(Application.id)))).scalar() or 0

@@ -94,7 +94,7 @@ export default function GradeTryoutsPage() {
                             Refresh
                         </button>
                         <Link
-                            to="/employer/dashboard"
+                            to="/hr/dashboard"
                             className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
                         >
                             ← Dashboard
@@ -152,7 +152,7 @@ export default function GradeTryoutsPage() {
                             Go to your jobs, open a job with a tryout, and click "View Submissions".
                         </p>
                         <Link
-                            to="/employer/jobs"
+                            to="/hr/jobs"
                             className="inline-flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors"
                         >
                             View My Jobs <ChevronRight size={15} />
@@ -218,7 +218,7 @@ export default function GradeTryoutsPage() {
                                             </div>
                                         </div>
                                         <Link
-                                            to={`/employer/tryouts/grade/${sub.id}`}
+                                            to={`/hr/tryouts/grade/${sub.id}`}
                                             className="flex items-center gap-1.5 px-4 py-2 bg-violet-600 text-white rounded-xl hover:bg-violet-700 transition-colors text-sm font-semibold flex-shrink-0"
                                         >
                                             {sub.status === 'submitted' ? 'Grade Now' : 'View Details'}

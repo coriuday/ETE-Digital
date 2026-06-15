@@ -28,6 +28,7 @@ class CompanyProfile(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     employer_id = Column(UUID(as_uuid=True), nullable=False, unique=True, index=True)
+    slug = Column(String(255), nullable=True, unique=True, index=True)  # e.g. "acme-corp"
 
     # Company details
     name = Column(String(255), nullable=False)

@@ -60,7 +60,7 @@ class AnalyticsSummary(BaseModel):
 @router.get("/summary", response_model=AnalyticsSummary)
 async def get_analytics_summary(
     days: int = Query(default=30, ge=7, le=365, description="Analytics period in days"),
-    current_user: dict = Depends(require_role(UserRole.EMPLOYER)),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """

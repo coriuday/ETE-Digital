@@ -49,7 +49,7 @@ export default function CreateTryoutPage() {
         try {
             console.log('Creating tryout:', formData);
             alert('Tryout created successfully!');
-            navigate('/employer/jobs');
+            navigate('/hr/jobs');
         } catch (error) {
             console.error('Failed to create tryout:', error);
             alert('Failed to create tryout');

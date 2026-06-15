@@ -27,7 +27,7 @@ export default function GradeSubmissionPage() {
         try {
             console.log('Grading submission:', { submissionId, scores, totalScore, feedback, decision });
             alert('Submission graded successfully!');
-            navigate('/employer/tryouts/grade');
+            navigate('/hr/tryouts/grade');
         } catch (error) {
             console.error('Failed to grade submission:', error);
             alert('Failed to grade submission');

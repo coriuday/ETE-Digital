@@ -171,7 +171,7 @@ export default function HowItWorksPage() {
                                 <Briefcase size={20} className="text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
-                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">For Employers</h2>
+                                <h2 className="text-2xl font-bold text-slate-900 dark:text-white">for HR Managers</h2>
                                 <p className="text-sm text-slate-500 dark:text-slate-400">From job post to great hire</p>
                             </div>
                         </motion.div>

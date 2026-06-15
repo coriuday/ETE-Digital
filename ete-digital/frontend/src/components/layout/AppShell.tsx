@@ -43,13 +43,13 @@ const candidateNav: NavItem[] = [
     { label: 'Share Manager',  icon: <Share2 size={18} />,          href: '/vault/shares' },
 ];
 
-const employerNav: NavItem[] = [
-    { label: 'Dashboard',      icon: <LayoutDashboard size={18} />, href: '/employer/dashboard' },
-    { label: 'My Jobs',        icon: <Briefcase size={18} />,       href: '/employer/jobs' },
-    { label: 'Post a Job',     icon: <PlusCircle size={18} />,      href: '/employer/jobs/create' },
-    { label: 'Applications',   icon: <ClipboardList size={18} />,   href: '/employer/applications' },
-    { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/employer/tryouts/grade' },
-    { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/employer/analytics' },
+const hrNav: NavItem[] = [
+    { label: 'HR Dashboard',   icon: <LayoutDashboard size={18} />, href: '/hr/dashboard' },
+    { label: 'My Jobs',        icon: <Briefcase size={18} />,       href: '/hr/jobs' },
+    { label: 'Post a Job',     icon: <PlusCircle size={18} />,      href: '/hr/jobs/create' },
+    { label: 'Applications',   icon: <ClipboardList size={18} />,   href: '/hr/applications' },
+    { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/hr/tryouts/grade' },
+    { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/hr/analytics' },
 ];
 
 const adminNav: NavItem[] = [
@@ -59,19 +59,19 @@ const adminNav: NavItem[] = [
 ];
 
 function getNav(role?: string): NavItem[] {
-    if (role === 'employer') return employerNav;
+    if (role === 'employer') return hrNav;
     if (role === 'admin')    return adminNav;
     return candidateNav;
 }
 
 function getRoleLabel(role?: string) {
-    if (role === 'employer') return 'Employer Panel';
+    if (role === 'employer') return 'HR Panel';
     if (role === 'admin')    return 'Admin Panel';
     return 'Candidate Panel';
 }
 
 function getRoleHome(role?: string) {
-    if (role === 'employer') return '/employer/dashboard';
+    if (role === 'employer') return '/hr/dashboard';
     if (role === 'admin')    return '/admin';
     return '/dashboard';
 }
@@ -184,7 +184,7 @@ export default function AppShell({ children }: AppShellProps) {
     }, [nav, location.pathname]);
 
     const isActive = useCallback((href: string) =>
-        href === '/dashboard' || href === '/admin' || href === '/employer/dashboard'
+        href === '/dashboard' || href === '/admin' || href === '/hr/dashboard'
             ? location.pathname === href
             : location.pathname.startsWith(href),
         [location.pathname]

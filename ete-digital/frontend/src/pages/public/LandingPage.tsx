@@ -510,7 +510,7 @@ export default function LandingPage() {
                             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center mb-6">
                                 <TrendingUp size={24} className="text-white" />
                             </div>
-                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">For Employers</h3>
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">for HR Managers</h3>
                             <ul className="space-y-3 mb-8">
                                 {[
                                     'Access pre-vetted, skill-verified talent',

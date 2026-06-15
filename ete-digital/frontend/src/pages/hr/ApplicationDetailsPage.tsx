@@ -1,5 +1,5 @@
 /**
- * Application Details Page — Employer reviews a single candidate application
+ * Application Details Page — HR reviews a single candidate application
  */
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
@@ -7,7 +7,8 @@ import { jobsApi } from '../../api/jobs';
 import {
     ArrowLeft, Mail, Briefcase, CalendarDays,
     CheckCircle2, XCircle, Clock, Star,
-    ExternalLink, Loader2, ChevronRight, MessageSquare
+    ExternalLink, Loader2, ChevronRight, MessageSquare,
+    Sparkles, TrendingUp, AlertCircle, Info,
 } from 'lucide-react';
 
 function MatchGauge({ score }: { score: number }) {
@@ -184,6 +185,97 @@ export default function ApplicationDetailsPage() {
                             {app.cover_letter || <span className="text-gray-400 italic">No cover letter provided.</span>}
                         </p>
                     </div>
+
+                    {/* ── AI Match Intelligence Card ──────────────────────────── */}
+                    {app.match_explanation && (
+                        <div className="bg-gradient-to-br from-violet-50 via-white to-blue-50 rounded-2xl border border-violet-100 p-6 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                    <Sparkles size={16} className="text-violet-600" />
+                                </div>
+                                <div>
+                                    <h2 className="font-bold text-gray-900 text-base leading-tight">AI Match Analysis</h2>
+                                    <p className="text-xs text-gray-400">Powered by Gemini Flash</p>
+                                </div>
+                                <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                                    {app.match_score ?? 0}% match
+                                </span>
+                            </div>
+
+                            {/* LLM Narrative */}
+                            {app.match_explanation.llm_summary && (
+                                <div className="mb-5 p-4 bg-white/80 rounded-xl border border-violet-100 text-sm text-gray-700 leading-relaxed">
+                                    <Info size={13} className="inline-block text-violet-400 mr-1.5 -mt-0.5" />
+                                    {app.match_explanation.llm_summary}
+                                </div>
+                            )}
+
+                            {/* Sub-score bars */}
+                            {(() => {
+                                const ex = app.match_explanation;
+                                const scores = [
+                                    { label: 'Skills',     value: ex.skill_score,      color: 'bg-violet-500' },
+                                    { label: 'Experience', value: ex.experience_score,  color: 'bg-blue-500' },
+                                    { label: 'Location',   value: ex.location_score,    color: 'bg-emerald-500' },
+                                    { label: 'Salary Fit', value: ex.salary_score,      color: 'bg-amber-500' },
+                                ].filter(s => s.value != null);
+                                if (!scores.length) return null;
+                                return (
+                                    <div className="space-y-2.5 mb-5">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
+                                            <TrendingUp size={11} /> Score Breakdown
+                                        </p>
+                                        {scores.map(({ label, value, color }) => (
+                                            <div key={label}>
+                                                <div className="flex justify-between text-xs mb-1">
+                                                    <span className="text-gray-600 font-medium">{label}</span>
+                                                    <span className="font-bold text-gray-800">{Math.round(value as number)}%</span>
+                                                </div>
+                                                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all duration-700 ${color}`}
+                                                        style={{ width: `${value}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Matched Skills */}
+                            {app.match_explanation.matched_skills?.length > 0 && (
+                                <div className="mb-3">
+                                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                        <CheckCircle2 size={11} /> Matched Skills
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {app.match_explanation.matched_skills.map((skill: string) => (
+                                            <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Missing Skills */}
+                            {app.match_explanation.missing_skills?.length > 0 && (
+                                <div>
+                                    <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                        <AlertCircle size={11} /> Skill Gaps
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {app.match_explanation.missing_skills.map((skill: string) => (
+                                            <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 rounded-md border border-red-100">
+                                                {skill}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
 
                     {/* Notes */}
                     <div className="bg-white rounded-2xl border border-gray-100 p-6">
