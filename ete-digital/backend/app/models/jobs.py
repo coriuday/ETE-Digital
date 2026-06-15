@@ -11,12 +11,27 @@ from sqlalchemy import (
     Enum as SQLEnum,
     Text,
 )
+from sqlalchemy.types import UserDefinedType
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.sql import func
 import uuid
 import enum
 
 from app.core.database import Base
+
+
+class TSVectorType(UserDefinedType):
+    """Minimal pass-through type for PostgreSQL tsvector columns.
+
+    SQLAlchemy 2.x removed NullType from the public API.
+    This replacement tells SQLAlchemy the column exists (so DDL introspection
+    works) but never coerces the value, preserving tsvector semantics.
+    """
+
+    cache_ok = True
+
+    def get_col_spec(self, **kw):
+        return "TSVECTOR"
 
 
 class JobType(str, enum.Enum):
@@ -95,9 +110,10 @@ class Job(Base):
     published_at = Column(DateTime(timezone=True), nullable=True)
     expires_at = Column(DateTime(timezone=True))
 
-    # Full-text search vector (populated by DB trigger; use NullType so SQLAlchemy
-    # doesn't try to cast the tsvector — queries use Job.fts_vector.op("@@")(...)
-    fts_vector = Column(NullType, nullable=True)
+    # Full-text search vector (populated by DB trigger).
+    # TSVectorType is a pass-through so SQLAlchemy never tries to cast the
+    # raw tsvector value — queries use Job.fts_vector.op("@@")(...)
+    fts_vector = Column(TSVectorType, nullable=True)
 
     def __repr__(self):
         return f"<Job {self.title}>"
