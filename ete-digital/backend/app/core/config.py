@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     # Frontend URL (used for email links — e.g. email verification, password reset)
     FRONTEND_URL: str = "http://localhost:5173"
 
+    # Stripe — optional. When not set, billing endpoints run in simulation mode.
+    STRIPE_SECRET_KEY: Optional[str] = None
+    STRIPE_WEBHOOK_SECRET: Optional[str] = None
+    STRIPE_PRICE_STARTER: Optional[str] = None  # e.g. price_1Xyz...
+    STRIPE_PRICE_PRO: Optional[str] = None
+
     # CORS — allow frontend origins
     # NOTE: FastAPI/Starlette CORSMiddleware does EXACT string matching only.
     # Wildcards like *.vercel.app are NOT supported — list every origin explicitly.

@@ -23,7 +23,7 @@ import {
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X,
     PlusCircle, ClipboardList, Star, UserCheck,
-    ChevronDown, User, Globe,
+    ChevronDown, User, Globe, CreditCard,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
@@ -52,6 +52,7 @@ const hrNav: NavItem[] = [
     { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/hr/tryouts/grade' },
     { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/hr/analytics' },
     { label: 'Team',           icon: <Users size={18} />,           href: '/hr/team' },
+    { label: 'Billing',        icon: <CreditCard size={18} />,      href: '/hr/billing' },
     { label: 'Domain Verify',  icon: <Globe size={18} />,           href: '/hr/domain-verify' },
 ];
 

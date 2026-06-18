@@ -10,6 +10,7 @@ from app.models.notifications import Notification, AuditLog
 from app.models.company import CompanyProfile, Interview
 from app.models.organization import Organization
 from app.models.organization_member import OrganizationMember
+from app.models.subscription import Subscription
 
 __all__ = [
     "User",
@@ -27,4 +28,5 @@ __all__ = [
     "Interview",
     "Organization",
     "OrganizationMember",
+    "Subscription",
 ]

@@ -61,6 +61,7 @@ const AnalyticsDashboardPage = lazy(() => import('./pages/hr/AnalyticsDashboardP
 const DomainVerificationPage = lazy(() => import('./pages/hr/DomainVerificationPage'));
 const TeamManagementPage = lazy(() => import('./pages/hr/TeamManagementPage'));
 const AcceptInvitePage = lazy(() => import('./pages/hr/AcceptInvitePage'));
+const BillingPage = lazy(() => import('./pages/hr/BillingPage'));
 
 // ---- Admin Pages ----
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -221,6 +222,7 @@ export default function AppRouter() {
                         <Route path="/hr/domain-verify" element={<DomainVerificationPage />} />
                         <Route path="/hr/team" element={<TeamManagementPage />} />
                         <Route path="/hr/accept-invite" element={<AcceptInvitePage />} />
+                        <Route path="/hr/billing" element={<BillingPage />} />
 
                         {/* Legacy redirects — keep old /employer/* links working */}
                         <Route path="/employer/dashboard" element={<Navigate to="/hr/dashboard" replace />} />

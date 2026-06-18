@@ -177,7 +177,7 @@ from app.api.auth import oauth as oauth_router  # noqa: E402
 from app.api.users import users  # noqa: E402
 from app.api.jobs import jobs, analytics  # noqa: E402
 from app.api.talent import tryouts, vault, payments  # noqa: E402
-from app.api.platform import notifications, admin, websocket, companies, organizations  # noqa: E402
+from app.api.platform import notifications, admin, websocket, companies, organizations, billing  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(totp_router.router, tags=["Two-Factor Auth"])  # prefix in router: /api/auth/2fa
@@ -192,7 +192,8 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["Analytics"]
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
 app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
 app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
-app.include_router(organizations.router, prefix="/api/organizations", tags=["Domain Verification"])
+app.include_router(organizations.router, prefix="/api/organizations", tags=["Domain Verification & Teams"])
+app.include_router(billing.router, prefix="/api/billing", tags=["Billing"])
 
 # Serve uploaded files (resumes, avatars)
 _uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
