@@ -23,7 +23,7 @@ import {
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X,
     PlusCircle, ClipboardList, Star, UserCheck,
-    ChevronDown, User, Globe, CreditCard,
+    ChevronDown, User, Globe, CreditCard, Upload,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
@@ -48,6 +48,7 @@ const hrNav: NavItem[] = [
     { label: 'HR Dashboard',   icon: <LayoutDashboard size={18} />, href: '/hr/dashboard' },
     { label: 'My Jobs',        icon: <Briefcase size={18} />,       href: '/hr/jobs' },
     { label: 'Post a Job',     icon: <PlusCircle size={18} />,      href: '/hr/jobs/create' },
+    { label: 'Bulk Post',      icon: <Upload size={18} />,          href: '/hr/bulk-post' },
     { label: 'Applications',   icon: <ClipboardList size={18} />,   href: '/hr/applications' },
     { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/hr/tryouts/grade' },
     { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/hr/analytics' },

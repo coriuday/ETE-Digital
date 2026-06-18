@@ -175,7 +175,7 @@ from app.api.auth import auth  # noqa: E402
 from app.api.auth import totp as totp_router  # noqa: E402
 from app.api.auth import oauth as oauth_router  # noqa: E402
 from app.api.users import users  # noqa: E402
-from app.api.jobs import jobs, analytics  # noqa: E402
+from app.api.jobs import jobs, analytics, bulk as bulk_jobs  # noqa: E402
 from app.api.talent import tryouts, vault, payments  # noqa: E402
 from app.api.platform import notifications, admin, websocket, companies, organizations, billing  # noqa: E402
 
@@ -184,6 +184,7 @@ app.include_router(totp_router.router, tags=["Two-Factor Auth"])  # prefix in ro
 app.include_router(oauth_router.router, tags=["OAuth"])  # prefix in router: /api/auth/oauth
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
+app.include_router(bulk_jobs.router, prefix="/api/jobs/bulk", tags=["Bulk Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])
 app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 app.include_router(vault.router, prefix="/api/vault", tags=["Talent Vault"])
