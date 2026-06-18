@@ -51,6 +51,7 @@ const hrNav: NavItem[] = [
     { label: 'Applications',   icon: <ClipboardList size={18} />,   href: '/hr/applications' },
     { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/hr/tryouts/grade' },
     { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/hr/analytics' },
+    { label: 'Team',           icon: <Users size={18} />,           href: '/hr/team' },
     { label: 'Domain Verify',  icon: <Globe size={18} />,           href: '/hr/domain-verify' },
 ];
 
