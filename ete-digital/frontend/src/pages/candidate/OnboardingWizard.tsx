@@ -132,13 +132,17 @@ export default function OnboardingWizard() {
         setSaving(true);
         setError('');
         try {
-            // 1. Upload resume if provided
+            // 1. Upload resume if provided (non-blocking — MinIO may be unavailable)
             if (data.resume_file) {
-                const form = new FormData();
-                form.append('file', data.resume_file);
-                await api.post('/api/users/me/resume', form, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
+                try {
+                    const form = new FormData();
+                    form.append('file', data.resume_file);
+                    await api.post('/api/users/me/resume', form, {
+                        headers: { 'Content-Type': 'multipart/form-data' },
+                    });
+                } catch {
+                    // Resume upload is optional; don't block onboarding completion
+                }
             }
 
             // 2. Mark onboarding complete + save profile data
@@ -153,10 +157,14 @@ export default function OnboardingWizard() {
 
             // 3. Refresh user in store so the gate doesn't re-trigger
             await fetchUser();
+            // Belt-and-suspenders: ensure gate clears even if /me response is stale
+            useAuthStore.setState((state) => ({
+                user: state.user ? { ...state.user, onboarding_complete: true } : state.user,
+            }));
 
             // 4. Navigate to role home
             const role = user?.role;
-            navigate(role === 'employer' ? '/hr/dashboard' : '/dashboard', { replace: true });
+            navigate(role === 'employer' ? '/hr/onboarding' : '/dashboard', { replace: true });
         } catch (err: any) {
             setError(err?.response?.data?.detail ?? 'Something went wrong. Please try again.');
         } finally {

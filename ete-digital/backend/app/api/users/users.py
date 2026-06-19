@@ -36,6 +36,7 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
         role=user.role,
         is_verified=user.is_verified,
         is_active=user.is_active,
+        onboarding_complete=user.onboarding_complete,
         created_at=user.created_at,
     )
 
@@ -43,6 +44,7 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
         user_response.profile = UserProfileResponse(
             user_id=str(profile.user_id),
             full_name=profile.full_name,
+            headline=profile.headline,
             phone=profile.phone,
             location=profile.location,
             bio=profile.bio,
