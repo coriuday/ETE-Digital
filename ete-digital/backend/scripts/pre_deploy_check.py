@@ -58,7 +58,7 @@ if row:
     check("alembic_version table exists", True)
     print(f"     Current revision: {current_rev}")
     # Expected head
-    expected_head = "e5f6a7b8c9d0"
+    expected_head = "l6m7n8o9p0q1"
     check(
         f"Revision is HEAD ({expected_head})",
         current_rev == expected_head,

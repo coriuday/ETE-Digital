@@ -15,6 +15,7 @@ from app.core.security import (
     hash_password,
     verify_password,
     create_access_token,
+    create_partial_token,
     create_refresh_token,
     validate_password_strength,
 )
@@ -139,17 +140,20 @@ class AuthService:
         if not user.is_active:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account is deactivated")
 
+        if settings.ENVIRONMENT == "production" and not user.is_verified:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Email not verified. Please check your inbox for the verification link.",
+            )
+
         # Update last login
         user.last_login_at = datetime.now(timezone.utc)
         await db.commit()
 
         # --- 2FA gate: issue only a partial token if 2FA is enabled ---
         if user.totp_enabled:
-            partial_token = create_access_token(
-                data={
-                    "sub": str(user.id),
-                    "type": "2fa_partial",
-                },
+            partial_token = create_partial_token(
+                data={"sub": str(user.id)},
                 expires_delta=timedelta(minutes=5),
             )
             return partial_token, None, user, True

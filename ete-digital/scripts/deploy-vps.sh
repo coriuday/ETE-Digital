@@ -40,6 +40,12 @@ HEALTH_DELAY=10
 log "Deploying ETE Digital / Jobrows..."
 log "App directory: $APP_DIR"
 
+# Docker Compose variable substitution reads ete-digital/.env (not backend/.env)
+if [ -f "$APP_DIR/backend/.env" ] && [ ! -f "$APP_DIR/.env" ]; then
+    warn "ete-digital/.env missing — copying from backend/.env for compose build vars."
+    cp "$APP_DIR/backend/.env" "$APP_DIR/.env"
+fi
+
 # ── 1. Git pull ───────────────────────────────────────────────────────────────
 log "Pulling latest code..."
 PREV_SHA=$(git -C "$REPO_DIR" rev-parse HEAD)

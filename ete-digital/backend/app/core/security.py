@@ -97,6 +97,21 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
     return encoded_jwt
 
 
+def create_partial_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
+    """Create a short-lived token for intermediate auth steps (e.g. 2FA pending)."""
+    to_encode = data.copy()
+
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=5)
+
+    to_encode.update({"exp": expire, "type": "2fa_partial"})
+
+    encoded_jwt = jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return encoded_jwt
+
+
 def create_refresh_token(data: Dict[str, Any]) -> str:
     """Create JWT refresh token"""
     to_encode = data.copy()

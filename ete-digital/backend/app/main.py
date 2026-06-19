@@ -16,6 +16,17 @@ from app.core.limiter import limiter
 from app.core.config import settings
 from app.core.database import engine
 
+if settings.SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.fastapi import FastApiIntegration
+
+    sentry_sdk.init(
+        dsn=settings.SENTRY_DSN,
+        environment=settings.ENVIRONMENT,
+        integrations=[FastApiIntegration()],
+        traces_sample_rate=0.1 if settings.ENVIRONMENT == "production" else 0.0,
+    )
+
 # ---- Security Headers Middleware ----
 
 import secrets as _secrets  # local alias to avoid shadowing any future module-level var
@@ -44,15 +55,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
 
-        # Build connect-src: include localhost only in non-production environments
-        _backend_url = "https://ete-digital-backend.onrender.com"
+        # Build connect-src from configured frontend URL (same-origin on VPS via Caddy)
+        _api_origin = settings.FRONTEND_URL.rstrip("/")
         if settings.ENVIRONMENT == "production":
-            _connect_src = f"connect-src 'self' ws: wss: {_backend_url} " f"https://*.supabase.co https://accounts.google.com;"
+            _connect_src = f"connect-src 'self' ws: wss: {_api_origin} " f"https://accounts.google.com;"
         else:
             _connect_src = (
                 f"connect-src 'self' ws: wss: "
-                f"http://localhost:8000 http://127.0.0.1:8000 {_backend_url} "
-                f"https://*.supabase.co https://accounts.google.com;"
+                f"http://localhost:8000 http://127.0.0.1:8000 {_api_origin} "
+                f"https://accounts.google.com;"
             )
 
         response.headers["Content-Security-Policy"] = (
@@ -174,15 +185,16 @@ async def root():
 from app.api.auth import auth  # noqa: E402
 from app.api.auth import totp as totp_router  # noqa: E402
 from app.api.auth import oauth as oauth_router  # noqa: E402
-from app.api.users import users  # noqa: E402
+from app.api.users import users, gdpr  # noqa: E402
 from app.api.jobs import jobs, analytics, bulk as bulk_jobs  # noqa: E402
 from app.api.talent import tryouts, vault, payments  # noqa: E402
-from app.api.platform import notifications, admin, websocket, companies, organizations, billing  # noqa: E402
+from app.api.platform import notifications, admin, websocket, companies, organizations, billing, audit  # noqa: E402
 
 app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
 app.include_router(totp_router.router, tags=["Two-Factor Auth"])  # prefix in router: /api/auth/2fa
 app.include_router(oauth_router.router, tags=["OAuth"])  # prefix in router: /api/auth/oauth
 app.include_router(users.router, prefix="/api/users", tags=["Users"])
+app.include_router(gdpr.router, prefix="/api/users/gdpr", tags=["GDPR Tools"])
 app.include_router(jobs.router, prefix="/api/jobs", tags=["Jobs"])
 app.include_router(bulk_jobs.router, prefix="/api/jobs/bulk", tags=["Bulk Jobs"])
 app.include_router(tryouts.router, prefix="/api/tryouts", tags=["Tryouts"])
@@ -195,6 +207,7 @@ app.include_router(websocket.router, prefix="/api/ws", tags=["WebSocket"])
 app.include_router(companies.router, prefix="/api/companies", tags=["Companies"])
 app.include_router(organizations.router, prefix="/api/organizations", tags=["Domain Verification & Teams"])
 app.include_router(billing.router, prefix="/api/billing", tags=["Billing"])
+app.include_router(audit.router, prefix="/api/audit", tags=["Audit"])
 
 # Serve uploaded files (resumes, avatars)
 _uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")

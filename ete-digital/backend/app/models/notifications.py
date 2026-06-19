@@ -63,6 +63,15 @@ class AuditAction(str, enum.Enum):
     PASSWORD_CHANGE = "password_change"
     ADMIN_ACTION = "admin_action"
 
+    # Org/HR Actions
+    JOB_CREATED = "job_created"
+    JOB_UPDATED = "job_updated"
+    BULK_UPLOAD = "bulk_upload"
+    MEMBER_INVITED = "member_invited"
+    MEMBER_REMOVED = "member_removed"
+    ROLE_CHANGED = "role_changed"
+    SUBSCRIPTION_UPDATED = "subscription_updated"
+
 
 class AuditLog(Base):
     """Audit log for compliance and security"""
@@ -71,6 +80,7 @@ class AuditLog(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), index=True)
+    org_id = Column(UUID(as_uuid=True), index=True, nullable=True)  # Added for Org Audit Trails
 
     # Action details
     action = Column(

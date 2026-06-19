@@ -23,7 +23,7 @@ from app.schemas.jobs import (
 )
 from app.services.jobs import job_service, application_service
 from app.services.notification_service import notification_service
-from app.core.security import get_optional_current_user  # may be None for unauthenticated
+from app.core.security import get_optional_current_user, get_current_user  # may be None for unauthenticated
 
 router = APIRouter()
 
@@ -477,10 +477,12 @@ async def update_application_status(
 
 @router.get("/{job_id}", response_model=JobResponse)
 async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
-    """Get job details by ID"""
+    """Get job details by ID (public — active jobs only)"""
+    from app.models.jobs import JobStatus  # noqa: PLC0415
+
     job = await job_service.get_job(db, uuid.UUID(job_id))
 
-    if not job:
+    if not job or job.status != JobStatus.ACTIVE:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
     # Build the response BEFORE calling increment_view_count.
@@ -647,6 +649,7 @@ async def apply_to_job(
         candidate_id=current_user["user_id"],
         job_id=job_id,
     )
+    background_tasks.add_task(_run_fraud_eval, application_id=str(application.id))
 
     return ApplicationResponse(
         id=str(application.id),
@@ -662,6 +665,21 @@ async def apply_to_job(
         created_at=application.created_at,
         updated_at=application.updated_at,
     )
+
+
+async def _run_fraud_eval(application_id: str) -> None:
+    """BackgroundTask: evaluate application fraud score in a fresh DB session."""
+    import logging as _log  # noqa: PLC0415
+
+    _logger = _log.getLogger(__name__)
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.services.fraud import evaluate_application_fraud  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as session:
+            await evaluate_application_fraud(session, uuid.UUID(application_id))
+    except Exception as exc:
+        _logger.warning("Fraud evaluation failed for application %s: %s", application_id, exc)
 
 
 async def _generate_and_store_explanation(application_id: str, candidate_id: str, job_id: str) -> None:

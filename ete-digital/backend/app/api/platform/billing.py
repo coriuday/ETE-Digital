@@ -190,7 +190,12 @@ async def subscribe(
     sub = await _get_or_create_subscription(db, org.id)
 
     if not STRIPE_AVAILABLE:
-        # Simulation mode — pretend the upgrade happened
+        if settings.ENVIRONMENT == "production":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Billing is not configured. Contact support.",
+            )
+        # Simulation mode — pretend the upgrade happened (dev only)
         sub.plan = PlanTier(body.plan)
         sub.status = "active"
         sub.current_period_end = None

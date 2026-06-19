@@ -22,6 +22,8 @@ interface Application {
     status: string;
     match_score: number | null;
     match_explanation: Record<string, any> | null;
+    fraud_score?: number;
+    fraud_flags?: string[];
     created_at: string;
 }
 
@@ -51,6 +53,19 @@ function MatchBadge({ score }: { score: number | null }) {
             <div className="w-12 h-1 rounded-full bg-gray-200 overflow-hidden">
                 <div className={`h-full rounded-full ${barColor}`} style={{ width: `${score}%` }} />
             </div>
+        </div>
+    );
+}
+
+function FraudBadge({ score }: { score?: number }) {
+    if (score === undefined || score < 20) return null; // Only show if >= 20
+    const color = score >= 60 ? 'text-red-600' : 'text-amber-600';
+    const bgColor = score >= 60 ? 'bg-red-50 border-red-200' : 'bg-amber-50 border-amber-200';
+    
+    return (
+        <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold ${bgColor}`} title="Suspicious activity detected">
+            <AlertCircle size={12} className={color} />
+            <span className={color}>Fraud Score: {score}</span>
         </div>
     );
 }
@@ -271,12 +286,14 @@ export default function ApplicationsPage() {
                                                         <span className="flex items-center gap-1"><Calendar size={11} /> Applied {new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                                     </div>
 
-                                                    {/* Match score */}
-                                                    {app.match_score !== null && (
-                                                        <div className="mt-2">
+                                                    {/* Match and Fraud scores */}
+                                                    {(app.match_score !== null || (app.fraud_score && app.fraud_score >= 20)) && (
+                                                        <div className="mt-2 flex flex-wrap gap-2">
                                                             <MatchBadge score={app.match_score} />
+                                                            <FraudBadge score={app.fraud_score} />
                                                         </div>
                                                     )}
+
 
                                                     {/* Cover letter preview */}
                                                     {app.cover_letter && (

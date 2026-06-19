@@ -207,6 +207,32 @@ class SubmissionService:
         result = await db.execute(select(TryoutSubmission).where(TryoutSubmission.id == submission_id))
         return result.scalar_one_or_none()
 
+    async def assert_employer_owns_submission(
+        self,
+        db: AsyncSession,
+        submission_id: uuid.UUID,
+        employer_id: uuid.UUID,
+    ) -> TryoutSubmission:
+        """Verify the employer owns the job linked to this submission."""
+        submission = await self.get_submission(db, submission_id)
+        if not submission:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+
+        tryout_result = await db.execute(select(Tryout).where(Tryout.id == submission.tryout_id))
+        tryout = tryout_result.scalar_one_or_none()
+        if not tryout:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tryout not found")
+
+        job_result = await db.execute(select(Job).where(Job.id == tryout.job_id))
+        job = job_result.scalar_one_or_none()
+        if not job or job.employer_id != employer_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to grade this submission",
+            )
+
+        return submission
+
     async def auto_grade_submission(self, db: AsyncSession, submission_id: uuid.UUID) -> Dict:
         """
         Auto-grade submission based on test cases

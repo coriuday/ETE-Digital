@@ -96,10 +96,8 @@ services:
         required: false   # Present on VPS; skipped in CI where .env is not committed
     environment:
       # ── Container-to-container service hostnames ──────────────────────────────
-      # DATABASE_URL is intentionally NOT overridden here so that backend/.env
-      # controls which database is used (Supabase vs local postgres).
-      # If you want local Docker postgres, uncomment the line below:
-      # DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-ete_digital}
+      # VPS / Hostinger: use the internal Postgres container (not external Supabase).
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-ete_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set in .env}@postgres:5432/${POSTGRES_DB:-ete_digital}
       REDIS_URL:    redis://redis:6379/0
       MINIO_ENDPOINT: minio
       MINIO_PORT:     "9000"
@@ -170,9 +168,15 @@ services:
     restart: unless-stopped
     profiles:
       - vps   # Only starts with: docker compose --profile vps up
+    env_file:
+      - path: ./backend/.env
+        required: false
     ports:
+      - "80:80"
       - "443:443"
       - "443:443/udp"   # HTTP/3
+    environment:
+      CADDY_DOMAIN: ${CADDY_DOMAIN:-localhost}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data

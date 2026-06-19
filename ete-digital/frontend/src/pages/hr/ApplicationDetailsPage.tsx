@@ -277,6 +277,25 @@ export default function ApplicationDetailsPage() {
                         </div>
                     )}
 
+                    {/* Fraud Detection / Alerts */}
+                    {(app.fraud_score !== undefined && app.fraud_score >= 20) && (
+                        <div className="bg-red-50 rounded-2xl border border-red-200 p-6 shadow-sm">
+                            <h2 className="font-bold text-red-900 text-lg mb-3 flex items-center gap-2">
+                                <AlertCircle size={18} className="text-red-600" /> Fraud & Spam Alert (Score: {app.fraud_score})
+                            </h2>
+                            <p className="text-sm text-red-700 mb-3">
+                                This application exhibits patterns commonly associated with spam or fraudulent activity. Please proceed with caution.
+                            </p>
+                            {app.fraud_flags && app.fraud_flags.length > 0 && (
+                                <ul className="list-disc pl-5 space-y-1 text-sm text-red-800">
+                                    {app.fraud_flags.map((flag: string, i: number) => (
+                                        <li key={i}>{flag}</li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
+                    )}
+
                     {/* Notes */}
                     <div className="bg-white rounded-2xl border border-gray-100 p-6">
                         <h2 className="font-bold text-gray-900 text-lg mb-3">Reviewer Notes</h2>

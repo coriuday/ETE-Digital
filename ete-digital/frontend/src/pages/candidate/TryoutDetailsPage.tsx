@@ -153,7 +153,7 @@ export default function TryoutDetailsPage() {
     const [submissionCode, setSubmissionCode] = useState('');
     const [submissionText, setSubmissionText] = useState('');
     const [notes, setNotes] = useState('');
-    const [_file, setFile] = useState<File | null>(null);
+    const [submissionFile, setSubmissionFile] = useState<File | null>(null);
 
     useEffect(() => {
         if (!jobId) return;
@@ -174,10 +174,31 @@ export default function TryoutDetailsPage() {
         if (!tryout) return;
         setSubmitting(true);
         try {
-            const payload: any = { notes };
-            if (tryout.submission_format === 'URL') payload.submission_url = submissionUrl;
-            else if (tryout.submission_format === 'CODE') payload.submission_code = submissionCode;
-            else if (tryout.submission_format === 'TEXT') payload.submission_text = submissionText;
+            const payload: {
+                submission_url?: string;
+                submission_data?: Record<string, unknown>;
+                notes?: string;
+            } = { notes };
+
+            if (tryout.submission_format === 'URL') {
+                payload.submission_url = submissionUrl;
+            } else if (tryout.submission_format === 'CODE') {
+                payload.submission_data = { code: submissionCode };
+            } else if (tryout.submission_format === 'TEXT') {
+                payload.submission_data = { text: submissionText };
+            } else if (tryout.submission_format === 'FILE') {
+                if (!submissionFile) {
+                    alert('Please upload a file before submitting.');
+                    return;
+                }
+                const uploaded = await tryoutsApi.uploadSubmissionFile(tryout.id, submissionFile);
+                payload.submission_data = {
+                    file_path: uploaded.file_path,
+                    file_url: uploaded.file_url,
+                    file_name: uploaded.file_name,
+                };
+            }
+
             await tryoutsApi.submitSolution(tryout.id, payload);
             setSubmitted(true);
         } catch (err: any) {
@@ -324,7 +345,7 @@ export default function TryoutDetailsPage() {
                             {tryout.submission_format === 'FILE' && (
                                 <div>
                                     <label className="block text-sm font-semibold text-gray-700 mb-1.5">Upload File *</label>
-                                    <FileDropZone onFile={setFile} />
+                                    <FileDropZone onFile={setSubmissionFile} />
                                 </div>
                             )}
 

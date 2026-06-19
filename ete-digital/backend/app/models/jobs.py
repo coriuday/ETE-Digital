@@ -160,6 +160,10 @@ class Application(Base):
     # HR notes (internal, visible only to the HR/reviewer who owns the job)
     employer_notes = Column(Text)
 
+    # Fraud Detection (internal scoring)
+    fraud_score = Column(Integer, default=0)  # 0-100 scale
+    fraud_flags = Column(JSONB, default=list)  # List of flag reasons
+
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

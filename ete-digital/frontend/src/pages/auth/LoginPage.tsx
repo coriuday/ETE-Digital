@@ -3,7 +3,7 @@
  * Design system: "Indigo Ether" (Stitch) — deep indigo/violet palette, glassmorphism, Inter + Noto Serif
  */
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, ArrowRight, Loader2, LayoutGrid, ShieldAlert } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -30,7 +30,19 @@ const brandPoints = [
 
 export default function LoginPage() {
     const navigate = useNavigate();
+    const location = useLocation();
     const { login, completeTwoFactorLogin, requiresTwoFactor } = useAuthStore();
+
+    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+
+    const navigateAfterLogin = () => {
+        if (returnTo) {
+            navigate(returnTo);
+            return;
+        }
+        const role = useAuthStore.getState().user?.role;
+        navigate(role === 'employer' ? '/hr/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
+    };
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -48,8 +60,7 @@ export default function LoginPage() {
             // If requiresTwoFactor becomes true, login() returned without throwing.
             // The UI will automatically switch to the 2FA step.
             if (!useAuthStore.getState().requiresTwoFactor) {
-                const role = useAuthStore.getState().user?.role;
-                navigate(role === 'employer' ? '/hr/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
+                navigateAfterLogin();
             }
         } catch (err: any) {
             setError(err?.response?.data?.detail ?? 'Invalid email or password. Please try again.');
@@ -64,8 +75,7 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await completeTwoFactorLogin(totpCode);
-            const role = useAuthStore.getState().user?.role;
-            navigate(role === 'employer' ? '/hr/dashboard' : role === 'admin' ? '/admin' : '/dashboard');
+            navigateAfterLogin();
         } catch (err: any) {
             setError(err?.response?.data?.detail ?? 'Invalid code. Please try again.');
         } finally {

@@ -2,13 +2,15 @@
 Tryout and submission API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.ext.asyncio import AsyncSession
 import uuid
+import io
 
 from app.core.database import get_db
-from app.core.security import get_current_user, require_role
+from app.core.security import require_role
 from app.models.users import UserRole
+from app.services.storage import storage_service
 from app.schemas.tryouts import (
     TryoutCreate,
     TryoutUpdate,
@@ -146,6 +148,65 @@ async def activate_tryout(
 
 # ========== Submission Endpoints ==========
 
+ALLOWED_TRYOUT_EXTENSIONS = {
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".zip",
+    ".txt",
+    ".md",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+}
+MAX_TRYOUT_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+
+
+@router.post("/{tryout_id}/upload")
+async def upload_submission_file(
+    tryout_id: str,
+    file: UploadFile = File(...),
+    current_user: dict = Depends(require_role(UserRole.CANDIDATE)),
+):
+    """Upload a file for a FILE-format tryout submission. Returns storage path for submit."""
+    filename = file.filename or ""
+    ext = "." + filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    if ext not in ALLOWED_TRYOUT_EXTENSIONS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File type '{ext}' is not allowed.",
+        )
+
+    content = await file.read()
+    file_size = len(content)
+    if file_size == 0:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot upload an empty file.")
+    if file_size > MAX_TRYOUT_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"File exceeds the {MAX_TRYOUT_UPLOAD_BYTES // 1024 // 1024} MB limit.",
+        )
+
+    content_type = (file.content_type or "application/octet-stream").split(";")[0].strip()
+    user_id = current_user["user_id"]
+    file_path = storage_service.get_file_path("tryouts", user_id, filename or "submission")
+
+    url = storage_service.upload_file(
+        file_data=io.BytesIO(content),
+        file_path=file_path,
+        content_type=content_type,
+        file_size=file_size,
+    )
+    if url is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is not available.",
+        )
+
+    return {"file_path": file_path, "file_url": url, "file_name": filename, "file_size": file_size}
+
 
 @router.post(
     "/{tryout_id}/submit",
@@ -248,10 +309,15 @@ async def review_submission(
 @router.post("/submissions/{submission_id}/auto-grade", response_model=SubmissionGradeResponse)
 async def auto_grade_submission(
     submission_id: str,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
-    """Trigger auto-grading for a submission"""
+    """Trigger auto-grading for a submission (employer must own the tryout's job)."""
+    await submission_service.assert_employer_owns_submission(
+        db=db,
+        submission_id=uuid.UUID(submission_id),
+        employer_id=uuid.UUID(current_user["user_id"]),
+    )
     result = await submission_service.auto_grade_submission(db=db, submission_id=uuid.UUID(submission_id))
     return SubmissionGradeResponse(
         auto_score=result["auto_score"],

@@ -54,15 +54,29 @@ export const tryoutsApi = {
         return response.data;
     },
 
+    // Upload file for FILE-format tryouts
+    uploadSubmissionFile: async (
+        tryoutId: string,
+        file: File,
+    ): Promise<{ file_path: string; file_url: string; file_name: string; file_size: number }> => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await api.post(`/api/tryouts/${tryoutId}/upload`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        return response.data;
+    },
+
     // Submit solution
     submitSolution: async (tryoutId: string, data: {
         submission_url?: string;
-        submission_file_path?: string;
-        submission_code?: string;
-        submission_text?: string;
+        submission_data?: Record<string, unknown>;
         notes?: string;
     }): Promise<Submission> => {
-        const response = await api.post(`/api/tryouts/${tryoutId}/submit`, data);
+        const response = await api.post(`/api/tryouts/${tryoutId}/submit`, {
+            tryout_id: tryoutId,
+            ...data,
+        });
         return response.data;
     },
 

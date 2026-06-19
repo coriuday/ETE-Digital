@@ -5,25 +5,27 @@
  * - Candidates see a Resume Upload section
  */
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import AppShell from '../../components/layout/AppShell';
 import api from '../../api/client';
 import {
-    User, Lock, Trash2, Camera, Loader2, CheckCircle, AlertCircle,
+    User, Lock, Camera, Loader2, CheckCircle, AlertCircle,
     Eye, EyeOff, FileText, Upload, Download, X,
-    ChevronRight, Award, SlidersHorizontal, Ban,
+    ChevronRight, Award, SlidersHorizontal, Ban, Shield,
 } from 'lucide-react';
 
 type Tab = 'profile' | 'password' | 'danger';
 
 export default function AccountSettingsPage() {
     const { user, fetchUser } = useAuthStore();
+    const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<Tab>('profile');
 
-    const tabs: { key: Tab; icon: React.ReactNode; label: string }[] = [
+    const tabs: { key: Tab | 'privacy'; icon: React.ReactNode; label: string }[] = [
         { key: 'profile', icon: <User className="w-4 h-4" />, label: 'Profile' },
         { key: 'password', icon: <Lock className="w-4 h-4" />, label: 'Password' },
-        { key: 'danger', icon: <Trash2 className="w-4 h-4" />, label: 'Danger Zone' },
+        { key: 'privacy', icon: <Shield className="w-4 h-4" />, label: 'Privacy & Data' },
     ];
 
     return (
@@ -38,7 +40,13 @@ export default function AccountSettingsPage() {
                     {tabs.map(tab => (
                         <button
                             key={tab.key}
-                            onClick={() => setActiveTab(tab.key)}
+                            onClick={() => {
+                                if (tab.key === 'privacy') {
+                                    navigate('/settings/privacy');
+                                } else {
+                                    setActiveTab(tab.key as Tab);
+                                }
+                            }}
                             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                                 activeTab === tab.key
                                     ? 'bg-primary-600 text-white shadow-sm'
@@ -53,7 +61,6 @@ export default function AccountSettingsPage() {
 
                 {activeTab === 'profile' && <ProfileTab user={user} fetchUser={fetchUser} />}
                 {activeTab === 'password' && <PasswordTab />}
-                {activeTab === 'danger' && <DangerZoneTab />}
             </div>
         </div>
         </AppShell>
@@ -448,112 +455,6 @@ function PasswordTab() {
     );
 }
 
-
-function DangerZoneTab() {
-    const { logout } = useAuthStore();
-    const [confirming, setConfirming] = useState(false);
-    const [reason, setReason] = useState('');
-    const [confirmText, setConfirmText] = useState('');
-    const [loading, setLoading] = useState(false);
-    const [deleted, setDeleted] = useState(false);
-    const [error, setError] = useState('');
-
-    const handleDelete = async () => {
-        if (confirmText !== 'DELETE') {
-            setError('Please type DELETE exactly to confirm.');
-            return;
-        }
-        setLoading(true);
-        setError('');
-        try {
-            await api.delete('/api/users/account', { data: { reason } });
-            setDeleted(true);
-            // Clear all local auth state then redirect after a brief moment
-            await logout();
-            setTimeout(() => { window.location.href = '/'; }, 2000);
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to delete account. Please contact support.');
-            setLoading(false);
-        }
-    };
-
-    if (deleted) {
-        return (
-            <div className="bg-white rounded-2xl border-2 border-red-200 shadow-soft p-8 text-center">
-                <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
-                    <CheckCircle className="w-7 h-7 text-red-500" />
-                </div>
-                <h2 className="text-lg font-bold text-gray-900 mb-2">Account Deleted</h2>
-                <p className="text-sm text-gray-500">Your account has been permanently deleted. Redirecting you to home…</p>
-            </div>
-        );
-    }
-
-    return (
-        <div className="bg-surface rounded-xl border-2 border-red-200 shadow-card p-6">
-            <h2 className="text-base font-bold text-red-700 mb-2 flex items-center gap-2">
-                <Trash2 className="w-5 h-5" />
-                Danger Zone
-            </h2>
-            <p className="text-sm text-gray-600 mb-6">
-                Deleting your account is <strong>permanent and cannot be undone</strong>. All your data, applications, job postings, and profile information will be immediately and permanently removed.
-            </p>
-
-            {!confirming ? (
-                <button onClick={() => setConfirming(true)}
-                    className="px-6 py-2.5 border-2 border-red-500 text-red-600 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors">
-                    Delete My Account
-                </button>
-            ) : (
-                <div className="bg-red-50 border border-red-200 rounded-xl p-5 space-y-4">
-                    <p className="text-sm font-semibold text-red-700">⚠️ This action is irreversible</p>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Why are you leaving? <span className="text-gray-400 font-normal">(optional)</span>
-                        </label>
-                        <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2}
-                            placeholder="e.g. Found a job, moving to a different platform..."
-                            className="w-full px-4 py-2.5 border border-red-200 rounded-xl text-sm focus:ring-2 focus:ring-red-300 outline-none resize-none bg-white" />
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Type <span className="font-mono font-bold text-red-600">DELETE</span> to confirm
-                        </label>
-                        <input
-                            type="text"
-                            value={confirmText}
-                            onChange={e => { setConfirmText(e.target.value); setError(''); }}
-                            placeholder="Type DELETE here"
-                            className="w-full px-4 py-2.5 border border-red-300 rounded-xl text-sm focus:ring-2 focus:ring-red-400 outline-none bg-white font-mono"
-                        />
-                    </div>
-
-                    {error && (
-                        <div className="flex items-center gap-2 text-red-700 bg-red-100 rounded-lg px-3 py-2 text-sm">
-                            <AlertCircle className="w-4 h-4 flex-shrink-0" /> {error}
-                        </div>
-                    )}
-
-                    <div className="flex gap-3 pt-1">
-                        <button
-                            onClick={handleDelete}
-                            disabled={loading || confirmText !== 'DELETE'}
-                            className="px-6 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                        >
-                            {loading ? <><Loader2 className="w-4 h-4 animate-spin" /> Deleting…</> : 'Permanently Delete Account'}
-                        </button>
-                        <button onClick={() => { setConfirming(false); setConfirmText(''); setError(''); }}
-                            className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors">
-                            Cancel
-                        </button>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-}
 
 /**
  * VisibilityToggle — "Employers can find you" banner (Indeed style)

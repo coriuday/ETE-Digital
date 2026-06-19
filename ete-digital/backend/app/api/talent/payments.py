@@ -353,7 +353,12 @@ async def stripe_webhook(
     """
     payload = await request.body()
 
-    if stripe_signature:
+    if payment_service._is_available():
+        if not stripe_signature:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing Stripe signature",
+            )
         event = payment_service.verify_webhook(payload, stripe_signature)
         if not event:
             raise HTTPException(
@@ -361,13 +366,21 @@ async def stripe_webhook(
                 detail="Invalid webhook signature",
             )
     else:
-        # Dev/simulation: parse raw JSON without signature check
+        # Dev/simulation only: parse raw JSON without signature check
         import json
 
-        try:
-            event = json.loads(payload)
-        except Exception:
-            raise HTTPException(status_code=400, detail="Invalid payload")
+        if not stripe_signature:
+            try:
+                event = json.loads(payload)
+            except Exception:
+                raise HTTPException(status_code=400, detail="Invalid payload")
+        else:
+            event = payment_service.verify_webhook(payload, stripe_signature)
+            if not event:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid webhook signature",
+                )
 
     event_type = event.get("type", "")
     intent_data = event.get("data", {}).get("object", {})

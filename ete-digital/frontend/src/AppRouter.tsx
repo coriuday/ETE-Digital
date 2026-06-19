@@ -63,6 +63,7 @@ const TeamManagementPage = lazy(() => import('./pages/hr/TeamManagementPage'));
 const AcceptInvitePage = lazy(() => import('./pages/hr/AcceptInvitePage'));
 const BillingPage = lazy(() => import('./pages/hr/BillingPage'));
 const BulkJobPostPage = lazy(() => import('./pages/hr/BulkJobPostPage'));
+const AuditLogsPage = lazy(() => import('./pages/hr/AuditLogsPage'));
 
 // ---- Admin Pages ----
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -87,6 +88,7 @@ const SafeJobSearchPage = lazy(() => import('./pages/marketing/SafeJobSearchPage
 
 // ---- Settings Pages ----
 const AccountSettingsPage = lazy(() => import('./pages/settings/AccountSettingsPage'));
+const PrivacyPage = lazy(() => import('./pages/settings/PrivacyPage'));
 const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage'));
 const TwoFactorPage = lazy(() => import('./pages/settings/TwoFactorPage'));
 
@@ -192,6 +194,7 @@ export default function AppRouter() {
 
                         {/* Settings */}
                         <Route path="/settings" element={<AccountSettingsPage />} />
+                        <Route path="/settings/privacy" element={<PrivacyPage />} />
                         <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
                         <Route path="/settings/2fa" element={<TwoFactorPage />} />
 
@@ -225,6 +228,7 @@ export default function AppRouter() {
                         <Route path="/hr/accept-invite" element={<AcceptInvitePage />} />
                         <Route path="/hr/billing" element={<BillingPage />} />
                         <Route path="/hr/bulk-post" element={<BulkJobPostPage />} />
+                        <Route path="/hr/audit-logs" element={<AuditLogsPage />} />
 
                         {/* Legacy redirects — keep old /employer/* links working */}
                         <Route path="/employer/dashboard" element={<Navigate to="/hr/dashboard" replace />} />
