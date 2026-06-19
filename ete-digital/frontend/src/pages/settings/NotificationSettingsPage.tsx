@@ -92,13 +92,12 @@ export default function NotificationSettingsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 py-8 px-4">
-            <div className="max-w-2xl mx-auto">
+        <div className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
                     <Bell className="w-6 h-6 text-primary-600" />
-                    <h1 className="text-2xl font-bold text-gray-900">Notification Settings</h1>
+                    <h2 className="text-lg font-bold text-text-primary">Notification Settings</h2>
                 </div>
-                <p className="text-gray-500 text-sm mb-8">Choose what updates you want to receive.</p>
+                <p className="text-text-secondary text-sm mb-2">Choose what updates you want to receive.</p>
 
                 <div className="space-y-6">
                     {sections.map((section, si) => (
@@ -150,6 +149,5 @@ export default function NotificationSettingsPage() {
                     )}
                 </div>
             </div>
-        </div>
     );
 }

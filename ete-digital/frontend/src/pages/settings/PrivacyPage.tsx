@@ -3,10 +3,9 @@
  */
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import AppShell from '../../components/layout/AppShell';
 import api from '../../api/client';
 import { useAuthStore } from '../../stores/authStore';
-import { Download, Trash2, Shield, AlertTriangle, Loader2 } from 'lucide-react';
+import { Download, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function PrivacyPage() {
     const { logout } = useAuthStore();
@@ -66,34 +65,22 @@ export default function PrivacyPage() {
     };
 
     return (
-        <AppShell>
-            <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
+            <div className="space-y-6">
                 
-                {/* Header */}
-                <div className="flex items-center gap-4 border-b border-gray-100 pb-6">
-                    <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center">
-                        <Shield className="text-indigo-600" size={24} />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Privacy & Data (GDPR)</h1>
-                        <p className="text-gray-500 mt-1">Manage your personal data, export a copy, or delete your account permanently.</p>
-                    </div>
-                </div>
-
                 {/* Export Section */}
-                <section className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <section className="bg-surface rounded-xl border border-border p-6 shadow-card">
                     <div className="flex items-start gap-4">
-                        <div className="p-3 bg-blue-50 rounded-xl">
-                            <Download className="text-blue-600" size={24} />
+                        <div className="p-3 bg-primary-50 rounded-xl">
+                            <Download className="text-primary-600" size={24} />
                         </div>
                         <div className="flex-1">
-                            <h2 className="text-lg font-semibold text-gray-900">Export Your Data</h2>
-                            <p className="text-gray-500 text-sm mt-1 mb-4 max-w-2xl">
+                            <h2 className="text-lg font-semibold text-text-primary">Export Your Data</h2>
+                            <p className="text-text-secondary text-sm mt-1 mb-4">
                                 Request a machine-readable copy of your personal data. This includes your profile information, settings, and job applications. The file will be provided in JSON format.
                             </p>
                             
                             {exportError && (
-                                <div className="mb-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">
+                                <div className="mb-4 text-sm text-error bg-red-50 p-3 rounded-lg border border-red-200">
                                     {exportError}
                                 </div>
                             )}
@@ -101,7 +88,7 @@ export default function PrivacyPage() {
                             <button
                                 onClick={handleExport}
                                 disabled={exporting}
-                                className="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                className="flex items-center gap-2 px-5 py-2.5 bg-surface border border-border text-text-primary font-medium rounded-xl hover:bg-background transition-colors disabled:opacity-50"
                             >
                                 {exporting ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
                                 {exporting ? 'Preparing Download...' : 'Download Data Archive'}
@@ -111,17 +98,17 @@ export default function PrivacyPage() {
                 </section>
 
                 {/* Delete Section */}
-                <section className="bg-white rounded-2xl border border-red-200 p-6 shadow-sm overflow-hidden relative">
+                <section className="bg-surface rounded-xl border border-red-200 p-6 shadow-card overflow-hidden relative">
                     <div className="absolute top-0 left-0 w-1 h-full bg-red-500"></div>
                     <div className="flex items-start gap-4">
                         <div className="p-3 bg-red-50 rounded-xl">
                             <Trash2 className="text-red-600" size={24} />
                         </div>
                         <div className="flex-1">
-                            <h2 className="text-lg font-semibold text-gray-900">Delete Account</h2>
-                            <p className="text-gray-500 text-sm mt-1 mb-4 max-w-2xl">
-                                Permanently delete your Jobsrow account and all of your content. 
-                                <strong className="text-gray-700"> This action is not reversible.</strong>
+                            <h2 className="text-lg font-semibold text-text-primary">Delete Account</h2>
+                            <p className="text-text-secondary text-sm mt-1 mb-4">
+                                Permanently delete your JobsRow account and all of your content. 
+                                <strong className="text-text-primary"> This action is not reversible.</strong>
                             </p>
 
                             <button
@@ -192,6 +179,5 @@ export default function PrivacyPage() {
                 )}
 
             </div>
-        </AppShell>
     );
 }

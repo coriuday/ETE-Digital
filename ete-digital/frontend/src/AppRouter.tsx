@@ -89,7 +89,13 @@ const CookiePolicyPage = lazy(() => import('./pages/marketing/CookiePolicyPage')
 const SafeJobSearchPage = lazy(() => import('./pages/marketing/SafeJobSearchPage'));
 
 // ---- Settings Pages ----
-const AccountSettingsPage = lazy(() => import('./pages/settings/AccountSettingsPage'));
+const SettingsLayout = lazy(() => import('./components/layout/SettingsLayout'));
+const ProfileSettingsPage = lazy(() => import('./pages/settings/ProfileSettingsPage'));
+const QualificationsPage = lazy(() => import('./pages/settings/QualificationsPage'));
+const JobPreferencesPage = lazy(() => import('./pages/settings/JobPreferencesPage'));
+const JobFiltersPage = lazy(() => import('./pages/settings/JobFiltersPage'));
+const ResumeSettingsPage = lazy(() => import('./pages/settings/ResumeSettingsPage'));
+const PasswordSettingsPage = lazy(() => import('./pages/settings/PasswordSettingsPage'));
 const PrivacyPage = lazy(() => import('./pages/settings/PrivacyPage'));
 const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage'));
 const TwoFactorPage = lazy(() => import('./pages/settings/TwoFactorPage'));
@@ -212,11 +218,19 @@ export default function AppRouter() {
                     >
                         <Route path="/dashboard" element={<DashboardPage />} />
 
-                        {/* Settings */}
-                        <Route path="/settings" element={<AccountSettingsPage />} />
-                        <Route path="/settings/privacy" element={<PrivacyPage />} />
-                        <Route path="/settings/notifications" element={<NotificationSettingsPage />} />
-                        <Route path="/settings/2fa" element={<TwoFactorPage />} />
+                        {/* Settings — nested layout */}
+                        <Route path="/settings" element={<SettingsLayout />}>
+                            <Route index element={<Navigate to="/settings/profile" replace />} />
+                            <Route path="profile" element={<ProfileSettingsPage />} />
+                            <Route path="qualifications" element={<QualificationsPage />} />
+                            <Route path="job-preferences" element={<JobPreferencesPage />} />
+                            <Route path="job-filters" element={<JobFiltersPage />} />
+                            <Route path="resume" element={<ResumeSettingsPage />} />
+                            <Route path="password" element={<PasswordSettingsPage />} />
+                            <Route path="privacy" element={<PrivacyPage />} />
+                            <Route path="notifications" element={<NotificationSettingsPage />} />
+                            <Route path="2fa" element={<TwoFactorPage />} />
+                        </Route>
 
                         {/* Candidate Routes */}
                         <Route path="/dashboard/applications" element={<MyApplicationsPage />} />

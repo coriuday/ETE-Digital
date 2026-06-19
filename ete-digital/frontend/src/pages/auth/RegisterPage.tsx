@@ -5,7 +5,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { ArrowRight, CheckCircle, Circle, Loader2, LayoutGrid, Users, Briefcase } from 'lucide-react';
+import BrandLogo from '../../components/layout/BrandLogo';
+import { Users, Briefcase, CheckCircle, Circle, Loader2, ArrowRight } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -183,12 +184,8 @@ export default function RegisterPage() {
                 <div className="w-full max-w-md">
 
                     {/* Mobile logo */}
-                    <Link to="/" className="flex items-center gap-2 mb-8 lg:hidden w-fit">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)' }}>
-                            <LayoutGrid size={15} className="text-white" />
-                        </div>
-                        <span className="font-extrabold text-lg text-gray-900">Jobsrow</span>
+                    <Link to="/" className="block mb-8 lg:hidden w-fit">
+                        <BrandLogo size="md" />
                     </Link>
 
                     <h2 className="text-3xl font-bold mb-1 text-gray-900"

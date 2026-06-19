@@ -12,7 +12,13 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 import uuid
 from app.models.users import User, UserProfile
-from app.schemas.users import UserProfileUpdate, UserProfileResponse, UserResponse
+from app.schemas.users import (
+    UserProfileUpdate,
+    UserProfileResponse,
+    UserResponse,
+    ChangePasswordRequest,
+    PreferencesUpdate,
+)
 
 router = APIRouter()
 
@@ -245,3 +251,105 @@ async def complete_onboarding(
 
     await db.commit()
     return {"success": True, "onboarding_complete": True}
+
+
+DEFAULT_PREFERENCES = {
+    "profile_visible": True,
+    "remote_preferred": False,
+    "preferred_job_types": [],
+    "preferred_locations": [],
+    "salary_min": None,
+    "salary_max": None,
+    "hidden_companies": [],
+    "hidden_job_types": [],
+    "qualifications": {"education": [], "certifications": []},
+    "resume_builder": {},
+}
+
+
+def _merge_preferences(stored: dict | None) -> dict:
+    merged = {**DEFAULT_PREFERENCES}
+    if stored:
+        merged.update(stored)
+    return merged
+
+
+async def _get_or_create_profile(db: AsyncSession, user_id: uuid.UUID) -> UserProfile:
+    result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_id))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        profile = UserProfile(user_id=user_id)
+        db.add(profile)
+        await db.flush()
+    return profile
+
+
+@router.post("/change-password", response_model=dict)
+async def change_password(
+    body: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change password for the authenticated user."""
+    from app.core.security import verify_password, hash_password
+
+    user_id = uuid.UUID(current_user["user_id"])
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if not verify_password(body.current_password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Current password is incorrect")
+
+    user.password_hash = hash_password(body.new_password)
+    await db.commit()
+    return {"message": "Password changed successfully"}
+
+
+@router.get("/me/preferences", response_model=dict)
+async def get_my_preferences(
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get merged candidate preferences from UserProfile.preferences JSONB."""
+    user_id = uuid.UUID(current_user["user_id"])
+    profile = await _get_or_create_profile(db, user_id)
+    return _merge_preferences(profile.preferences)
+
+
+@router.patch("/me/preferences", response_model=dict)
+async def update_my_preferences(
+    body: PreferencesUpdate,
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Partially update candidate preferences."""
+    user_id = uuid.UUID(current_user["user_id"])
+    profile = await _get_or_create_profile(db, user_id)
+
+    current = _merge_preferences(profile.preferences)
+    updates = body.model_dump(exclude_unset=True)
+
+    allowed_job_types = {"full_time", "part_time", "contract", "internship", "freelance"}
+    if "preferred_job_types" in updates and updates["preferred_job_types"] is not None:
+        invalid = set(updates["preferred_job_types"]) - allowed_job_types
+        if invalid:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid job types: {', '.join(sorted(invalid))}",
+            )
+
+    if "salary_min" in updates and "salary_max" in updates:
+        smin, smax = updates.get("salary_min"), updates.get("salary_max")
+        if smin is not None and smax is not None and smin > smax:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="salary_min cannot exceed salary_max",
+            )
+
+    current.update(updates)
+    profile.preferences = current
+    await db.commit()
+    await db.refresh(profile)
+    return _merge_preferences(profile.preferences)

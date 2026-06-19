@@ -96,7 +96,34 @@ class PasswordResetConfirm(BaseModel):
         return v
 
 
-# ========== User Profile ==========
+class ChangePasswordRequest(BaseModel):
+    """Change password for authenticated user"""
+
+    current_password: str
+    new_password: str = Field(..., min_length=8, max_length=100)
+
+    @field_validator("new_password")
+    def validate_password_strength(cls, v):
+        from app.core.security import validate_password_strength
+
+        if not validate_password_strength(v):
+            raise ValueError("Password must contain uppercase, lowercase, digit, and special character")
+        return v
+
+
+class PreferencesUpdate(BaseModel):
+    """Partial update of candidate preferences stored in UserProfile.preferences JSONB"""
+
+    profile_visible: Optional[bool] = None
+    remote_preferred: Optional[bool] = None
+    preferred_job_types: Optional[List[str]] = None
+    preferred_locations: Optional[List[str]] = None
+    salary_min: Optional[int] = Field(None, ge=0)
+    salary_max: Optional[int] = Field(None, ge=0)
+    hidden_companies: Optional[List[str]] = None
+    hidden_job_types: Optional[List[str]] = None
+    qualifications: Optional[dict] = None
+    resume_builder: Optional[dict] = None
 
 
 class UserProfileUpdate(BaseModel):

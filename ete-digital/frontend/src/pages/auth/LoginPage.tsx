@@ -4,8 +4,9 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Eye, EyeOff, ArrowRight, Loader2, LayoutGrid, ShieldAlert } from 'lucide-react';
+import BrandLogo from '../../components/layout/BrandLogo';
 import { useAuthStore } from '../../stores/authStore';
+import { ShieldAlert, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -160,12 +161,8 @@ export default function LoginPage() {
                 <div className="w-full max-w-md">
 
                     {/* Mobile logo */}
-                    <Link to="/" className="flex items-center gap-2 mb-8 lg:hidden w-fit">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center"
-                            style={{ background: 'linear-gradient(135deg, #4f46e5, #7c4dff)' }}>
-                            <LayoutGrid size={15} className="text-white" />
-                        </div>
-                        <span className="font-extrabold text-lg text-gray-900">Jobsrow</span>
+                    <Link to="/" className="flex items-center mb-8 lg:hidden w-fit">
+                        <BrandLogo size="md" />
                     </Link>
 
                     {requiresTwoFactor ? (

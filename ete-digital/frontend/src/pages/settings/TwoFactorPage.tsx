@@ -9,8 +9,7 @@
  *  - View backup codes count
  */
 import { useState, useEffect } from 'react';
-import { QrCode, Shield, ShieldCheck, ShieldOff, Copy, Download, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
-import AppShell from '../../components/layout/AppShell';
+import { QrCode, ShieldCheck, ShieldOff, Copy, Download, AlertTriangle, CheckCircle2, Loader2 } from 'lucide-react';
 import apiClient from '../../api/client';
 
 type Step = 'status' | 'setup' | 'enable' | 'backup_codes' | 'disable';
@@ -118,22 +117,7 @@ export default function TwoFactorPage() {
     };
 
     return (
-        <AppShell>
-            <div className="min-h-full bg-gray-50">
-                {/* Header */}
-                <div className="border-b border-gray-200 px-6 py-5 bg-white">
-                    <div className="max-w-2xl mx-auto flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center">
-                            <Shield size={18} className="text-white" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Two-Factor Authentication</h1>
-                            <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="max-w-2xl mx-auto px-6 py-8 space-y-6">
+            <div className="space-y-6">
                     {/* Error */}
                     {error && (
                         <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
@@ -313,8 +297,6 @@ export default function TwoFactorPage() {
                             </div>
                         </div>
                     )}
-                </div>
             </div>
-        </AppShell>
     );
 }

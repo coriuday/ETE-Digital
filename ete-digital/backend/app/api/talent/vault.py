@@ -66,7 +66,7 @@ def token_to_response(token, frontend_url):
         id=str(token.id),
         vault_item_id=str(token.vault_item_id),
         token=str(token.token),
-        share_url=f"{frontend_url}/vault/shared/{token.token}",
+        share_url=f"{frontend_url}/shared/{token.token}",
         expires_at=token.expires_at,
         max_views=token.max_views,
         view_count=token.view_count,
@@ -318,7 +318,7 @@ async def create_share_tokens(
         shared_with_email=share_data.shared_with_email,
         shared_with_company=share_data.shared_with_company,
     )
-    frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
+    frontend_url = settings.FRONTEND_URL
     return [token_to_response(t, frontend_url) for t in tokens]
 
 
@@ -336,7 +336,7 @@ async def get_my_share_tokens(
         page=page,
         page_size=page_size,
     )
-    frontend_url = settings.CORS_ORIGINS[0] if settings.CORS_ORIGINS else "http://localhost:5173"
+    frontend_url = settings.FRONTEND_URL
     return ShareTokenListResponse(
         tokens=[token_to_response(t, frontend_url) for t in tokens],
         total=total,

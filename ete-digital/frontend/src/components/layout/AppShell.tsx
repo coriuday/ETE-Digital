@@ -18,6 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../utils/useNotifications';
 import NotificationDrawer from '../ui/NotificationDrawer';
+import BrandLogo from './BrandLogo';
 import {
     LayoutDashboard, Search, Briefcase, FileText, Trophy, Building2,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
@@ -93,8 +94,19 @@ function getRoleAccent(role?: string) {
 }
 
 /* ── Sidebar widths ──────────────────────────────────────────────────────── */
-const SIDEBAR_EXPANDED  = 240;
+const SETTINGS_SECTIONS: Record<string, string> = {
+    '/settings/profile': 'Profile',
+    '/settings/qualifications': 'Qualifications',
+    '/settings/job-preferences': 'Job Preferences',
+    '/settings/job-filters': 'Job Filters',
+    '/settings/resume': 'Resume',
+    '/settings/password': 'Password',
+    '/settings/privacy': 'Privacy & Data',
+    '/settings/notifications': 'Notifications',
+    '/settings/2fa': 'Two-Factor Auth',
+};
 const SIDEBAR_COLLAPSED = 68;
+const SIDEBAR_EXPANDED = 240;
 
 /* ── NavItem component — memoized to prevent unnecessary re-renders ───────── */
 const NavLink = memo(function NavLink({
@@ -183,6 +195,12 @@ export default function AppShell({ children }: AppShellProps) {
 
     /* Current page label for breadcrumb */
     const currentPage = useMemo(() => {
+        if (location.pathname.startsWith('/settings')) {
+            const section = SETTINGS_SECTIONS[location.pathname];
+            if (section) return section;
+            if (location.pathname === '/settings') return 'Settings';
+            return 'Settings';
+        }
         const match = nav.find(item =>
             item.href === '/dashboard'
                 ? location.pathname === item.href
@@ -191,12 +209,16 @@ export default function AppShell({ children }: AppShellProps) {
         return match?.label ?? '';
     }, [nav, location.pathname]);
 
-    const isActive = useCallback((href: string) =>
-        href === '/dashboard' || href === '/admin' || href === '/hr/dashboard'
+    const settingsBreadcrumb = location.pathname.startsWith('/settings');
+
+    const isActive = useCallback((href: string) => {
+        if (href === '/settings') {
+            return location.pathname.startsWith('/settings');
+        }
+        return href === '/dashboard' || href === '/admin' || href === '/hr/dashboard'
             ? location.pathname === href
-            : location.pathname.startsWith(href),
-        [location.pathname]
-    );
+            : location.pathname.startsWith(href);
+    }, [location.pathname]);
 
     const handleLogout = useCallback(async () => {
         await logout();
@@ -253,21 +275,10 @@ export default function AppShell({ children }: AppShellProps) {
                     ].join(' ')}
                     aria-label="JobsRow.com Home"
                 >
-                    {/* Brand mark — always visible */}
-                    <div className="w-7 h-7 rounded-lg bg-primary-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                        <span className="text-white text-xs font-black">JR</span>
-                    </div>
-
-                    {!isCollapsed && (
-                        <div className="min-w-0">
-                            <div className="flex items-baseline gap-0 leading-none">
-                                <span className="text-[15px] font-extrabold text-text-primary tracking-tight">JobsRow</span>
-                                <span className="text-[15px] font-extrabold text-primary-600 tracking-tight">.com</span>
-                            </div>
-                            <p className="text-[10px] text-text-tertiary mt-0.5 font-medium tracking-wide uppercase">
-                                {roleLabel}
-                            </p>
-                        </div>
+                    {isCollapsed ? (
+                        <span className="text-sm font-extrabold text-[#176BBE]">J</span>
+                    ) : (
+                        <BrandLogo size="sm" subtitle={roleLabel} />
                     )}
                 </Link>
 
@@ -290,8 +301,8 @@ export default function AppShell({ children }: AppShellProps) {
                 {/* Bottom section: Settings + Logout */}
                 <div className="px-2 py-3 border-t border-border space-y-0.5 flex-shrink-0">
                     <NavLink
-                        item={{ label: 'Settings', icon: <Settings size={18} />, href: '/settings' }}
-                        active={isActive('/settings')}
+                        item={{ label: 'Settings', icon: <Settings size={18} />, href: '/settings/profile' }}
+                        active={location.pathname.startsWith('/settings')}
                         collapsed={isCollapsed}
                         onClick={mobile ? () => setMobileOpen(false) : undefined}
                     />
@@ -404,11 +415,23 @@ export default function AppShell({ children }: AppShellProps) {
                     {/* Breadcrumb / Page Title */}
                     {currentPage && (
                         <div className="hidden sm:flex items-center gap-2 text-sm">
-                            <span className="text-text-tertiary font-medium">
-                                {roleLabel.replace(' Panel', '')}
-                            </span>
-                            <ChevronRight size={14} className="text-border" />
-                            <span className="text-text-primary font-semibold">{currentPage}</span>
+                            {settingsBreadcrumb ? (
+                                <>
+                                    <Link to="/settings/profile" className="text-text-tertiary font-medium hover:text-text-primary">
+                                        Settings
+                                    </Link>
+                                    <ChevronRight size={14} className="text-border" />
+                                    <span className="text-text-primary font-semibold">{currentPage}</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="text-text-tertiary font-medium">
+                                        {roleLabel.replace(' Panel', '')}
+                                    </span>
+                                    <ChevronRight size={14} className="text-border" />
+                                    <span className="text-text-primary font-semibold">{currentPage}</span>
+                                </>
+                            )}
                         </div>
                     )}
 
@@ -482,7 +505,7 @@ export default function AppShell({ children }: AppShellProps) {
 
                                     <div className="py-1">
                                         <Link
-                                            to="/settings"
+                                            to="/settings/profile"
                                             onClick={() => setProfileOpen(false)}
                                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-text-secondary hover:text-text-primary hover:bg-background transition-colors"
                                             role="menuitem"

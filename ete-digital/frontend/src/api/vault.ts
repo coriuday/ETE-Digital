@@ -20,9 +20,11 @@ export interface VaultItem {
 
 export interface ShareToken {
     id: string;
-    candidate_id: string;
+    candidate_id?: string;
     token: string;
     vault_item_ids: string[];
+    group_token_ids?: string[];
+    share_url?: string;
     shared_with_company?: string;
     shared_with_email?: string;
     expires_at?: string;
@@ -30,6 +32,48 @@ export interface ShareToken {
     current_views: number;
     is_active: boolean;
     created_at: string;
+}
+
+/** Map backend ShareTokenResponse → frontend ShareToken shape */
+function mapShareToken(raw: Record<string, unknown>): ShareToken {
+    const vaultItemId = raw.vault_item_id as string | undefined;
+    return {
+        id: String(raw.id),
+        token: String(raw.token),
+        vault_item_ids: vaultItemId ? [vaultItemId] : [],
+        group_token_ids: [String(raw.id)],
+        share_url: raw.share_url as string | undefined,
+        shared_with_company: raw.shared_with_company as string | undefined,
+        shared_with_email: raw.shared_with_email as string | undefined,
+        expires_at: raw.expires_at as string | undefined,
+        max_views: raw.max_views as number | undefined,
+        current_views: (raw.view_count as number) ?? 0,
+        is_active: !(raw.is_revoked as boolean),
+        created_at: String(raw.created_at),
+    };
+}
+
+/** Group tokens created together (same recipient + expiry) into one UI card */
+function groupShareTokens(tokens: ShareToken[]): ShareToken[] {
+    const groups = new Map<string, ShareToken>();
+    for (const t of tokens) {
+        const key = [
+            t.shared_with_email ?? '',
+            t.shared_with_company ?? '',
+            t.expires_at ?? '',
+            t.max_views ?? '',
+            t.is_active,
+        ].join('|');
+        const existing = groups.get(key);
+        if (existing) {
+            existing.vault_item_ids = [...new Set([...existing.vault_item_ids, ...t.vault_item_ids])];
+            existing.group_token_ids = [...new Set([...(existing.group_token_ids ?? [existing.id]), ...(t.group_token_ids ?? [t.id])])];
+            existing.current_views = Math.max(existing.current_views, t.current_views);
+        } else {
+            groups.set(key, { ...t, vault_item_ids: [...t.vault_item_ids], group_token_ids: t.group_token_ids ?? [t.id] });
+        }
+    }
+    return Array.from(groups.values());
 }
 
 export interface VaultStats {
@@ -101,7 +145,7 @@ export const vaultApi = {
         return response.data;
     },
 
-    // Create share token
+    // Create share token(s) — backend returns one token per vault item
     createShareToken: async (data: {
         vault_item_ids: string[];
         shared_with_company?: string;
@@ -110,13 +154,19 @@ export const vaultApi = {
         max_views?: number;
     }): Promise<ShareToken> => {
         const response = await api.post('/api/vault/share', data);
-        return response.data;
+        const rawList = Array.isArray(response.data) ? response.data : [response.data];
+        const mapped = rawList.map((r: Record<string, unknown>) => mapShareToken(r));
+        const grouped = groupShareTokens(mapped);
+        return grouped[0] ?? mapped[0];
     },
 
     // Get all share tokens
     getShareTokens: async (): Promise<ShareToken[]> => {
         const response = await api.get('/api/vault/share/tokens');
-        return response.data;
+        const rawList = response.data?.tokens ?? [];
+        if (!Array.isArray(rawList)) return [];
+        const mapped = rawList.map((r: Record<string, unknown>) => mapShareToken(r));
+        return groupShareTokens(mapped);
     },
 
     // Revoke share token

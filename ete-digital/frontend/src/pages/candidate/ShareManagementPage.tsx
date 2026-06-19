@@ -1,6 +1,5 @@
 /**
  * Share Management Page — Candidate: manage vault share tokens
- * Redesigned with AppShell, dark mode, premium cards, proper UX
  */
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
@@ -16,9 +15,9 @@ export default function ShareManagementPage() {
     const [items, setItems] = useState<VaultItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [actionError, setActionError] = useState('');
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
-
 
     useEffect(() => { loadData(); }, []);
 
@@ -30,58 +29,55 @@ export default function ShareManagementPage() {
                 vaultApi.getShareTokens(),
                 vaultApi.getVaultItems(),
             ]);
-            setTokens(tokensData);
-            setItems(itemsData);
+            setTokens(Array.isArray(tokensData) ? tokensData : []);
+            setItems(Array.isArray(itemsData) ? itemsData : []);
         } catch {
             setError('Failed to load share data. Please try again.');
+            setTokens([]);
         } finally {
             setLoading(false);
         }
     };
 
-    const handleRevoke = async (tokenId: string) => {
+    const handleRevoke = async (token: ShareToken) => {
         if (!confirm('Are you sure you want to revoke this share link? Anyone using it will lose access immediately.')) return;
+        setActionError('');
         try {
-            await vaultApi.revokeShareToken(tokenId);
-            setTokens(prev => prev.filter(t => t.id !== tokenId));
+            const ids = token.group_token_ids ?? [token.id];
+            await Promise.all(ids.map(id => vaultApi.revokeShareToken(id)));
+            setTokens(prev => prev.filter(t => t.id !== token.id));
         } catch {
-            alert('Failed to revoke share token. Please try again.');
+            setActionError('Failed to revoke share link. Please try again.');
         }
     };
 
-    const copyShareLink = async (token: string, tokenId: string) => {
-        const url = `${window.location.origin}/shared/${token}`;
+    const copyShareLink = async (token: ShareToken) => {
+        const url = token.share_url || `${window.location.origin}/shared/${token.token}`;
         await navigator.clipboard.writeText(url);
-        setCopiedId(tokenId);
+        setCopiedId(token.id);
         setTimeout(() => setCopiedId(null), 2000);
     };
 
-    const bg = 'bg-gray-50';
-    const cardBg = 'bg-white border-gray-200';
-    const textPrimary = 'text-gray-900';
-    const textMuted = 'text-gray-500';
-
     return (
         <AppShell>
-            <div className={`min-h-full ${bg}`}>
-                {/* Header */}
-                <div className="border-b border-gray-200 px-6 py-5 bg-white">
+            <div className="min-h-full bg-background">
+                <div className="border-b border-border px-6 py-5 bg-surface">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <Link to="/vault" className="p-2 rounded-lg transition-colors hover:bg-gray-100 text-gray-500">
+                            <Link to="/vault" className="p-2 rounded-lg transition-colors hover:bg-background text-text-secondary">
                                 <ChevronLeft size={18} />
                             </Link>
-                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
+                            <div className="w-10 h-10 rounded-xl bg-primary-600 flex items-center justify-center">
                                 <Share2 size={18} className="text-white" />
                             </div>
                             <div>
-                                <h1 className={`text-xl font-bold ${textPrimary}`}>Share Manager</h1>
-                                <p className={`text-sm ${textMuted}`}>Control who sees your Talent Vault</p>
+                                <h1 className="text-xl font-bold text-text-primary">Share Manager</h1>
+                                <p className="text-sm text-text-secondary">Control who sees your Talent Vault</p>
                             </div>
                         </div>
                         <button
                             onClick={() => setShowCreateForm(!showCreateForm)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                            className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors shadow-sm"
                         >
                             {showCreateForm ? <><X size={15} /> Cancel</> : <><Plus size={15} /> New Share</>}
                         </button>
@@ -89,7 +85,6 @@ export default function ShareManagementPage() {
                 </div>
 
                 <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
-                    {/* Error */}
                     {error && (
                         <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                             <AlertCircle size={18} className="flex-shrink-0" />
@@ -97,7 +92,14 @@ export default function ShareManagementPage() {
                         </div>
                     )}
 
-                    {/* Create Form inline */}
+                    {actionError && (
+                        <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                            <AlertCircle size={18} className="flex-shrink-0" />
+                            <p>{actionError}</p>
+                            <button onClick={() => setActionError('')} className="ml-auto text-xs font-semibold hover:underline">Dismiss</button>
+                        </div>
+                    )}
+
                     {showCreateForm && (
                         <CreateShareForm
                             items={items}
@@ -105,89 +107,96 @@ export default function ShareManagementPage() {
                                 setTokens(prev => [newToken, ...prev]);
                                 setShowCreateForm(false);
                             }}
+                            onError={setActionError}
                         />
                     )}
 
-                    {/* Tokens List */}
                     {loading ? (
                         <div className="space-y-4">
                             {[1, 2].map(i => (
-                                <div key={i} className="h-36 rounded-2xl animate-pulse bg-gray-200" />
+                                <div key={i} className="h-36 rounded-2xl animate-pulse bg-border/40" />
                             ))}
                         </div>
                     ) : tokens.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-gray-300">
-                            <Share2 size={48} className="mb-4 opacity-20" />
-                            <h3 className={`font-bold text-lg mb-1 ${textPrimary}`}>No share links yet</h3>
-                            <p className={`text-sm mb-6 max-w-xs ${textMuted}`}>
-                                Create a share link to send specific portfolio items directly to employers — with optional expiry and view limits.
+                        <div className="flex flex-col items-center justify-center py-20 text-center rounded-2xl border border-dashed border-border bg-surface">
+                            <Share2 size={48} className="mb-4 text-text-tertiary opacity-40" />
+                            <h3 className="font-bold text-lg mb-1 text-text-primary">No share links yet</h3>
+                            <p className="text-sm mb-6 max-w-xs text-text-secondary">
+                                {items.length === 0
+                                    ? 'Add vault items first, then create share links for employers.'
+                                    : 'Create a share link to send specific portfolio items directly to employers — with optional expiry and view limits.'}
                             </p>
-                            <button
-                                onClick={() => setShowCreateForm(true)}
-                                className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity"
-                            >
-                                <Plus size={15} /> Create First Share Link
-                            </button>
+                            {items.length === 0 ? (
+                                <Link to="/vault/add"
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700">
+                                    <Plus size={15} /> Add Vault Item
+                                </Link>
+                            ) : (
+                                <button onClick={() => setShowCreateForm(true)}
+                                    className="flex items-center gap-2 px-6 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700">
+                                    <Plus size={15} /> Create First Share Link
+                                </button>
+                            )}
                         </div>
                     ) : (
                         <div className="space-y-4">
                             {tokens.map(token => (
-                                <div key={token.id} className={`rounded-2xl border overflow-hidden transition-all hover:shadow-md ${cardBg}`}>
-                                    <div className={`h-1 w-full ${token.is_active ? 'bg-gradient-to-r from-emerald-400 to-teal-400' : 'bg-gray-300'}`} />
+                                <div key={token.id} className="rounded-2xl border border-border overflow-hidden transition-all hover:shadow-card bg-surface">
+                                    <div className={`h-1 w-full ${token.is_active ? 'bg-emerald-400' : 'bg-border'}`} />
                                     <div className="p-5">
                                         <div className="flex items-start justify-between gap-4 mb-3">
                                             <div>
                                                 <div className="flex items-center gap-2 flex-wrap mb-1">
                                                     <span className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                                                         token.is_active
-                                                            ? 'bg-emerald-100 text-emerald-700'
-                                                            : 'bg-gray-100 text-gray-500'
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : 'bg-background text-text-tertiary border border-border'
                                                     }`}>
                                                         {token.is_active ? <CheckCircle size={10} /> : <X size={10} />}
                                                         {token.is_active ? 'Active' : 'Inactive'}
                                                     </span>
                                                     {token.expires_at && (
-                                                        <span className={`flex items-center gap-1 text-xs ${textMuted}`}>
+                                                        <span className="flex items-center gap-1 text-xs text-text-tertiary">
                                                             <Clock size={11} />
                                                             Expires {new Date(token.expires_at).toLocaleDateString()}
                                                         </span>
                                                     )}
                                                 </div>
                                                 {token.shared_with_company && (
-                                                    <p className={`text-sm font-semibold ${textPrimary}`}>{token.shared_with_company}</p>
+                                                    <p className="text-sm font-semibold text-text-primary">{token.shared_with_company}</p>
                                                 )}
                                                 {token.shared_with_email && (
-                                                    <p className={`text-xs ${textMuted}`}>{token.shared_with_email}</p>
+                                                    <p className="text-xs text-text-secondary">{token.shared_with_email}</p>
                                                 )}
                                             </div>
                                             <div className="text-right flex-shrink-0">
-                                                <p className={`text-2xl font-extrabold ${textPrimary}`}>
+                                                <p className="text-2xl font-extrabold text-text-primary">
                                                     {token.current_views}{token.max_views ? `/${token.max_views}` : ''}
                                                 </p>
-                                                <p className={`text-xs ${textMuted} flex items-center gap-1 justify-end`}>
+                                                <p className="text-xs text-text-tertiary flex items-center gap-1 justify-end">
                                                     <Eye size={10} /> views
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <p className={`text-xs mb-4 ${textMuted}`}>
+                                        <p className="text-xs mb-4 text-text-secondary">
                                             {token.vault_item_ids.length} vault item{token.vault_item_ids.length !== 1 ? 's' : ''} shared
                                         </p>
 
                                         <div className="flex items-center gap-2">
                                             <button
-                                                onClick={() => copyShareLink(token.token, token.id)}
+                                                onClick={() => copyShareLink(token)}
                                                 className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
                                                     copiedId === token.id
                                                         ? 'bg-emerald-500 text-white'
-                                                        : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                                                        : 'bg-primary-600 hover:bg-primary-700 text-white'
                                                 }`}
                                             >
                                                 {copiedId === token.id ? <><CheckCircle size={14} /> Copied!</> : <><Copy size={14} /> Copy Link</>}
                                             </button>
                                             <button
-                                                onClick={() => handleRevoke(token.id)}
-                                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-red-50 text-red-600 hover:bg-red-100"
+                                                onClick={() => handleRevoke(token)}
+                                                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
                                             >
                                                 <Trash2 size={14} /> Revoke
                                             </button>
@@ -203,11 +212,13 @@ export default function ShareManagementPage() {
     );
 }
 
-function CreateShareForm({ items, onSuccess }: {
+function CreateShareForm({ items, onSuccess, onError }: {
     items: VaultItem[];
     onSuccess: (token: ShareToken) => void;
+    onError: (msg: string) => void;
 }) {
     const [submitting, setSubmitting] = useState(false);
+    const [formError, setFormError] = useState('');
     const [formData, setFormData] = useState({
         vault_item_ids: [] as string[],
         shared_with_company: '',
@@ -216,17 +227,17 @@ function CreateShareForm({ items, onSuccess }: {
         max_views: '',
     });
 
-    const cardBg = 'bg-white border-gray-200';
-    const inputCls = `w-full px-3.5 py-2.5 border border-gray-300 rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 bg-white text-gray-900`;
-    const labelCls = `block text-sm font-medium mb-1.5 text-gray-700`;
+    const inputCls = 'w-full px-3.5 py-2.5 border border-border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-primary-600/20 focus:border-primary-600 bg-surface text-text-primary';
+    const labelCls = 'block text-sm font-medium mb-1.5 text-text-primary';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (formData.vault_item_ids.length === 0) {
-            alert('Please select at least one item to share.');
+            setFormError('Please select at least one item to share.');
             return;
         }
         setSubmitting(true);
+        setFormError('');
         try {
             const data = {
                 vault_item_ids: formData.vault_item_ids,
@@ -237,8 +248,11 @@ function CreateShareForm({ items, onSuccess }: {
             };
             const token = await vaultApi.createShareToken(data);
             onSuccess(token);
-        } catch (err: any) {
-            alert(err.response?.data?.detail || 'Failed to create share link. Please try again.');
+        } catch (err: unknown) {
+            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            const msg = detail || 'Failed to create share link. Please try again.';
+            setFormError(msg);
+            onError(msg);
         } finally {
             setSubmitting(false);
         }
@@ -254,24 +268,30 @@ function CreateShareForm({ items, onSuccess }: {
     };
 
     return (
-        <div className={`rounded-2xl border p-6 ${cardBg}`}>
-            <h2 className="text-base font-bold mb-5 text-gray-900">Create New Share Link</h2>
+        <div className="rounded-2xl border border-border p-6 bg-surface shadow-card">
+            <h2 className="text-base font-bold mb-5 text-text-primary">Create New Share Link</h2>
+            {formError && (
+                <div className="mb-4 flex items-center gap-2 text-sm text-error bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                    <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                    {formError}
+                </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                     <label className={labelCls}>Select Items to Share <span className="text-red-500">*</span></label>
-                    <div className="border border-gray-200 bg-gray-50 rounded-xl p-3 max-h-48 overflow-y-auto space-y-1">
+                    <div className="border border-border bg-background rounded-xl p-3 max-h-48 overflow-y-auto space-y-1">
                         {items.length === 0 ? (
-                            <p className="text-sm text-center py-4 text-gray-400">
-                                No vault items yet. <Link to="/vault/add" className="text-indigo-400 hover:underline">Add items</Link>
+                            <p className="text-sm text-center py-4 text-text-tertiary">
+                                No vault items yet. <Link to="/vault/add" className="text-primary-600 hover:underline">Add items</Link>
                             </p>
                         ) : items.map(item => (
                             <label key={item.id} className={`flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-colors ${
                                 formData.vault_item_ids.includes(item.id)
-                                    ? 'bg-violet-50'
-                                    : 'hover:bg-gray-100'
+                                    ? 'bg-primary-50'
+                                    : 'hover:bg-background'
                             }`}>
-                                <input type="checkbox" checked={formData.vault_item_ids.includes(item.id)} onChange={() => toggleItem(item.id)} className="accent-violet-500 w-4 h-4" />
-                                <span className="text-sm text-gray-800">{item.title}</span>
+                                <input type="checkbox" checked={formData.vault_item_ids.includes(item.id)} onChange={() => toggleItem(item.id)} className="accent-primary-600 w-4 h-4" />
+                                <span className="text-sm text-text-primary">{item.title}</span>
                             </label>
                         ))}
                     </div>
@@ -303,7 +323,7 @@ function CreateShareForm({ items, onSuccess }: {
                 </div>
 
                 <button type="submit" disabled={submitting}
-                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-indigo-500 to-violet-600 text-white text-sm font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 py-2.5 bg-primary-600 text-white text-sm font-semibold rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-50"
                 >
                     {submitting ? <><Loader2 size={16} className="animate-spin" /> Creating…</> : <><Share2 size={16} /> Create Share Link</>}
                 </button>
