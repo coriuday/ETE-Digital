@@ -40,7 +40,12 @@ def upgrade():
     if not _has_column(conn, "applications", "fraud_flags"):
         op.add_column(
             "applications",
-            sa.Column("fraud_flags", postgresql.JSONB(astext_type=sa.Text()), nullable=True, server_default="'[]'::jsonb"),
+            sa.Column(
+                "fraud_flags",
+                postgresql.JSONB(astext_type=sa.Text()),
+                nullable=True,
+                server_default=sa.text("'[]'::jsonb"),
+            ),
         )
 
 
