@@ -79,6 +79,17 @@ export const organizationsApi = {
         return res.data;
     },
 
+    updateMine: async (data: {
+        company_name?: string;
+        website?: string;
+        linkedin_url?: string;
+        company_size?: string;
+        industry?: string;
+    }): Promise<Organization> => {
+        const res = await api.patch('/api/organizations/me', data);
+        return res.data;
+    },
+
     removeMember: async (userId: string) => {
         await api.delete(`/api/organizations/members/${userId}`);
     },

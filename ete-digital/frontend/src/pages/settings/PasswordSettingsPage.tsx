@@ -4,13 +4,13 @@
 import { useState } from 'react';
 import api from '../../api/client';
 import { SettingsCard } from './settingsShared';
-import { CheckCircle, AlertCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toastSuccess, toastError } from '../../utils/toast';
+import { AlertCircle, CheckCircle, Eye, EyeOff, Loader2 } from 'lucide-react';
 
 export default function PasswordSettingsPage() {
     const [form, setForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
     const [show, setShow] = useState({ current: false, new: false, confirm: false });
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
 
     const passwordRules = [
@@ -32,11 +32,13 @@ export default function PasswordSettingsPage() {
                 current_password: form.currentPassword,
                 new_password: form.newPassword,
             });
-            setSuccess(true);
+            toastSuccess('Password changed successfully');
             setForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setError(detail || 'Failed to change password. Check your current password.');
+            const msg = detail || 'Failed to change password. Check your current password.';
+            setError(msg);
+            toastError(msg);
         } finally {
             setSaving(false);
         }
@@ -68,17 +70,7 @@ export default function PasswordSettingsPage() {
 
     return (
         <SettingsCard title="Change Password" description="Update your account password.">
-            {success ? (
-                <div className="flex items-center gap-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl px-4 py-3">
-                    <CheckCircle className="w-5 h-5" />
-                    <p className="text-sm font-medium">Password changed successfully!</p>
-                    <button type="button" onClick={() => setSuccess(false)}
-                        className="ml-auto text-xs font-semibold text-emerald-600 hover:underline">
-                        Change again
-                    </button>
-                </div>
-            ) : (
-                <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
+            <form onSubmit={handleSubmit} className="space-y-5 max-w-md">
                     <PasswordInput label="Current Password" valueKey="currentPassword" showKey="current" />
                     <PasswordInput label="New Password" valueKey="newPassword" showKey="new" />
                     {form.newPassword && (
@@ -101,8 +93,7 @@ export default function PasswordSettingsPage() {
                         className="px-5 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60 flex items-center gap-2 shadow-sm">
                         {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Updating…</> : 'Update Password'}
                     </button>
-                </form>
-            )}
+            </form>
         </SettingsCard>
     );
 }

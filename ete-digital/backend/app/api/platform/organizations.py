@@ -64,6 +64,14 @@ class OrgStandardInitRequest(BaseModel):
     gst_number: Optional[str] = None
 
 
+class OrgUpdateRequest(BaseModel):
+    company_name: Optional[str] = Field(None, min_length=1, max_length=255)
+    website: Optional[str] = Field(None, min_length=1, max_length=255)
+    linkedin_url: Optional[str] = None
+    company_size: Optional[str] = None
+    industry: Optional[str] = None
+
+
 class OrgResponse(BaseModel):
     id: str
     company_name: str
@@ -323,6 +331,38 @@ async def get_my_organization(
     org = await _get_member_org(db, user_id)
     if not org:
         raise HTTPException(status_code=404, detail="No organization found.")
+    return _to_response(org)
+
+
+@router.patch("/me", response_model=OrgResponse)
+async def update_my_organization(
+    payload: OrgUpdateRequest,
+    current_user: dict = Depends(require_role(UserRole.HR)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Update company profile fields (name, website, LinkedIn, size, industry)."""
+    user_id = uuid.UUID(current_user["user_id"])
+    org = await _get_owner_org(db, user_id)
+    if not org:
+        raise HTTPException(status_code=404, detail="No organization found.")
+
+    updates = payload.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="No fields to update.")
+
+    if "company_name" in updates:
+        org.company_name = updates["company_name"]
+    if "website" in updates:
+        org.website = updates["website"]
+    if "linkedin_url" in updates:
+        org.linkedin_url = updates["linkedin_url"]
+    if "company_size" in updates:
+        org.company_size = updates["company_size"]
+    if "industry" in updates:
+        org.industry = updates["industry"]
+
+    await db.commit()
+    await db.refresh(org)
     return _to_response(org)
 
 

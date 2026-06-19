@@ -99,6 +99,7 @@ const PasswordSettingsPage = lazy(() => import('./pages/settings/PasswordSetting
 const PrivacyPage = lazy(() => import('./pages/settings/PrivacyPage'));
 const NotificationSettingsPage = lazy(() => import('./pages/settings/NotificationSettingsPage'));
 const TwoFactorPage = lazy(() => import('./pages/settings/TwoFactorPage'));
+const CompanySettingsPage = lazy(() => import('./pages/settings/CompanySettingsPage'));
 
 // ---- Onboarding ----
 const OnboardingWizard = lazy(() => import('./pages/candidate/OnboardingWizard'));
@@ -227,6 +228,7 @@ export default function AppRouter() {
                             <Route path="privacy" element={<PrivacyPage />} />
                             <Route path="notifications" element={<NotificationSettingsPage />} />
                             <Route path="2fa" element={<TwoFactorPage />} />
+                            <Route path="company" element={<CompanySettingsPage />} />
                         </Route>
                     </Route>
 

@@ -6,7 +6,10 @@ import { useAuthStore } from '../../stores/authStore';
 import api from '../../api/client';
 import { preferencesApi } from '../../api/preferences';
 import { SettingsCard, SaveFeedback, inputCls, labelCls } from './settingsShared';
+import { toastSuccess, toastError } from '../../utils/toast';
 import { Camera, Eye, EyeOff, Loader2 } from 'lucide-react';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export default function ProfileSettingsPage() {
     const { user, fetchUser } = useAuthStore();
@@ -16,8 +19,8 @@ export default function ProfileSettingsPage() {
     const [profileVisible, setProfileVisible] = useState(true);
     const [loadingProfile, setLoadingProfile] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -36,6 +39,7 @@ export default function ProfileSettingsPage() {
                     linkedin_url: p.social_links?.linkedin || '',
                 });
                 setProfileVisible(prefs.profile_visible !== false);
+                setAvatarUrl(p.avatar_url || null);
             } catch {
                 setForm({
                     fullName: user?.full_name || '',
@@ -53,7 +57,27 @@ export default function ProfileSettingsPage() {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
-        setSuccess(false);
+    };
+
+    const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setUploadingAvatar(true);
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            const res = await api.post('/api/users/me/avatar', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setAvatarUrl(res.data.avatar_url);
+            await fetchUser();
+            toastSuccess('Profile photo updated');
+        } catch (err: unknown) {
+            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toastError(detail || 'Failed to upload photo.');
+        } finally {
+            setUploadingAvatar(false);
+        }
     };
 
     const toggleVisibility = async () => {
@@ -69,7 +93,6 @@ export default function ProfileSettingsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        setError('');
         try {
             await api.patch('/api/users/profile', {
                 full_name: form.fullName,
@@ -78,11 +101,11 @@ export default function ProfileSettingsPage() {
                 phone: form.phone,
                 social_links: { website: form.website, linkedin: form.linkedin_url },
             });
-            setSuccess(true);
             await fetchUser();
+            toastSuccess('Profile saved');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setError(detail || 'Failed to save changes.');
+            toastError(typeof detail === 'string' ? detail : 'Failed to save changes.');
         } finally {
             setSaving(false);
         }
@@ -97,6 +120,9 @@ export default function ProfileSettingsPage() {
     }
 
     const displayName = form.fullName || user?.email?.split('@')[0] || 'User';
+    const avatarSrc = avatarUrl
+        ? (avatarUrl.startsWith('http') ? avatarUrl : `${API_BASE}${avatarUrl}`)
+        : null;
 
     return (
         <SettingsCard title="Profile" description="Your public profile information visible to employers.">
@@ -128,21 +154,25 @@ export default function ProfileSettingsPage() {
             {/* Avatar */}
             <div className="flex items-center gap-6 mb-6 pb-6 border-b border-border">
                 <div className="relative">
-                    <div className="w-20 h-20 bg-primary-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
-                        {displayName[0]?.toUpperCase() || '?'}
-                    </div>
-                    <button
-                        type="button"
-                        title="Avatar upload requires file storage (MinIO)"
-                        className="absolute -bottom-1 -right-1 w-7 h-7 bg-surface border-2 border-border rounded-lg shadow-card flex items-center justify-center opacity-50 cursor-not-allowed"
+                    {avatarSrc ? (
+                        <img src={avatarSrc} alt={displayName} className="w-20 h-20 rounded-xl object-cover border border-border" />
+                    ) : (
+                        <div className="w-20 h-20 bg-primary-600 rounded-xl flex items-center justify-center text-white text-2xl font-bold">
+                            {displayName[0]?.toUpperCase() || '?'}
+                        </div>
+                    )}
+                    <label
+                        title="Upload profile photo"
+                        className={`absolute -bottom-1 -right-1 w-7 h-7 bg-surface border-2 border-border rounded-lg shadow-card flex items-center justify-center cursor-pointer hover:bg-background transition-colors ${uploadingAvatar ? 'opacity-50 pointer-events-none' : ''}`}
                     >
-                        <Camera className="w-3.5 h-3.5 text-text-secondary" />
-                    </button>
+                        {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin text-text-secondary" /> : <Camera className="w-3.5 h-3.5 text-text-secondary" />}
+                        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} className="sr-only" />
+                    </label>
                 </div>
                 <div>
                     <h3 className="font-semibold text-text-primary">{displayName}</h3>
                     <p className="text-sm text-text-secondary">{user?.email}</p>
-                    <p className="text-xs text-text-tertiary mt-1">Photo upload available when storage is configured.</p>
+                    <p className="text-xs text-text-tertiary mt-1">JPG, PNG or WebP · max 2 MB</p>
                 </div>
             </div>
 
@@ -178,7 +208,7 @@ export default function ProfileSettingsPage() {
                     <textarea name="bio" value={form.bio} onChange={handleChange} rows={3}
                         placeholder="Tell employers a bit about yourself..." className={`${inputCls} resize-none`} />
                 </div>
-                <SaveFeedback saving={saving} success={success} error={error} />
+                <SaveFeedback saving={saving} />
             </form>
         </SettingsCard>
     );

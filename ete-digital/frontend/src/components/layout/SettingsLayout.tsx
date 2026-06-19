@@ -1,7 +1,7 @@
 /**
  * SettingsLayout — two-column settings shell (candidate + HR + admin)
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { NavLink, Outlet, useLocation, Link } from 'react-router-dom';
 import AppShell from './AppShell';
 import api from '../../api/client';
@@ -52,6 +52,34 @@ function calcCompletion(profile: Record<string, unknown> | null, prefs: Record<s
         'job-filters': filterFields.length > 0 ? 100 : 0,
         resume: pct(resumeFields.length, 1),
     };
+}
+
+function ProgressRing({ pct }: { pct: number }) {
+    const r = 18;
+    const circumference = 2 * Math.PI * r;
+    const offset = circumference - (pct / 100) * circumference;
+
+    return (
+        <div className="flex items-center gap-3 px-3 py-4 mb-4 border-b border-border">
+            <div className="relative w-11 h-11 flex-shrink-0">
+                <svg width="44" height="44" className="-rotate-90">
+                    <circle cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeWidth="3.5" className="text-border" />
+                    <circle
+                        cx="22" cy="22" r={r} fill="none" stroke="currentColor" strokeWidth="3.5"
+                        strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
+                        className="text-primary-600 transition-all duration-500"
+                    />
+                </svg>
+                <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-primary-700">
+                    {pct}%
+                </span>
+            </div>
+            <div>
+                <p className="text-sm font-bold text-text-primary">Profile {pct}% complete</p>
+                <p className="text-xs text-text-secondary">Finish setting up your account</p>
+            </div>
+        </div>
+    );
 }
 
 function NavItem({ section, navLinkClass }: { section: NavSection; navLinkClass: (props: { isActive: boolean }) => string }) {
@@ -112,7 +140,7 @@ export default function SettingsLayout() {
     ];
 
     const hrSections: NavSection[] = isEmployer ? [
-        { href: '/hr/onboarding', label: 'Company Profile', icon: <Building2 size={16} />, external: true },
+        { href: '/settings/company', label: 'Company Profile', icon: <Building2 size={16} /> },
         { href: '/hr/team', label: 'Team', icon: <Users size={16} />, external: true },
         { href: '/hr/domain-verify', label: 'Domain Verification', icon: <Globe size={16} />, external: true },
         { href: '/hr/billing', label: 'Billing', icon: <CreditCard size={16} />, external: true },
@@ -146,11 +174,18 @@ export default function SettingsLayout() {
         ? 'Manage your account and company settings'
         : 'Manage your account and job search preferences';
 
+    const overallPct = useMemo(() => {
+        const vals = Object.values(completion);
+        if (!vals.length) return 0;
+        return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+    }, [completion]);
+
     return (
         <AppShell>
             <div className="flex flex-col lg:flex-row min-h-[calc(100vh-60px)] bg-background">
                 {/* Side nav — desktop */}
                 <aside className="hidden lg:block w-60 flex-shrink-0 border-r border-border bg-surface p-4">
+                    <ProgressRing pct={overallPct} />
                     <p className="px-3 mb-4 text-sm text-text-secondary">{subtitle}</p>
                     {renderSection('Account', accountSections)}
                     {hrSections.length > 0 && renderSection('Company', hrSections)}

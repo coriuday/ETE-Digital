@@ -190,6 +190,61 @@ async def upload_resume(
     return {"resume_url": resume_url, "filename": file.filename}
 
 
+@router.post("/me/avatar", response_model=dict)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Upload or replace profile avatar (JPEG/PNG/WebP, max 2 MB) to MinIO/S3"""
+    import io
+    from app.services.storage import storage_service
+
+    allowed_exts = (".jpg", ".jpeg", ".png", ".webp")
+    fname = (file.filename or "avatar.jpg").lower()
+    if not any(fname.endswith(ext) for ext in allowed_exts):
+        raise HTTPException(status_code=400, detail="Only JPG, PNG, and WebP images are allowed.")
+
+    contents = await file.read()
+    file_size = len(contents)
+    if file_size > 2 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image must be under 2 MB.")
+
+    user_id = current_user["user_id"]
+    file_path = storage_service.get_file_path("avatars", user_id, file.filename or "avatar.jpg")
+
+    content_types = {
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".png": "image/png",
+        ".webp": "image/webp",
+    }
+    ext = next((e for e in allowed_exts if fname.endswith(e)), ".jpg")
+    avatar_url = storage_service.upload_file(
+        file_data=io.BytesIO(contents),
+        file_path=file_path,
+        content_type=file.content_type or content_types.get(ext, "image/jpeg"),
+        file_size=file_size,
+    )
+
+    if avatar_url is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="File storage is not available. Configure MinIO/S3 to enable uploads.",
+        )
+
+    user_uuid = uuid.UUID(user_id)
+    result = await db.execute(select(UserProfile).where(UserProfile.user_id == user_uuid))
+    profile = result.scalar_one_or_none()
+    if not profile:
+        profile = UserProfile(user_id=user_uuid)
+        db.add(profile)
+    profile.avatar_url = avatar_url
+    await db.commit()
+
+    return {"avatar_url": avatar_url, "filename": file.filename}
+
+
 # ─── Onboarding Endpoints (Task 1.3) ──────────────────────────────────────────
 
 

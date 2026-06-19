@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { preferencesApi } from '../../api/preferences';
 import { SettingsCard, SaveFeedback, inputCls, labelCls } from './settingsShared';
+import { toastSuccess, toastError } from '../../utils/toast';
 import { Loader2 } from 'lucide-react';
 
 const JOB_TYPES = [
@@ -23,8 +24,6 @@ export default function JobPreferencesPage() {
     const [salaryMax, setSalaryMax] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         (async () => {
@@ -36,7 +35,7 @@ export default function JobPreferencesPage() {
                 setSalaryMin(prefs.salary_min != null ? String(prefs.salary_min) : '');
                 setSalaryMax(prefs.salary_max != null ? String(prefs.salary_max) : '');
             } catch {
-                setError('Failed to load job preferences.');
+                toastError('Failed to load job preferences.');
             } finally {
                 setLoading(false);
             }
@@ -60,7 +59,6 @@ export default function JobPreferencesPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        setError('');
         try {
             await preferencesApi.patch({
                 remote_preferred: remotePreferred,
@@ -69,10 +67,10 @@ export default function JobPreferencesPage() {
                 salary_min: salaryMin ? parseInt(salaryMin, 10) : null,
                 salary_max: salaryMax ? parseInt(salaryMax, 10) : null,
             });
-            setSuccess(true);
+            toastSuccess('Job preferences saved');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setError(detail || 'Failed to save job preferences.');
+            toastError(typeof detail === 'string' ? detail : 'Failed to save job preferences.');
         } finally {
             setSaving(false);
         }
@@ -147,7 +145,7 @@ export default function JobPreferencesPage() {
                     </div>
                 </div>
 
-                <SaveFeedback saving={saving} success={success} error={error} />
+                <SaveFeedback saving={saving} />
             </form>
         </SettingsCard>
     );

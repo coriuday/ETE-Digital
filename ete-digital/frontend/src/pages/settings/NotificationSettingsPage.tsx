@@ -2,9 +2,10 @@
  * Notification Settings Page
  */
 import { useState, useEffect } from 'react';
-import { Mail, Smartphone, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Mail, Smartphone, Loader2 } from 'lucide-react';
 import api from '../../api/client';
 import { SettingsCard } from './settingsShared';
+import { toastSuccess, toastError } from '../../utils/toast';
 
 type NotifPrefs = {
     email_applications: boolean;
@@ -50,8 +51,6 @@ export default function NotificationSettingsPage() {
     const [prefs, setPrefs] = useState<NotifPrefs>(defaultPrefs);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         (async () => {
@@ -71,18 +70,16 @@ export default function NotificationSettingsPage() {
 
     const update = (key: keyof NotifPrefs, value: boolean) => {
         setPrefs(prev => ({ ...prev, [key]: value }));
-        setSuccess(false);
     };
 
     const handleSave = async () => {
         setSaving(true);
-        setError('');
         try {
             await api.patch('/api/users/me/preferences', { notifications: prefs });
-            setSuccess(true);
+            toastSuccess('Notification preferences saved');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setError(detail || 'Failed to save preferences.');
+            toastError(typeof detail === 'string' ? detail : 'Failed to save preferences.');
         } finally {
             setSaving(false);
         }
@@ -151,13 +148,6 @@ export default function NotificationSettingsPage() {
                     </div>
                 ))}
 
-                {error && (
-                    <div className="flex items-center gap-2 text-sm text-error bg-red-50 border border-red-200 rounded-xl px-3 py-2">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        {error}
-                    </div>
-                )}
-
                 <div className="flex items-center gap-4">
                     <button
                         onClick={handleSave}
@@ -166,12 +156,6 @@ export default function NotificationSettingsPage() {
                     >
                         {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Save Preferences'}
                     </button>
-                    {success && (
-                        <div className="flex items-center gap-1.5 text-emerald-600 text-sm">
-                            <CheckCircle className="w-4 h-4" />
-                            Preferences saved!
-                        </div>
-                    )}
                 </div>
             </div>
         </SettingsCard>

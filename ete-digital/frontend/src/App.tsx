@@ -51,9 +51,11 @@ function App() {
                                     duration: 4000,
                                     style: {
                                         borderRadius: '12px',
-                                        background: '#1f2937',
-                                        color: '#f9fafb',
+                                        background: '#ffffff',
+                                        color: '#111827',
                                         fontSize: '14px',
+                                        border: '1px solid #e5e7eb',
+                                        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
                                     },
                                     success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
                                     error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },

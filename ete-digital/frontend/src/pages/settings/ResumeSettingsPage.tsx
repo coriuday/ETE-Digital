@@ -6,7 +6,8 @@ import { useAuthStore } from '../../stores/authStore';
 import api from '../../api/client';
 import { preferencesApi } from '../../api/preferences';
 import { SettingsCard, inputCls } from './settingsShared';
-import { FileText, Upload, Download, Loader2, CheckCircle, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { toastSuccess, toastError } from '../../utils/toast';
+import { FileText, Upload, Download, Loader2, CheckCircle, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -25,7 +26,6 @@ export default function ResumeSettingsPage() {
     const [builderStep, setBuilderStep] = useState(0);
     const [builder, setBuilder] = useState<ResumeBuilderData>({ headline: '', experience: '', skills: '' });
     const [savingBuilder, setSavingBuilder] = useState(false);
-    const [builderSuccess, setBuilderSuccess] = useState(false);
     const [showBuilder, setShowBuilder] = useState(false);
 
     useEffect(() => {
@@ -62,9 +62,12 @@ export default function ResumeSettingsPage() {
             });
             setResumeUrl(res.data.resume_url);
             await fetchUser();
+            toastSuccess('Resume uploaded');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setUploadError(detail || 'Upload failed. File storage may be unavailable.');
+            const msg = detail || 'Upload failed. File storage may be unavailable.';
+            setUploadError(msg);
+            toastError(msg);
         } finally {
             setUploading(false);
         }
@@ -72,17 +75,18 @@ export default function ResumeSettingsPage() {
 
     const saveBuilder = async () => {
         setSavingBuilder(true);
-        setBuilderSuccess(false);
         try {
             await Promise.all([
                 api.patch('/api/users/profile', { headline: builder.headline }),
                 preferencesApi.patch({ resume_builder: builder as unknown as Record<string, unknown> }),
             ]);
-            setBuilderSuccess(true);
+            toastSuccess('Resume builder saved');
             setShowBuilder(false);
             await fetchUser();
         } catch {
-            setUploadError('Failed to save resume builder data.');
+            const msg = 'Failed to save resume builder data.';
+            setUploadError(msg);
+            toastError(msg);
         } finally {
             setSavingBuilder(false);
         }
@@ -146,17 +150,7 @@ export default function ResumeSettingsPage() {
                 )}
 
                 {uploadError && (
-                    <div className="mt-3 flex items-center gap-2 text-error bg-red-50 border border-red-200 rounded-xl px-3 py-2 text-sm">
-                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                        {uploadError}
-                    </div>
-                )}
-
-                {builderSuccess && (
-                    <div className="mt-3 flex items-center gap-2 text-emerald-600 text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        Resume builder data saved to your profile.
-                    </div>
+                    <p className="mt-3 text-sm text-error">{uploadError}</p>
                 )}
 
                 {/* 3-step builder */}

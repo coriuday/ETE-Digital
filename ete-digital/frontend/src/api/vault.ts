@@ -18,11 +18,19 @@ export interface VaultItem {
     share_count: number;
 }
 
+export interface ShareLink {
+    id: string;
+    token: string;
+    share_url?: string;
+    vault_item_id: string;
+}
+
 export interface ShareToken {
     id: string;
     candidate_id?: string;
     token: string;
     vault_item_ids: string[];
+    links: ShareLink[];
     group_token_ids?: string[];
     share_url?: string;
     shared_with_company?: string;
@@ -37,11 +45,20 @@ export interface ShareToken {
 /** Map backend ShareTokenResponse → frontend ShareToken shape */
 function mapShareToken(raw: Record<string, unknown>): ShareToken {
     const vaultItemId = raw.vault_item_id as string | undefined;
+    const id = String(raw.id);
+    const token = String(raw.token);
+    const link: ShareLink = {
+        id,
+        token,
+        share_url: raw.share_url as string | undefined,
+        vault_item_id: vaultItemId ?? '',
+    };
     return {
-        id: String(raw.id),
-        token: String(raw.token),
+        id,
+        token,
         vault_item_ids: vaultItemId ? [vaultItemId] : [],
-        group_token_ids: [String(raw.id)],
+        links: [link],
+        group_token_ids: [id],
         share_url: raw.share_url as string | undefined,
         shared_with_company: raw.shared_with_company as string | undefined,
         shared_with_email: raw.shared_with_email as string | undefined,
@@ -67,10 +84,16 @@ function groupShareTokens(tokens: ShareToken[]): ShareToken[] {
         const existing = groups.get(key);
         if (existing) {
             existing.vault_item_ids = [...new Set([...existing.vault_item_ids, ...t.vault_item_ids])];
+            existing.links = [...existing.links, ...t.links];
             existing.group_token_ids = [...new Set([...(existing.group_token_ids ?? [existing.id]), ...(t.group_token_ids ?? [t.id])])];
             existing.current_views = Math.max(existing.current_views, t.current_views);
         } else {
-            groups.set(key, { ...t, vault_item_ids: [...t.vault_item_ids], group_token_ids: t.group_token_ids ?? [t.id] });
+            groups.set(key, {
+                ...t,
+                vault_item_ids: [...t.vault_item_ids],
+                links: [...t.links],
+                group_token_ids: t.group_token_ids ?? [t.id],
+            });
         }
     }
     return Array.from(groups.values());

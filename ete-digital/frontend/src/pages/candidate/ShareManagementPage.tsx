@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
 import { vaultApi, ShareToken, VaultItem } from '../../api/vault';
+import { toastSuccess, toastError, toastCopied } from '../../utils/toast';
 import {
     Share2, Copy, Trash2, Plus, Loader2, Eye, CheckCircle,
     AlertCircle, Clock, X, ChevronLeft,
@@ -18,6 +19,9 @@ export default function ShareManagementPage() {
     const [actionError, setActionError] = useState('');
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const itemTitle = (vaultItemId: string) =>
+        items.find(i => i.id === vaultItemId)?.title ?? 'Vault item';
 
     useEffect(() => { loadData(); }, []);
 
@@ -33,6 +37,7 @@ export default function ShareManagementPage() {
             setItems(Array.isArray(itemsData) ? itemsData : []);
         } catch {
             setError('Failed to load share data. Please try again.');
+            toastError('Failed to load share data');
             setTokens([]);
         } finally {
             setLoading(false);
@@ -46,15 +51,25 @@ export default function ShareManagementPage() {
             const ids = token.group_token_ids ?? [token.id];
             await Promise.all(ids.map(id => vaultApi.revokeShareToken(id)));
             setTokens(prev => prev.filter(t => t.id !== token.id));
+            toastSuccess('Share link revoked');
         } catch {
             setActionError('Failed to revoke share link. Please try again.');
+            toastError('Failed to revoke share link');
         }
     };
 
-    const copyShareLink = async (token: ShareToken) => {
-        const url = token.share_url || `${window.location.origin}/shared/${token.token}`;
+    const copyShareLink = async (linkId: string, url: string) => {
         await navigator.clipboard.writeText(url);
+        setCopiedId(linkId);
+        toastCopied();
+        setTimeout(() => setCopiedId(null), 2000);
+    };
+
+    const copyAllLinks = async (token: ShareToken) => {
+        const urls = token.links.map(l => l.share_url || `${window.location.origin}/shared/${l.token}`);
+        await navigator.clipboard.writeText(urls.join('\n'));
         setCopiedId(token.id);
+        toastCopied();
         setTimeout(() => setCopiedId(null), 2000);
     };
 
@@ -179,21 +194,48 @@ export default function ShareManagementPage() {
                                             </div>
                                         </div>
 
-                                        <p className="text-xs mb-4 text-text-secondary">
-                                            {token.vault_item_ids.length} vault item{token.vault_item_ids.length !== 1 ? 's' : ''} shared
-                                        </p>
+                                        <div className="mb-4 space-y-2">
+                                            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                                                Shared items ({token.links.length})
+                                            </p>
+                                            {token.links.map(link => {
+                                                const url = link.share_url || `${window.location.origin}/shared/${link.token}`;
+                                                return (
+                                                    <div key={link.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-background border border-border">
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm font-medium text-text-primary truncate">
+                                                                {itemTitle(link.vault_item_id)}
+                                                            </p>
+                                                            <p className="text-[11px] text-text-tertiary truncate font-mono">{url}</p>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => copyShareLink(link.id, url)}
+                                                            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                                                                copiedId === link.id
+                                                                    ? 'bg-emerald-500 text-white'
+                                                                    : 'bg-primary-600 hover:bg-primary-700 text-white'
+                                                            }`}
+                                                        >
+                                                            {copiedId === link.id ? <><CheckCircle size={12} /> Copied</> : <><Copy size={12} /> Copy</>}
+                                                        </button>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
 
                                         <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => copyShareLink(token)}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                                                    copiedId === token.id
-                                                        ? 'bg-emerald-500 text-white'
-                                                        : 'bg-primary-600 hover:bg-primary-700 text-white'
-                                                }`}
-                                            >
-                                                {copiedId === token.id ? <><CheckCircle size={14} /> Copied!</> : <><Copy size={14} /> Copy Link</>}
-                                            </button>
+                                            {token.links.length > 1 && (
+                                                <button
+                                                    onClick={() => copyAllLinks(token)}
+                                                    className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                                                        copiedId === token.id
+                                                            ? 'bg-emerald-500 text-white'
+                                                            : 'bg-primary-50 text-primary-700 border border-primary-200 hover:bg-primary-100'
+                                                    }`}
+                                                >
+                                                    {copiedId === token.id ? <><CheckCircle size={14} /> Copied All</> : <><Copy size={14} /> Copy All</>}
+                                                </button>
+                                            )}
                                             <button
                                                 onClick={() => handleRevoke(token)}
                                                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-colors bg-red-50 text-red-600 hover:bg-red-100 border border-red-200"
@@ -250,6 +292,7 @@ function CreateShareForm({ items, onSuccess, onError }: {
             if (!token?.token) {
                 throw new Error('Share link created but response was invalid.');
             }
+            toastSuccess('Share link created');
             onSuccess();
         } catch (err: unknown) {
             const resp = (err as { response?: { data?: { detail?: string | { msg: string }[] } } })?.response?.data;

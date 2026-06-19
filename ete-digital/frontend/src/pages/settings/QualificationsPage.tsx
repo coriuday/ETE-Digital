@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import api from '../../api/client';
 import { preferencesApi, QualificationsData } from '../../api/preferences';
 import { SettingsCard, SaveFeedback, inputCls, labelCls } from './settingsShared';
+import { toastSuccess, toastError } from '../../utils/toast';
 import { Loader2, Plus, X } from 'lucide-react';
 
 const EXPERIENCE_OPTIONS = [
@@ -24,8 +25,6 @@ export default function QualificationsPage() {
     const [certifications, setCertifications] = useState<QualificationsData['certifications']>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         (async () => {
@@ -41,7 +40,7 @@ export default function QualificationsPage() {
                 setEducation(quals.education?.length ? quals.education : [{ school: '', degree: '', year: '' }]);
                 setCertifications(quals.certifications?.length ? quals.certifications : []);
             } catch {
-                setError('Failed to load qualifications.');
+                toastError('Failed to load qualifications.');
             } finally {
                 setLoading(false);
             }
@@ -59,7 +58,6 @@ export default function QualificationsPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        setError('');
         try {
             await Promise.all([
                 api.patch('/api/users/profile', {
@@ -73,10 +71,10 @@ export default function QualificationsPage() {
                     },
                 }),
             ]);
-            setSuccess(true);
+            toastSuccess('Qualifications saved');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setError(detail || 'Failed to save qualifications.');
+            toastError(typeof detail === 'string' ? detail : 'Failed to save qualifications.');
         } finally {
             setSaving(false);
         }
@@ -184,7 +182,7 @@ export default function QualificationsPage() {
                     )}
                 </div>
 
-                <SaveFeedback saving={saving} success={success} error={error} />
+                <SaveFeedback saving={saving} />
             </form>
         </SettingsCard>
     );

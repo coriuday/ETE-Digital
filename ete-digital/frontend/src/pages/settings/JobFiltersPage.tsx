@@ -4,6 +4,7 @@
 import { useState, useEffect } from 'react';
 import { preferencesApi } from '../../api/preferences';
 import { SettingsCard, SaveFeedback, inputCls, labelCls } from './settingsShared';
+import { toastSuccess, toastError } from '../../utils/toast';
 import { Loader2 } from 'lucide-react';
 
 const JOB_TYPES = [
@@ -21,8 +22,6 @@ export default function JobFiltersPage() {
     const [salaryMin, setSalaryMin] = useState('');
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [error, setError] = useState('');
 
     useEffect(() => {
         (async () => {
@@ -32,7 +31,7 @@ export default function JobFiltersPage() {
                 setHiddenJobTypes(prefs.hidden_job_types ?? []);
                 setSalaryMin(prefs.salary_min != null ? String(prefs.salary_min) : '');
             } catch {
-                setError('Failed to load job filters.');
+                toastError('Failed to load job filters.');
             } finally {
                 setLoading(false);
             }
@@ -56,17 +55,16 @@ export default function JobFiltersPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setSaving(true);
-        setError('');
         try {
             await preferencesApi.patch({
                 hidden_companies: hiddenCompanies,
                 hidden_job_types: hiddenJobTypes,
                 salary_min: salaryMin ? parseInt(salaryMin, 10) : null,
             });
-            setSuccess(true);
+            toastSuccess('Job filters saved');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            setError(detail || 'Failed to save job filters.');
+            toastError(typeof detail === 'string' ? detail : 'Failed to save job filters.');
         } finally {
             setSaving(false);
         }
@@ -130,7 +128,7 @@ export default function JobFiltersPage() {
                         placeholder="Jobs below this salary will be hidden" className={inputCls} min="0" />
                 </div>
 
-                <SaveFeedback saving={saving} success={success} error={error} />
+                <SaveFeedback saving={saving} />
             </form>
         </SettingsCard>
     );
