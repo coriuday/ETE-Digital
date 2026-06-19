@@ -16,7 +16,7 @@ from app.core.limiter import limiter
 from app.core.config import settings
 from app.core.database import engine
 
-if settings.SENTRY_DSN:
+if settings.SENTRY_DSN and settings.SENTRY_DSN.startswith("https://"):
     import sentry_sdk
     from sentry_sdk.integrations.fastapi import FastApiIntegration
 
