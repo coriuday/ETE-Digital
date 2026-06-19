@@ -208,7 +208,7 @@ export default function AppRouter() {
                     <Route path="/copyright" element={<CopyrightPage />} />
                     <Route path="/safe-job-search" element={<SafeJobSearchPage />} />
 
-                    {/* Protected Routes — gate onboarding before any protected content */}
+                    {/* Settings — all authenticated roles (candidate, employer, admin) */}
                     <Route
                         element={
                             needsOnboarding
@@ -216,9 +216,6 @@ export default function AppRouter() {
                                 : <ProtectedRoute />
                         }
                     >
-                        <Route path="/dashboard" element={<DashboardPage />} />
-
-                        {/* Settings — nested layout */}
                         <Route path="/settings" element={<SettingsLayout />}>
                             <Route index element={<Navigate to="/settings/profile" replace />} />
                             <Route path="profile" element={<ProfileSettingsPage />} />
@@ -231,6 +228,17 @@ export default function AppRouter() {
                             <Route path="notifications" element={<NotificationSettingsPage />} />
                             <Route path="2fa" element={<TwoFactorPage />} />
                         </Route>
+                    </Route>
+
+                    {/* Protected Routes — gate onboarding before any protected content */}
+                    <Route
+                        element={
+                            needsOnboarding
+                                ? <Navigate to="/onboarding" replace />
+                                : <ProtectedRoute />
+                        }
+                    >
+                        <Route path="/dashboard" element={<DashboardPage />} />
 
                         {/* Candidate Routes */}
                         <Route path="/dashboard/applications" element={<MyApplicationsPage />} />

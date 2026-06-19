@@ -132,7 +132,7 @@ const ProfileCompletionCard = memo(function ProfileCompletionCard({ profile }: P
             {/* CTA */}
             <div className="px-5 py-3 border-t border-border bg-gray-50/50">
                 <Link
-                    to="/settings"
+                    to="/settings/profile"
                     className="flex items-center justify-between text-xs font-semibold text-primary-600 hover:text-primary-700 transition-colors"
                 >
                     Complete your profile

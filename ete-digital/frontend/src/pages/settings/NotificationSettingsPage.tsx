@@ -1,9 +1,10 @@
 /**
  * Notification Settings Page
  */
-import { useState } from 'react';
-import { Bell, Mail, Smartphone, Loader2, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Mail, Smartphone, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import api from '../../api/client';
+import { SettingsCard } from './settingsShared';
 
 type NotifPrefs = {
     email_applications: boolean;
@@ -32,12 +33,14 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
             role="switch"
             aria-checked={checked}
             onClick={() => onChange(!checked)}
-            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${checked ? 'bg-primary-600' : 'bg-gray-200'
-                }`}
+            className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
+                checked ? 'bg-primary-600' : 'bg-border'
+            }`}
         >
             <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${checked ? 'translate-x-5' : 'translate-x-0'
-                    }`}
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                    checked ? 'translate-x-5' : 'translate-x-0'
+                }`}
             />
         </button>
     );
@@ -45,9 +48,26 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 
 export default function NotificationSettingsPage() {
     const [prefs, setPrefs] = useState<NotifPrefs>(defaultPrefs);
+    const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [success, setSuccess] = useState(false);
     const [error, setError] = useState('');
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const res = await api.get('/api/users/me/preferences');
+                const stored = res.data?.notifications;
+                if (stored && typeof stored === 'object') {
+                    setPrefs({ ...defaultPrefs, ...stored });
+                }
+            } catch {
+                /* use defaults */
+            } finally {
+                setLoading(false);
+            }
+        })();
+    }, []);
 
     const update = (key: keyof NotifPrefs, value: boolean) => {
         setPrefs(prev => ({ ...prev, [key]: value }));
@@ -58,10 +78,11 @@ export default function NotificationSettingsPage() {
         setSaving(true);
         setError('');
         try {
-            await api.patch('/api/users/notification-preferences', prefs);
+            await api.patch('/api/users/me/preferences', { notifications: prefs });
             setSuccess(true);
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to save preferences.');
+        } catch (err: unknown) {
+            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            setError(detail || 'Failed to save preferences.');
         } finally {
             setSaving(false);
         }
@@ -91,63 +112,68 @@ export default function NotificationSettingsPage() {
         },
     ];
 
-    return (
-        <div className="space-y-6">
-                <div className="flex items-center gap-3 mb-2">
-                    <Bell className="w-6 h-6 text-primary-600" />
-                    <h2 className="text-lg font-bold text-text-primary">Notification Settings</h2>
-                </div>
-                <p className="text-text-secondary text-sm mb-2">Choose what updates you want to receive.</p>
+    if (loading) {
+        return (
+            <div className="flex justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-primary-600" />
+            </div>
+        );
+    }
 
-                <div className="space-y-6">
-                    {sections.map((section, si) => (
-                        <div key={si} className="bg-white rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
-                            <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-100 bg-gray-50">
-                                <div className="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center">
-                                    {section.icon}
-                                </div>
-                                <div>
-                                    <h2 className="font-semibold text-gray-900 text-sm">{section.title}</h2>
-                                    <p className="text-xs text-gray-500">{section.desc}</p>
-                                </div>
+    return (
+        <SettingsCard title="Notifications" description="Choose what updates you want to receive.">
+            <div className="space-y-6">
+                {sections.map((section, si) => (
+                    <div key={si} className="rounded-xl border border-border overflow-hidden">
+                        <div className="flex items-center gap-3 px-5 py-4 border-b border-border bg-background">
+                            <div className="w-9 h-9 bg-primary-50 rounded-lg flex items-center justify-center">
+                                {section.icon}
                             </div>
-                            <div className="divide-y divide-gray-100">
-                                {section.items.map((item) => (
-                                    <div key={item.key} className="flex items-center justify-between px-6 py-4">
-                                        <div>
-                                            <p className="text-sm font-medium text-gray-900">{item.label}</p>
-                                            <p className="text-xs text-gray-500">{item.desc}</p>
-                                        </div>
-                                        <Toggle
-                                            checked={prefs[item.key]}
-                                            onChange={(value) => update(item.key, value)}
-                                        />
-                                    </div>
-                                ))}
+                            <div>
+                                <h3 className="font-semibold text-text-primary text-sm">{section.title}</h3>
+                                <p className="text-xs text-text-secondary">{section.desc}</p>
                             </div>
                         </div>
-                    ))}
-                </div>
+                        <div className="divide-y divide-border">
+                            {section.items.map((item) => (
+                                <div key={item.key} className="flex items-center justify-between px-5 py-4">
+                                    <div>
+                                        <p className="text-sm font-medium text-text-primary">{item.label}</p>
+                                        <p className="text-xs text-text-secondary">{item.desc}</p>
+                                    </div>
+                                    <Toggle
+                                        checked={prefs[item.key]}
+                                        onChange={(value) => update(item.key, value)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                ))}
 
                 {error && (
-                    <p className="mt-4 text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>
+                    <div className="flex items-center gap-2 text-sm text-error bg-red-50 border border-red-200 rounded-xl px-3 py-2">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {error}
+                    </div>
                 )}
 
-                <div className="mt-6 flex items-center gap-4">
+                <div className="flex items-center gap-4">
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-6 py-2.5 bg-gradient-to-r from-primary-600 to-secondary-700 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-60 flex items-center gap-2"
+                        className="px-6 py-2.5 bg-primary-600 text-white rounded-xl text-sm font-semibold hover:bg-primary-700 transition-colors disabled:opacity-60 flex items-center gap-2"
                     >
                         {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : 'Save Preferences'}
                     </button>
                     {success && (
-                        <div className="flex items-center gap-1.5 text-green-600 text-sm">
+                        <div className="flex items-center gap-1.5 text-emerald-600 text-sm">
                             <CheckCircle className="w-4 h-4" />
                             Preferences saved!
                         </div>
                     )}
                 </div>
             </div>
+        </SettingsCard>
     );
 }

@@ -105,8 +105,8 @@ const SETTINGS_SECTIONS: Record<string, string> = {
     '/settings/notifications': 'Notifications',
     '/settings/2fa': 'Two-Factor Auth',
 };
-const SIDEBAR_COLLAPSED = 68;
-const SIDEBAR_EXPANDED = 240;
+const SIDEBAR_COLLAPSED = 72;
+const SIDEBAR_EXPANDED = 272;
 
 /* ── NavItem component — memoized to prevent unnecessary re-renders ───────── */
 const NavLink = memo(function NavLink({
@@ -269,14 +269,14 @@ export default function AppShell({ children }: AppShellProps) {
                 <Link
                     to={roleHome}
                     className={[
-                        'flex items-center gap-3 px-4 border-b border-border',
+                        'flex items-center gap-3 px-4 border-b border-border overflow-visible',
                         'hover:bg-background transition-colors duration-150 flex-shrink-0',
-                        isCollapsed ? 'justify-center py-4 h-[60px]' : 'py-4 h-[60px]',
+                        isCollapsed ? 'justify-center py-4 h-[60px]' : 'py-3 h-[60px]',
                     ].join(' ')}
                     aria-label="JobsRow.com Home"
                 >
                     {isCollapsed ? (
-                        <span className="text-sm font-extrabold text-[#176BBE]">J</span>
+                        <span className="text-xs font-extrabold text-[#176BBE] leading-none">JR</span>
                     ) : (
                         <BrandLogo size="sm" subtitle={roleLabel} />
                     )}
@@ -529,7 +529,7 @@ export default function AppShell({ children }: AppShellProps) {
                 </header>
 
                 {/* ── Page Content ─────────────────────────────────────── */}
-                <main className="flex-1 overflow-y-auto" id="main-content">
+                <main className="flex-1 overflow-y-auto min-h-0" id="main-content">
                     {children}
                 </main>
             </div>

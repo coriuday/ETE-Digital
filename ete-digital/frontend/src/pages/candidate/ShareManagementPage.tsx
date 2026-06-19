@@ -103,9 +103,9 @@ export default function ShareManagementPage() {
                     {showCreateForm && (
                         <CreateShareForm
                             items={items}
-                            onSuccess={(newToken) => {
-                                setTokens(prev => [newToken, ...prev]);
+                            onSuccess={() => {
                                 setShowCreateForm(false);
+                                loadData();
                             }}
                             onError={setActionError}
                         />
@@ -214,7 +214,7 @@ export default function ShareManagementPage() {
 
 function CreateShareForm({ items, onSuccess, onError }: {
     items: VaultItem[];
-    onSuccess: (token: ShareToken) => void;
+    onSuccess: () => void;
     onError: (msg: string) => void;
 }) {
     const [submitting, setSubmitting] = useState(false);
@@ -247,10 +247,16 @@ function CreateShareForm({ items, onSuccess, onError }: {
                 ...(formData.max_views ? { max_views: parseInt(formData.max_views) } : {}),
             };
             const token = await vaultApi.createShareToken(data);
-            onSuccess(token);
+            if (!token?.token) {
+                throw new Error('Share link created but response was invalid.');
+            }
+            onSuccess();
         } catch (err: unknown) {
-            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-            const msg = detail || 'Failed to create share link. Please try again.';
+            const resp = (err as { response?: { data?: { detail?: string | { msg: string }[] } } })?.response?.data;
+            let msg = 'Failed to create share link. Please try again.';
+            if (typeof resp?.detail === 'string') msg = resp.detail;
+            else if (Array.isArray(resp?.detail)) msg = resp.detail.map(d => d.msg).join(', ');
+            else if (err instanceof Error) msg = err.message;
             setFormError(msg);
             onError(msg);
         } finally {

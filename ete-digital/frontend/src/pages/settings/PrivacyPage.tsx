@@ -23,7 +23,7 @@ export default function PrivacyPage() {
         setExporting(true);
         setExportError('');
         try {
-            const res = await api.get('/users/gdpr/export', { responseType: 'blob' });
+            const res = await api.get('/api/users/gdpr/export', { responseType: 'blob' });
             
             // Create a blob link to download
             const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
         setDeleting(true);
         setDeleteError('');
         try {
-            await api.delete('/users/gdpr/account');
+            await api.delete('/api/users/gdpr/account');
             logout();
             navigate('/login');
         } catch (err: any) {

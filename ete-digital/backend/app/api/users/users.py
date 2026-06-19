@@ -264,6 +264,15 @@ DEFAULT_PREFERENCES = {
     "hidden_job_types": [],
     "qualifications": {"education": [], "certifications": []},
     "resume_builder": {},
+    "notifications": {
+        "email_applications": True,
+        "email_tryouts": True,
+        "email_messages": True,
+        "email_marketing": False,
+        "push_applications": True,
+        "push_tryouts": True,
+        "push_messages": True,
+    },
 }
 
 

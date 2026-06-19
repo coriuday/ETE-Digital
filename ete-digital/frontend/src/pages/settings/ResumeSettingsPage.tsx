@@ -128,7 +128,7 @@ export default function ResumeSettingsPage() {
                                 <p className="text-xs text-emerald-600 truncate">{fileName || resumeUrl.split('/').pop()}</p>
                             </div>
                             <div className="flex gap-2">
-                                <a href={`${API_BASE}${resumeUrl}`} target="_blank" rel="noopener noreferrer"
+                                <a href={resumeUrl.startsWith('http') ? resumeUrl : `${API_BASE}${resumeUrl}`} target="_blank" rel="noopener noreferrer"
                                     className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:underline">
                                     <Download className="w-3.5 h-3.5" /> Download
                                 </a>

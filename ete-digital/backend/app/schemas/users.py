@@ -123,6 +123,7 @@ class PreferencesUpdate(BaseModel):
     hidden_companies: Optional[List[str]] = None
     hidden_job_types: Optional[List[str]] = None
     qualifications: Optional[dict] = None
+    notifications: Optional[dict] = None
     resume_builder: Optional[dict] = None
 
 

@@ -9,12 +9,12 @@ import { Facebook, Youtube, Linkedin, Instagram } from 'lucide-react';
 const footerSections = {
     'Candidates Zone': [
         { label: 'Browse Jobs', href: '/jobs' },
-        { label: 'Upload Resume', href: '/settings?tab=profile' },
+        { label: 'Upload Resume', href: '/settings/resume' },
         { label: 'My Applications', href: '/dashboard/applications' },
         { label: 'My Tryouts', href: '/dashboard/tryouts' },
         { label: 'Talent Vault', href: '/vault' },
         { label: 'Career Advice', href: '/about' },
-        { label: 'Job Preferences', href: '/settings?tab=profile' },
+        { label: 'Job Preferences', href: '/settings/job-preferences' },
     ],
     'Employers Zone': [
         { label: 'Post a Job for Free', href: '/register?role=employer' },

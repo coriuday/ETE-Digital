@@ -18,6 +18,7 @@ export interface UserPreferences {
     hidden_companies: string[];
     hidden_job_types: string[];
     qualifications: QualificationsData;
+    notifications: Record<string, boolean>;
     resume_builder: Record<string, unknown>;
 }
 
