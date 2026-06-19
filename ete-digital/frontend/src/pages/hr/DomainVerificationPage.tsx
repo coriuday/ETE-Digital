@@ -4,9 +4,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { hrPageCls } from './hrShared';
 import { organizationsApi, Organization } from '../../api/organizations';
 import {
-    Globe, CheckCircle2, Copy, RefreshCw, AlertCircle,
+    CheckCircle2, Copy, RefreshCw, AlertCircle,
     ShieldCheck, Loader2, ChevronRight, ExternalLink,
 } from 'lucide-react';
 
@@ -90,16 +92,11 @@ export default function DomainVerificationPage() {
                 </div>
             )}
 
-            <div className="p-6 lg:p-8 max-w-2xl mx-auto space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                        <Globe size={20} className="text-violet-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">Domain Verification</h1>
-                        <p className="text-sm text-gray-500">{org?.company_name} · {org?.domain}</p>
-                    </div>
-                </div>
+            <div className={`${hrPageCls} max-w-2xl`}>
+                <PageHeader
+                    title="Domain Verification"
+                    description={`${org?.company_name ?? 'Company'} · ${org?.domain ?? ''}`}
+                />
 
                 <div className="flex items-center gap-2 text-sm">
                     {['Instructions', 'Verify'].map((label, i) => {
@@ -108,12 +105,12 @@ export default function DomainVerificationPage() {
                         return (
                             <div key={label} className="flex items-center gap-2">
                                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                                    done ? 'bg-emerald-500 text-white' : active ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-500'
+                                    done ? 'bg-emerald-500 text-white' : active ? 'bg-primary-600 text-white' : 'bg-border text-text-secondary'
                                 }`}>
                                     {done ? '✓' : i + 1}
                                 </div>
-                                <span className={active ? 'text-gray-900 font-semibold' : done ? 'text-emerald-600' : 'text-gray-400'}>{label}</span>
-                                {i < 1 && <ChevronRight size={14} className="text-gray-300" />}
+                                <span className={active ? 'text-text-primary font-semibold' : done ? 'text-emerald-600' : 'text-text-tertiary'}>{label}</span>
+                                {i < 1 && <ChevronRight size={14} className="text-text-tertiary" />}
                             </div>
                         );
                     })}
@@ -128,11 +125,11 @@ export default function DomainVerificationPage() {
 
                 {step === 'pending' && org && (
                     <div className="space-y-4">
-                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+                        <div className="bg-surface rounded-2xl border border-border shadow-sm p-6 space-y-4">
                             {method === 'dns_txt' && (
                                 <>
-                                    <h2 className="font-semibold text-gray-900">Add This DNS TXT Record</h2>
-                                    <p className="text-sm text-gray-500">
+                                    <h2 className="font-semibold text-text-primary">Add This DNS TXT Record</h2>
+                                    <p className="text-sm text-text-secondary">
                                         Add the following TXT record for <strong>{org.domain}</strong> at your DNS provider:
                                     </p>
                                     <div className="space-y-3">
@@ -146,8 +143,8 @@ export default function DomainVerificationPage() {
 
                             {method === 'html_file' && (
                                 <>
-                                    <h2 className="font-semibold text-gray-900">Upload Verification File</h2>
-                                    <p className="text-sm text-gray-500">
+                                    <h2 className="font-semibold text-text-primary">Upload Verification File</h2>
+                                    <p className="text-sm text-text-secondary">
                                         Upload a file named <strong>{org.html_file_name}</strong> to your website root so it is accessible at:
                                     </p>
                                     <DnsField
@@ -167,8 +164,8 @@ export default function DomainVerificationPage() {
 
                             {method === 'meta_tag' && (
                                 <>
-                                    <h2 className="font-semibold text-gray-900">Add Meta Tag to Homepage</h2>
-                                    <p className="text-sm text-gray-500">
+                                    <h2 className="font-semibold text-text-primary">Add Meta Tag to Homepage</h2>
+                                    <p className="text-sm text-text-secondary">
                                         Paste this tag inside the <code>&lt;head&gt;</code> of <strong>{org.website}</strong>:
                                     </p>
                                     <DnsField
@@ -187,13 +184,13 @@ export default function DomainVerificationPage() {
                         </div>
 
                         {method === 'dns_txt' && (
-                            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                                <h3 className="font-semibold text-gray-900 mb-1">Step-by-step guides</h3>
+                            <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
+                                <h3 className="font-semibold text-text-primary mb-1">Step-by-step guides</h3>
                                 <div className="flex flex-wrap gap-2 mt-3">
                                     {['Cloudflare', 'GoDaddy', 'Namecheap'].map((r) => (
                                         <a key={r} href={`https://google.com/search?q=add+dns+txt+record+${r.toLowerCase()}`}
                                             target="_blank" rel="noreferrer"
-                                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-gray-200 rounded-lg text-gray-600 hover:bg-gray-50">
+                                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border rounded-lg text-text-secondary hover:bg-background">
                                             {r} <ExternalLink size={11} />
                                         </a>
                                     ))}
@@ -211,12 +208,12 @@ export default function DomainVerificationPage() {
                 )}
 
                 {step === 'verified' && org && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center space-y-4">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-8 text-center space-y-4">
                         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
                             <ShieldCheck size={32} className="text-emerald-600" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900">Domain Verified!</h2>
-                        <p className="text-gray-500 text-sm">
+                        <h2 className="text-xl font-bold text-text-primary">Domain Verified!</h2>
+                        <p className="text-text-secondary text-sm">
                             <strong>{org.domain}</strong> is verified for <strong>{org.company_name}</strong>.
                         </p>
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 text-sm font-semibold">
@@ -239,22 +236,22 @@ function DnsField({ label, value, copyable, copied, onCopy, help }: {
 }) {
     return (
         <div>
-            <p className="text-xs font-medium text-gray-500 mb-1">{label}</p>
+            <p className="text-xs font-medium text-text-secondary mb-1">{label}</p>
             <div className="flex items-center gap-2">
-                <code className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono text-gray-800 break-all">
+                <code className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm font-mono text-text-primary break-all">
                     {value}
                 </code>
                 {copyable && onCopy && (
                     <button onClick={onCopy}
                         className={`p-2 rounded-lg border transition-colors flex-shrink-0 ${
-                            copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'border-gray-200 text-gray-500 hover:bg-gray-50'
+                            copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'border-border text-text-secondary hover:bg-background'
                         }`}
                         title="Copy to clipboard">
                         {copied ? <CheckCircle2 size={15} /> : <Copy size={15} />}
                     </button>
                 )}
             </div>
-            {help && <p className="text-xs text-gray-400 mt-1">{help}</p>}
+            {help && <p className="text-xs text-text-tertiary mt-1">{help}</p>}
         </div>
     );
 }

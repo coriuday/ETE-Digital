@@ -9,7 +9,7 @@ import { preferencesApi } from '../../api/preferences';
 import { useAuthStore } from '../../stores/authStore';
 import {
     User, Award, SlidersHorizontal, Ban, FileText, Lock,
-    Shield, Bell, KeyRound, Building2, Users, Globe, CreditCard,
+    Shield, Bell, KeyRound, Building2, Users, Globe,
     ExternalLink,
 } from 'lucide-react';
 
@@ -143,7 +143,6 @@ export default function SettingsLayout() {
         { href: '/settings/company', label: 'Company Profile', icon: <Building2 size={16} /> },
         { href: '/hr/team', label: 'Team', icon: <Users size={16} />, external: true },
         { href: '/hr/domain-verify', label: 'Domain Verification', icon: <Globe size={16} />, external: true },
-        { href: '/hr/billing', label: 'Billing', icon: <CreditCard size={16} />, external: true },
     ] : [];
 
     const securitySections: NavSection[] = [

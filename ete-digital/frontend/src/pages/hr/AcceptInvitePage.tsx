@@ -37,7 +37,7 @@ export default function AcceptInvitePage() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-violet-50 to-indigo-50 flex items-center justify-center p-6">
-            <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-10 max-w-md w-full text-center space-y-5">
+            <div className="bg-surface rounded-2xl shadow-xl border border-border p-10 max-w-md w-full text-center space-y-5">
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mx-auto ${
                     state === 'loading' ? 'bg-violet-100' :
                     state === 'success' ? 'bg-emerald-100' : 'bg-red-100'
@@ -47,16 +47,16 @@ export default function AcceptInvitePage() {
                     {state === 'error' && <AlertCircle size={32} className="text-red-500" />}
                 </div>
 
-                <h1 className="text-xl font-bold text-gray-900">
+                <h1 className="text-xl font-bold text-text-primary">
                     {state === 'loading' && 'Accepting Invite...'}
                     {state === 'success' && 'Welcome to the team! 🎉'}
                     {state === 'error' && 'Invite Error'}
                 </h1>
 
-                <p className="text-gray-500 text-sm leading-relaxed">{message}</p>
+                <p className="text-text-secondary text-sm leading-relaxed">{message}</p>
 
                 {state === 'success' && (
-                    <p className="text-xs text-gray-400">Redirecting to Team page in 3 seconds...</p>
+                    <p className="text-xs text-text-tertiary">Redirecting to Team page in 3 seconds...</p>
                 )}
                 {state === 'error' && (
                     <button onClick={() => navigate('/hr/dashboard')}

@@ -24,7 +24,7 @@ import {
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X,
     PlusCircle, ClipboardList, Star, UserCheck,
-    ChevronDown, User, Globe, CreditCard, Upload, ShieldAlert, ShieldCheck,
+    ChevronDown, User, Globe, Upload, ShieldAlert, ShieldCheck,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
@@ -54,9 +54,8 @@ const hrNav: NavItem[] = [
     { label: 'Grade Tryouts',  icon: <UserCheck size={18} />,       href: '/hr/tryouts/grade' },
     { label: 'Analytics',      icon: <BarChart2 size={18} />,       href: '/hr/analytics' },
     { label: 'Team',           icon: <Users size={18} />,           href: '/hr/team' },
-    { label: 'Billing',        icon: <CreditCard size={18} />,      href: '/hr/billing' },
+    { label: 'Company Profile', icon: <Globe size={18} />,          href: '/settings/company' },
     { label: 'Audit Logs',     icon: <ShieldAlert size={18} />,     href: '/hr/audit-logs' },
-    { label: 'Company Setup', icon: <Globe size={18} />,           href: '/hr/onboarding' },
     { label: 'Domain Verify',  icon: <ShieldCheck size={18} />,    href: '/hr/domain-verify' },
 ];
 
@@ -104,6 +103,7 @@ const SETTINGS_SECTIONS: Record<string, string> = {
     '/settings/privacy': 'Privacy & Data',
     '/settings/notifications': 'Notifications',
     '/settings/2fa': 'Two-Factor Auth',
+    '/settings/company': 'Company Profile',
 };
 const SIDEBAR_COLLAPSED = 72;
 const SIDEBAR_EXPANDED = 272;
@@ -301,7 +301,11 @@ export default function AppShell({ children }: AppShellProps) {
                 {/* Bottom section: Settings + Logout */}
                 <div className="px-2 py-3 border-t border-border space-y-0.5 flex-shrink-0">
                     <NavLink
-                        item={{ label: 'Settings', icon: <Settings size={18} />, href: '/settings/profile' }}
+                        item={{
+                            label: 'Settings',
+                            icon: <Settings size={18} />,
+                            href: user?.role === 'employer' ? '/settings/company' : '/settings/profile',
+                        }}
                         active={location.pathname.startsWith('/settings')}
                         collapsed={isCollapsed}
                         onClick={mobile ? () => setMobileOpen(false) : undefined}

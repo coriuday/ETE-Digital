@@ -10,9 +10,11 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { hrPageCls, btnSecondary } from './hrShared';
 import api from '../../api/client';
 import {
-    CreditCard, CheckCircle2, Zap, Building2, Crown,
+    CheckCircle2, Zap, Building2, Crown,
     Users, Briefcase, Loader2, AlertCircle, ExternalLink,
     TrendingUp, Shield,
 } from 'lucide-react';
@@ -38,7 +40,7 @@ const PLANS = [
         icon: <Shield size={20} />,
         color: 'from-gray-400 to-gray-500',
         bgLight: 'bg-gray-50',
-        border: 'border-gray-200',
+        border: 'border-border',
         features: ['1 team seat', '3 active jobs', 'Basic analytics', 'Domain verification'],
     },
     {
@@ -86,9 +88,9 @@ function UsageBar({ used, limit, label }: { used: number; limit: number; label: 
 
     return (
         <div className="space-y-1">
-            <div className="flex justify-between text-xs text-gray-500">
+            <div className="flex justify-between text-xs text-text-secondary">
                 <span>{label}</span>
-                <span className={`font-semibold ${isCritical ? 'text-red-600' : isWarning ? 'text-amber-600' : 'text-gray-700'}`}>
+                <span className={`font-semibold ${isCritical ? 'text-red-600' : isWarning ? 'text-amber-600' : 'text-text-primary'}`}>
                     {used} / {isUnlimited ? '∞' : limit}
                 </span>
             </div>
@@ -127,7 +129,7 @@ export default function BillingPage() {
     }, []);
 
     useEffect(() => {
-        api.get('/billing/plan')
+        api.get('/api/billing/plan')
             .then(r => setPlanData(r.data))
             .catch(e => setError(e.response?.data?.detail ?? 'Failed to load billing info.'))
             .finally(() => setLoading(false));
@@ -136,15 +138,15 @@ export default function BillingPage() {
     const handleSubscribe = async (planId: string) => {
         if (planId === 'free') return;
         if (planId === 'enterprise') {
-            window.open('mailto:hello@jobsrow.com?subject=Enterprise Plan Inquiry', '_blank');
+            window.location.href = 'mailto:hello@jobsrow.com?subject=Enterprise%20Plan%20Inquiry';
             return;
         }
         setSubscribing(planId);
         try {
-            const res = await api.post('/billing/subscribe', { plan: planId });
+            const res = await api.post('/api/billing/subscribe', { plan: planId });
             if (res.data.simulation) {
                 // Simulation mode — reload plan data
-                const updated = await api.get('/billing/plan');
+                const updated = await api.get('/api/billing/plan');
                 setPlanData(updated.data);
                 showToast(`✅ Upgraded to ${planId} (simulation mode — add Stripe keys for real billing)`);
             } else {
@@ -160,7 +162,7 @@ export default function BillingPage() {
     const handlePortal = async () => {
         setPortalLoading(true);
         try {
-            const res = await api.post('/billing/portal');
+            const res = await api.post('/api/billing/portal');
             window.location.href = res.data.url;
         } catch {
             showToast('Failed to open billing portal.', 'error');
@@ -180,27 +182,19 @@ export default function BillingPage() {
                 </div>
             )}
 
-            <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                            <CreditCard size={20} className="text-violet-600" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Billing & Plans</h1>
-                            <p className="text-sm text-gray-500">Manage your subscription and usage</p>
-                        </div>
-                    </div>
-                    {planData?.stripe_customer_id && (
-                        <button onClick={handlePortal} disabled={portalLoading}
-                            className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
-                            {portalLoading ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
-                            Manage Billing
-                        </button>
-                    )}
-                </div>
+            <div className={hrPageCls}>
+                <PageHeader
+                    title="Billing & Plans"
+                    description="Manage your subscription and usage"
+                    actions={
+                        planData?.stripe_customer_id ? (
+                            <button onClick={handlePortal} disabled={portalLoading} className={btnSecondary}>
+                                {portalLoading ? <Loader2 size={14} className="animate-spin" /> : <ExternalLink size={14} />}
+                                Manage Billing
+                            </button>
+                        ) : undefined
+                    }
+                />
 
                 {/* Current Plan Card */}
                 {loading ? (
@@ -221,14 +215,14 @@ export default function BillingPage() {
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <h2 className="font-bold text-gray-900 text-lg">{currentPlan.name} Plan</h2>
+                                        <h2 className="font-bold text-text-primary text-lg">{currentPlan.name} Plan</h2>
                                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                                             planData.status === 'active' ? 'bg-emerald-100 text-emerald-700' :
                                             planData.status === 'past_due' ? 'bg-red-100 text-red-600' :
-                                            'bg-gray-100 text-gray-500'
+                                            'bg-gray-100 text-text-secondary'
                                         }`}>{planData.status}</span>
                                     </div>
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-sm text-text-secondary">
                                         {planData.current_period_end
                                             ? `Renews ${new Date(planData.current_period_end).toLocaleDateString('en-IN', { dateStyle: 'medium' })}`
                                             : currentPlan.price === '₹0' ? 'Free forever' : currentPlan.price + '/mo'}
@@ -243,14 +237,14 @@ export default function BillingPage() {
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
-                            <div className="bg-white rounded-xl p-4 border border-white/60 shadow-sm space-y-3">
-                                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <div className="bg-surface rounded-xl p-4 border border-white/60 shadow-sm space-y-3">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
                                     <Users size={12} /> Team Seats
                                 </div>
                                 <UsageBar used={planData.seats_used} limit={planData.seat_limit} label="Seats used" />
                             </div>
-                            <div className="bg-white rounded-xl p-4 border border-white/60 shadow-sm space-y-3">
-                                <div className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                            <div className="bg-surface rounded-xl p-4 border border-white/60 shadow-sm space-y-3">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-text-secondary uppercase tracking-wider">
                                     <Briefcase size={12} /> Active Jobs
                                 </div>
                                 <UsageBar used={planData.jobs_active} limit={planData.job_limit} label="Jobs active" />
@@ -261,7 +255,7 @@ export default function BillingPage() {
 
                 {/* Plan Comparison */}
                 <div>
-                    <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-text-primary mb-4 flex items-center gap-2">
                         <TrendingUp size={18} className="text-violet-500" /> Upgrade Your Plan
                     </h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -270,7 +264,7 @@ export default function BillingPage() {
 
                             return (
                                 <div key={plan.id}
-                                    className={`relative bg-white rounded-2xl border shadow-sm p-5 flex flex-col gap-4 transition-all ${plan.popular ? 'border-violet-300 shadow-violet-100 shadow-md scale-[1.02]' : 'border-gray-100 hover:border-gray-200'}`}
+                                    className={`relative bg-surface rounded-2xl border shadow-sm p-5 flex flex-col gap-4 transition-all ${plan.popular ? 'border-violet-300 shadow-violet-100 shadow-md scale-[1.02]' : 'border-border hover:border-border'}`}
                                 >
                                     {plan.popular && (
                                         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -286,20 +280,20 @@ export default function BillingPage() {
                                             {plan.icon}
                                         </div>
                                         <div>
-                                            <p className="font-bold text-gray-900 text-sm">{plan.name}</p>
-                                            <p className="text-xs text-gray-400">{plan.period}</p>
+                                            <p className="font-bold text-text-primary text-sm">{plan.name}</p>
+                                            <p className="text-xs text-text-tertiary">{plan.period}</p>
                                         </div>
                                     </div>
 
                                     <div>
-                                        <span className="text-2xl font-extrabold text-gray-900">{plan.price}</span>
-                                        {plan.price !== 'Custom' && <span className="text-gray-400 text-sm">/mo</span>}
+                                        <span className="text-2xl font-extrabold text-text-primary">{plan.price}</span>
+                                        {plan.price !== 'Custom' && <span className="text-text-tertiary text-sm">/mo</span>}
                                     </div>
 
                                     {/* Features */}
                                     <ul className="space-y-1.5 flex-1">
                                         {plan.features.map(f => (
-                                            <li key={f} className="flex items-center gap-2 text-xs text-gray-600">
+                                            <li key={f} className="flex items-center gap-2 text-xs text-text-secondary">
                                                 <CheckCircle2 size={12} className="text-emerald-500 flex-shrink-0" /> {f}
                                             </li>
                                         ))}
@@ -311,10 +305,10 @@ export default function BillingPage() {
                                         disabled={isCurrent || subscribing === plan.id}
                                         className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${
                                             isCurrent
-                                                ? 'bg-gray-100 text-gray-400 cursor-default'
+                                                ? 'bg-gray-100 text-text-tertiary cursor-default'
                                                 : plan.popular
                                                     ? 'bg-violet-600 text-white hover:bg-violet-700 shadow-lg shadow-violet-200'
-                                                    : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+                                                    : 'border border-border text-text-primary hover:bg-background'
                                         }`}
                                     >
                                         {subscribing === plan.id ? (
@@ -329,7 +323,7 @@ export default function BillingPage() {
                     </div>
                 </div>
 
-                <p className="text-xs text-center text-gray-400">
+                <p className="text-xs text-center text-text-tertiary">
                     Prices are in INR. Billed monthly. Cancel anytime via the Manage Billing portal.
                     All payments are processed securely by Stripe.
                 </p>

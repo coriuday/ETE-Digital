@@ -65,6 +65,7 @@ const AcceptInvitePage = lazy(() => import('./pages/hr/AcceptInvitePage'));
 const BillingPage = lazy(() => import('./pages/hr/BillingPage'));
 const BulkJobPostPage = lazy(() => import('./pages/hr/BulkJobPostPage'));
 const AuditLogsPage = lazy(() => import('./pages/hr/AuditLogsPage'));
+const CandidateProfilePage = lazy(() => import('./pages/hr/CandidateProfilePage'));
 
 // ---- Admin Pages ----
 const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage'));
@@ -130,11 +131,11 @@ export default function AppRouter() {
         : user?.role === 'admin'  ? '/admin'
         : '/dashboard'; // candidate (default)
 
-    // Gate: new users who haven't completed onboarding are redirected to /onboarding.
-    // Admins are exempt (they have no onboarding flow).
+    // Gate: new candidates who haven't completed onboarding are redirected to /onboarding.
+    // Employers and admins are exempt (employers use /hr/onboarding or /settings/company).
     const needsOnboarding =
         isAuthenticated &&
-        user?.role !== 'admin' &&
+        user?.role === 'candidate' &&
         user?.onboarding_complete === false;
 
     return (
@@ -218,7 +219,12 @@ export default function AppRouter() {
                         }
                     >
                         <Route path="/settings" element={<SettingsLayout />}>
-                            <Route index element={<Navigate to="/settings/profile" replace />} />
+                            <Route index element={
+                                <Navigate
+                                    to={user?.role === 'employer' ? '/settings/company' : '/settings/profile'}
+                                    replace
+                                />
+                            } />
                             <Route path="profile" element={<ProfileSettingsPage />} />
                             <Route path="qualifications" element={<QualificationsPage />} />
                             <Route path="job-preferences" element={<JobPreferencesPage />} />
@@ -262,6 +268,7 @@ export default function AppRouter() {
                         <Route path="/hr/jobs/create" element={<CreateJobPage />} />
                         <Route path="/hr/applications" element={<ApplicationsPage />} />
                         <Route path="/hr/applications/:applicationId" element={<ApplicationDetailsPage />} />
+                        <Route path="/hr/applications/:applicationId/candidate" element={<CandidateProfilePage />} />
                         <Route path="/hr/tryouts/create" element={<CreateTryoutPage />} />
                         <Route path="/hr/tryouts/grade" element={<GradeTryoutsPage />} />
                         <Route path="/hr/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />

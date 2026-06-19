@@ -226,6 +226,10 @@ class ApplicationDetailResponse(BaseModel):
     candidate_name: Optional[str] = None
     candidate_email: Optional[str] = None
     job_title: Optional[str] = None
+    candidate_headline: Optional[str] = None
+    candidate_location: Optional[str] = None
+    candidate_skills: List[str] = Field(default_factory=list)
+    candidate_resume_url: Optional[str] = None
 
     # ATS pipeline
     status_history: List[StatusHistoryEntry] = Field(default_factory=list)
@@ -234,6 +238,28 @@ class ApplicationDetailResponse(BaseModel):
 
     created_at: datetime
     updated_at: Optional[datetime]
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CandidateProfileForEmployer(BaseModel):
+    """Candidate profile visible to employer reviewing an application."""
+
+    candidate_id: str
+    application_id: str
+    full_name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
+    headline: Optional[str] = None
+    skills: List[str] = Field(default_factory=list)
+    experience_years: Optional[str] = None
+    resume_url: Optional[str] = None
+    social_links: Optional[Dict] = None
+    vault_share_token: Optional[str] = None
+    has_shared_vault: bool = False
+    job_title: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

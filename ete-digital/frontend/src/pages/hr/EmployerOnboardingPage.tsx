@@ -6,10 +6,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { hrPageCls } from './hrShared';
 import { useAuthStore } from '../../stores/authStore';
 import { organizationsApi, Organization } from '../../api/organizations';
 import {
-    Building2, Globe, Mail, CheckCircle2, Loader2, AlertCircle,
+    Globe, Mail, CheckCircle2, Loader2, AlertCircle,
     ChevronRight, ShieldCheck, Clock,
 } from 'lucide-react';
 
@@ -128,16 +130,11 @@ export default function EmployerOnboardingPage() {
 
     return (
         <AppShell>
-            <div className="p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                        <Building2 size={20} className="text-violet-600" />
-                    </div>
-                    <div>
-                        <h1 className="text-xl font-bold text-gray-900">Set Up Your Company</h1>
-                        <p className="text-sm text-gray-500">Complete employer onboarding to start posting jobs</p>
-                    </div>
-                </div>
+            <div className={`${hrPageCls} max-w-3xl`}>
+                <PageHeader
+                    title="Set Up Your Company"
+                    description="Complete employer onboarding to start posting jobs"
+                />
 
                 {error && (
                     <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
@@ -151,13 +148,13 @@ export default function EmployerOnboardingPage() {
                         <button
                             type="button"
                             onClick={() => setPath('domain')}
-                            className="text-left p-6 bg-white border-2 border-gray-100 hover:border-violet-400 rounded-2xl shadow-sm transition-all group"
+                            className="text-left p-6 bg-surface border-2 border-border hover:border-violet-400 rounded-2xl shadow-sm transition-all group"
                         >
                             <div className="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center mb-4">
                                 <Globe size={20} className="text-emerald-600" />
                             </div>
-                            <h2 className="font-semibold text-gray-900 mb-2">Work Email / Company Domain</h2>
-                            <p className="text-sm text-gray-500 mb-4">
+                            <h2 className="font-semibold text-text-primary mb-2">Work Email / Company Domain</h2>
+                            <p className="text-sm text-text-secondary mb-4">
                                 Use your corporate email (e.g. hr@acme.com) and verify domain ownership via DNS, HTML file, or meta tag.
                             </p>
                             {hasCorporateEmail && (
@@ -173,13 +170,13 @@ export default function EmployerOnboardingPage() {
                         <button
                             type="button"
                             onClick={() => setPath('standard')}
-                            className="text-left p-6 bg-white border-2 border-gray-100 hover:border-amber-400 rounded-2xl shadow-sm transition-all group"
+                            className="text-left p-6 bg-surface border-2 border-border hover:border-amber-400 rounded-2xl shadow-sm transition-all group"
                         >
                             <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center mb-4">
                                 <Mail size={20} className="text-amber-600" />
                             </div>
-                            <h2 className="font-semibold text-gray-900 mb-2">Personal / Free Email</h2>
-                            <p className="text-sm text-gray-500 mb-4">
+                            <h2 className="font-semibold text-text-primary mb-2">Personal / Free Email</h2>
+                            <p className="text-sm text-text-secondary mb-4">
                                 Gmail, Yahoo, or other personal email? Submit company details for admin review — common for SMEs and agencies.
                             </p>
                             <span className="inline-flex items-center gap-1 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded-lg">
@@ -193,17 +190,17 @@ export default function EmployerOnboardingPage() {
                 )}
 
                 {path === 'domain' && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                        <button type="button" onClick={() => setPath('choose')} className="text-sm text-gray-500 hover:text-gray-800 mb-4">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
+                        <button type="button" onClick={() => setPath('choose')} className="text-sm text-text-secondary hover:text-text-primary mb-4">
                             ← Back
                         </button>
-                        <h2 className="font-semibold text-gray-900 mb-4">Register Company Domain</h2>
+                        <h2 className="font-semibold text-text-primary mb-4">Register Company Domain</h2>
                         <form onSubmit={handleDomainSubmit} className="space-y-4">
                             <Field label="Company Name" value={companyName} onChange={setCompanyName} placeholder="Acme Corp" required />
                             <Field label="Company Domain" value={domain} onChange={setDomain} placeholder="acme.com" required hint="Must match your work email domain" />
                             <Field label="Website URL" value={website} onChange={setWebsite} placeholder="https://acme.com" required />
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Verification Method</label>
+                                <label className="block text-sm font-medium text-text-primary mb-2">Verification Method</label>
                                 <div className="grid gap-2 sm:grid-cols-3">
                                     {([
                                         ['dns_txt', 'DNS TXT', 'Most secure'],
@@ -217,11 +214,11 @@ export default function EmployerOnboardingPage() {
                                             className={`p-3 rounded-xl border text-left text-sm transition-colors ${
                                                 verificationMethod === value
                                                     ? 'border-violet-500 bg-violet-50 text-violet-800'
-                                                    : 'border-gray-200 hover:border-gray-300'
+                                                    : 'border-border hover:border-border'
                                             }`}
                                         >
                                             <span className="font-semibold block">{label}</span>
-                                            <span className="text-xs text-gray-500">{sub}</span>
+                                            <span className="text-xs text-text-secondary">{sub}</span>
                                         </button>
                                     ))}
                                 </div>
@@ -235,19 +232,19 @@ export default function EmployerOnboardingPage() {
                 )}
 
                 {path === 'standard' && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                        <button type="button" onClick={() => setPath('choose')} className="text-sm text-gray-500 hover:text-gray-800 mb-4">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
+                        <button type="button" onClick={() => setPath('choose')} className="text-sm text-text-secondary hover:text-text-primary mb-4">
                             ← Back
                         </button>
-                        <h2 className="font-semibold text-gray-900 mb-4">Company Profile (Admin Review)</h2>
+                        <h2 className="font-semibold text-text-primary mb-4">Company Profile (Admin Review)</h2>
                         <form onSubmit={handleStandardSubmit} className="space-y-4">
                             <Field label="Company Name" value={stdCompanyName} onChange={setStdCompanyName} placeholder="Acme Recruiting Agency" required />
                             <Field label="Website URL" value={stdWebsite} onChange={setStdWebsite} placeholder="https://acme.com" required />
                             <Field label="LinkedIn Company Page (optional)" value={linkedinUrl} onChange={setLinkedinUrl} placeholder="https://linkedin.com/company/acme" />
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Company Size</label>
+                                <label className="block text-sm font-medium text-text-primary mb-1">Company Size</label>
                                 <select value={companySize} onChange={(e) => setCompanySize(e.target.value)}
-                                    className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
+                                    className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none">
                                     <option value="">Select size</option>
                                     {COMPANY_SIZES.map((s) => <option key={s} value={s}>{s} employees</option>)}
                                 </select>
@@ -263,12 +260,12 @@ export default function EmployerOnboardingPage() {
                 )}
 
                 {path === 'pending' && org && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center space-y-4">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-8 text-center space-y-4">
                         <div className="w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto">
                             <Clock size={32} className="text-amber-600" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900">Under Review</h2>
-                        <p className="text-gray-500 text-sm max-w-md mx-auto">
+                        <h2 className="text-xl font-bold text-text-primary">Under Review</h2>
+                        <p className="text-text-secondary text-sm max-w-md mx-auto">
                             <strong>{org.company_name}</strong> has been submitted for verification.
                             You can post up to 3 jobs while our team reviews your profile.
                         </p>
@@ -283,12 +280,12 @@ export default function EmployerOnboardingPage() {
                 )}
 
                 {path === 'verified' && org && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center space-y-4">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-8 text-center space-y-4">
                         <div className="w-16 h-16 bg-emerald-100 rounded-2xl flex items-center justify-center mx-auto">
                             <ShieldCheck size={32} className="text-emerald-600" />
                         </div>
-                        <h2 className="text-xl font-bold text-gray-900">Verified Employer</h2>
-                        <p className="text-gray-500 text-sm">{org.company_name} is fully verified.</p>
+                        <h2 className="text-xl font-bold text-text-primary">Verified Employer</h2>
+                        <p className="text-text-secondary text-sm">{org.company_name} is fully verified.</p>
                         <button onClick={() => navigate('/hr/dashboard')}
                             className="px-6 py-2.5 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700">
                             Go to Dashboard
@@ -306,11 +303,11 @@ function Field({ label, value, onChange, placeholder, required, hint }: {
 }) {
     return (
         <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+            <label className="block text-sm font-medium text-text-primary mb-1">{label}</label>
             <input value={value} onChange={(e) => onChange(e.target.value)} required={required}
                 placeholder={placeholder}
-                className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none" />
-            {hint && <p className="text-xs text-gray-400 mt-1">{hint}</p>}
+                className="w-full border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none" />
+            {hint && <p className="text-xs text-text-tertiary mt-1">{hint}</p>}
         </div>
     );
 }

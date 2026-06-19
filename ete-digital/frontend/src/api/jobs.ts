@@ -9,6 +9,7 @@ export interface ApplicationDetail {
     job_id: string;
     candidate_id: string;
     cover_letter: string | null;
+    vault_share_token?: string | null;
     status: string;
     match_score: number | null;
     match_explanation: Record<string, unknown> | null;
@@ -16,12 +17,34 @@ export interface ApplicationDetail {
     candidate_name?: string;
     candidate_email?: string;
     job_title?: string;
+    candidate_headline?: string | null;
+    candidate_location?: string | null;
+    candidate_skills?: string[];
+    candidate_resume_url?: string | null;
     status_history?: StatusHistoryEntry[];
     available_actions?: string[];
     is_locked?: boolean;
     pipeline_progress?: PipelineProgress;
     created_at: string;
     updated_at: string | null;
+}
+
+export interface CandidateProfile {
+    candidate_id: string;
+    application_id: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    location: string | null;
+    bio: string | null;
+    headline: string | null;
+    skills: string[];
+    experience_years: string | null;
+    resume_url: string | null;
+    social_links: Record<string, string> | null;
+    vault_share_token: string | null;
+    has_shared_vault: boolean;
+    job_title: string | null;
 }
 
 export interface Job {
@@ -160,6 +183,11 @@ export const jobsApi = {
 
     getApplicationDetail: async (applicationId: string): Promise<ApplicationDetail> => {
         const response = await api.get(`/api/jobs/applications/${applicationId}`);
+        return response.data;
+    },
+
+    getCandidateProfile: async (applicationId: string): Promise<CandidateProfile> => {
+        const response = await api.get(`/api/jobs/applications/${applicationId}/candidate-profile`);
         return response.data;
     },
 };

@@ -15,7 +15,7 @@ export function Card({ children, hover = false, className = '', onClick }: CardP
     return (
         <div
             className={`
-                bg-white rounded-xl border border-gray-200 shadow-sm
+                bg-surface rounded-xl border border-border shadow-card
                 ${hover ? 'transition-all duration-200 hover:shadow-md hover:border-primary-500/20 cursor-pointer' : ''}
                 ${className}
             `}
@@ -28,7 +28,7 @@ export function Card({ children, hover = false, className = '', onClick }: CardP
 
 export function CardHeader({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`px-6 py-4 border-b border-gray-200 ${className}`}>
+        <div className={`px-6 py-4 border-b border-border ${className}`}>
             {children}
         </div>
     );
@@ -44,7 +44,7 @@ export function CardBody({ children, className = '' }: { children: React.ReactNo
 
 export function CardFooter({ children, className = '' }: { children: React.ReactNode; className?: string }) {
     return (
-        <div className={`px-6 py-4 border-t border-gray-200 ${className}`}>
+        <div className={`px-6 py-4 border-t border-border ${className}`}>
             {children}
         </div>
     );

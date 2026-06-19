@@ -6,9 +6,30 @@ Helper functions to record audit logs.
 
 import uuid
 from typing import Optional, Any
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import Request
 from app.models.notifications import AuditLog, AuditAction
+from app.models.organization import Organization
+from app.models.organization_member import OrganizationMember
+
+
+async def get_org_id_for_user(db: AsyncSession, user_id: uuid.UUID | str) -> Optional[uuid.UUID]:
+    """Resolve organisation ID for an HR user (owner or member)."""
+    if isinstance(user_id, str):
+        user_id = uuid.UUID(user_id)
+
+    owner_result = await db.execute(select(Organization).where(Organization.owner_id == user_id))
+    org = owner_result.scalar_one_or_none()
+    if org:
+        return org.id
+
+    mem_result = await db.execute(select(OrganizationMember).where(OrganizationMember.user_id == user_id))
+    mem = mem_result.scalar_one_or_none()
+    if mem:
+        return mem.organization_id
+
+    return None
 
 
 async def log_audit_event(

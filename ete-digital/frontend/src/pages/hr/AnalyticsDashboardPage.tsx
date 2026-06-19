@@ -3,6 +3,8 @@
  */
 import { useState, useEffect } from 'react';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { hrPageCls, cardCls, btnSecondary } from './hrShared';
 import { BarChart2, TrendingUp, Users, Briefcase, Star, Download, Calendar } from 'lucide-react';
 import {
     ResponsiveContainer, LineChart, Line, BarChart, Bar,
@@ -52,17 +54,19 @@ function KpiCard({ label, value, icon, trend, color }: {
     icon: React.ReactNode; trend: string; color: string;
 }) {
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-surface rounded-xl p-6 shadow-card border border-border">
             <div className="flex items-center justify-between mb-3">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
                     {icon}
                 </div>
-                <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
-                    <TrendingUp size={10} /> {trend}
-                </span>
+                {trend && (
+                    <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
+                        <TrendingUp size={10} /> {trend}
+                    </span>
+                )}
             </div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-            <p className="text-sm text-gray-500 mt-0.5">{label}</p>
+            <p className="text-2xl font-bold text-text-primary">{value}</p>
+            <p className="text-sm text-text-secondary mt-0.5">{label}</p>
         </div>
     );
 }
@@ -113,29 +117,27 @@ export default function AnalyticsDashboardPage() {
 
     return (
         <AppShell>
-            <div className="p-6 lg:p-8 space-y-8">
-
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
-                        <p className="text-gray-500 mt-1">Track your hiring performance</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-sm">
-                            <Calendar size={14} className="text-gray-400" />
-                            <select value={days} onChange={(e) => setDays(Number(e.target.value))}
-                                className="text-sm text-gray-700 bg-transparent outline-none cursor-pointer">
-                                <option value={7}>Last 7 days</option>
-                                <option value={30}>Last 30 days</option>
-                                <option value={90}>Last 90 days</option>
-                            </select>
-                        </div>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-                            <Download size={14} /> Export
-                        </button>
-                    </div>
-                </div>
+            <div className={hrPageCls}>
+                <PageHeader
+                    title="Analytics"
+                    description="Track your hiring performance"
+                    actions={
+                        <>
+                            <div className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2 shadow-card">
+                                <Calendar size={14} className="text-text-tertiary" />
+                                <select value={days} onChange={(e) => setDays(Number(e.target.value))}
+                                    className="text-sm text-text-primary bg-transparent outline-none cursor-pointer">
+                                    <option value={7}>Last 7 days</option>
+                                    <option value={30}>Last 30 days</option>
+                                    <option value={90}>Last 90 days</option>
+                                </select>
+                            </div>
+                            <button className={btnSecondary}>
+                                <Download size={14} /> Export
+                            </button>
+                        </>
+                    }
+                />
 
                 {/* KPI Cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -147,9 +149,9 @@ export default function AnalyticsDashboardPage() {
 
                 {/* Applications Over Time + Top Jobs */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h2 className="font-semibold text-gray-900 mb-6">Applications Over Time</h2>
-                        {loading ? <div className="h-56 bg-gray-50 rounded-xl animate-pulse" /> : (
+                    <div className={`${cardCls} p-6`}>
+                        <h2 className="font-semibold text-text-primary mb-6">Applications Over Time</h2>
+                        {loading ? <div className="h-56 bg-background rounded-xl animate-pulse" /> : (
                             <ResponsiveContainer width="100%" height={220}>
                                 <LineChart data={lineData}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
@@ -164,9 +166,9 @@ export default function AnalyticsDashboardPage() {
                         )}
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h2 className="font-semibold text-gray-900 mb-6">Top Performing Jobs</h2>
-                        {loading ? <div className="h-56 bg-gray-50 rounded-xl animate-pulse" /> : (
+                    <div className={`${cardCls} p-6`}>
+                        <h2 className="font-semibold text-text-primary mb-6">Top Performing Jobs</h2>
+                        {loading ? <div className="h-56 bg-background rounded-xl animate-pulse" /> : (
                             <ResponsiveContainer width="100%" height={220}>
                                 <BarChart data={barData} layout="vertical" margin={{ left: 16 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
@@ -182,9 +184,9 @@ export default function AnalyticsDashboardPage() {
 
                 {/* Donut Chart + Funnel */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h2 className="font-semibold text-gray-900 mb-6">Candidate Sources</h2>
-                        {loading ? <div className="h-56 bg-gray-50 rounded-xl animate-pulse" /> : (
+                    <div className={`${cardCls} p-6`}>
+                        <h2 className="font-semibold text-text-primary mb-6">Candidate Sources</h2>
+                        {loading ? <div className="h-56 bg-background rounded-xl animate-pulse" /> : (
                             <div className="flex items-center gap-8">
                                 <ResponsiveContainer width={160} height={160}>
                                     <PieChart>
@@ -199,8 +201,8 @@ export default function AnalyticsDashboardPage() {
                                     {mockPieData.map((d) => (
                                         <div key={d.name} className="flex items-center gap-2.5">
                                             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: d.color }} />
-                                            <span className="text-sm text-gray-700">{d.name}</span>
-                                            <span className="text-sm font-semibold text-gray-900 ml-auto">{d.value}%</span>
+                                            <span className="text-sm text-text-secondary">{d.name}</span>
+                                            <span className="text-sm font-semibold text-text-primary ml-auto">{d.value}%</span>
                                         </div>
                                     ))}
                                 </div>
@@ -208,22 +210,22 @@ export default function AnalyticsDashboardPage() {
                         )}
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-                        <h2 className="font-semibold text-gray-900 mb-6">Application Funnel</h2>
+                    <div className={`${cardCls} p-6`}>
+                        <h2 className="font-semibold text-text-primary mb-6">Application Funnel</h2>
                         <div className="space-y-2">
                             {funnelData.map((stage) => {
                                 const maxVal = funnelData[0]?.value || 1;
                                 const barPct = Math.round((stage.value / maxVal) * 100);
                                 return (
                                     <div key={stage.name} className="flex items-center gap-3">
-                                        <span className="text-xs text-gray-500 w-20 text-right">{stage.name}</span>
-                                        <div className="flex-1 h-7 bg-gray-100 rounded-lg overflow-hidden">
+                                        <span className="text-xs text-text-secondary w-20 text-right">{stage.name}</span>
+                                        <div className="flex-1 h-7 bg-background rounded-lg overflow-hidden border border-border">
                                             <div className="h-full rounded-lg flex items-center px-2 transition-all duration-700"
                                                 style={{ width: `${barPct}%`, backgroundColor: stage.fill }}>
                                                 <span className="text-xs font-semibold text-white">{stage.value}</span>
                                             </div>
                                         </div>
-                                        <span className="text-xs text-gray-400 w-10 text-right">
+                                        <span className="text-xs text-text-tertiary w-10 text-right">
                                             {stage.pct ? `${stage.pct}%` : `${barPct}%`}
                                         </span>
                                     </div>

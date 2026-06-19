@@ -77,8 +77,8 @@ export default function GradeTryoutsPage() {
                 {/* Header */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">Grade Tryouts</h1>
-                        <p className="text-gray-500 mt-1 text-sm">
+                        <h1 className="text-2xl font-bold text-text-primary">Grade Tryouts</h1>
+                        <p className="text-text-secondary mt-1 text-sm">
                             {tryoutId
                                 ? `Showing submissions for tryout ${tryoutId.slice(0, 8)}…`
                                 : 'Select a tryout from your jobs page to view submissions'}
@@ -88,14 +88,14 @@ export default function GradeTryoutsPage() {
                         <button
                             onClick={loadSubmissions}
                             disabled={loading}
-                            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition-colors disabled:opacity-50"
+                            className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-background shadow-sm transition-colors disabled:opacity-50"
                         >
                             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
                             Refresh
                         </button>
                         <Link
                             to="/hr/dashboard"
-                            className="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 shadow-sm transition-colors"
+                            className="px-4 py-2 bg-surface border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-background shadow-sm transition-colors"
                         >
                             ← Dashboard
                         </Link>
@@ -115,7 +115,7 @@ export default function GradeTryoutsPage() {
                                     onClick={() => setFilter(f)}
                                     className={`px-4 py-1.5 rounded-full text-xs font-semibold border transition-all capitalize ${filter === f
                                         ? 'bg-gray-900 text-white border-gray-900'
-                                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-400'
+                                        : 'bg-surface text-text-secondary border-border hover:border-gray-400'
                                         }`}
                                 >
                                     {cfg?.label ?? 'All'} ({n})
@@ -137,18 +137,18 @@ export default function GradeTryoutsPage() {
                         <p className="text-red-600 text-sm font-medium">{error}</p>
                         <button
                             onClick={loadSubmissions}
-                            className="mt-3 px-4 py-2 bg-white border border-red-200 rounded-xl text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            className="mt-3 px-4 py-2 bg-surface border border-red-200 rounded-xl text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
                             Retry
                         </button>
                     </div>
                 ) : !tryoutId ? (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-14 text-center">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-14 text-center">
                         <div className="w-16 h-16 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <ClipboardList size={28} className="text-violet-500" />
                         </div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">No tryout selected</h3>
-                        <p className="text-gray-500 text-sm mb-6">
+                        <h3 className="text-lg font-semibold text-text-primary mb-2">No tryout selected</h3>
+                        <p className="text-text-secondary text-sm mb-6">
                             Go to your jobs, open a job with a tryout, and click "View Submissions".
                         </p>
                         <Link
@@ -159,10 +159,10 @@ export default function GradeTryoutsPage() {
                         </Link>
                     </div>
                 ) : filtered.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-14 text-center">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-14 text-center">
                         <div className="text-5xl mb-4">📝</div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-1">No submissions yet</h3>
-                        <p className="text-gray-500 text-sm">
+                        <h3 className="text-lg font-semibold text-text-primary mb-1">No submissions yet</h3>
+                        <p className="text-text-secondary text-sm">
                             {submissions.length === 0
                                 ? 'No candidates have submitted to this tryout yet.'
                                 : `No submissions match the "${filter}" filter.`}
@@ -174,7 +174,7 @@ export default function GradeTryoutsPage() {
                             const cfg = STATUS_CONFIG[sub.status] ?? STATUS_CONFIG.submitted;
                             const score = getScore(sub);
                             return (
-                                <div key={sub.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:shadow-md hover:border-gray-200 transition-all">
+                                <div key={sub.id} className="bg-surface rounded-2xl border border-border shadow-sm p-5 hover:shadow-md hover:border-border transition-all">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                         <div className="flex items-start gap-4 flex-1">
                                             <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0">
@@ -182,7 +182,7 @@ export default function GradeTryoutsPage() {
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                                                    <p className="text-sm font-semibold text-gray-800">
+                                                    <p className="text-sm font-semibold text-text-primary">
                                                         Candidate {sub.candidate_id.slice(0, 8)}…
                                                     </p>
                                                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${cfg.color}`}>
@@ -194,7 +194,7 @@ export default function GradeTryoutsPage() {
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                                                <div className="flex flex-wrap items-center gap-3 text-xs text-text-secondary">
                                                     <span className="flex items-center gap-1">
                                                         <Calendar size={11} />
                                                         Submitted {new Date(sub.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
@@ -210,7 +210,7 @@ export default function GradeTryoutsPage() {
                                                         </a>
                                                     )}
                                                     {sub.notes && (
-                                                        <span className="text-gray-400 truncate max-w-xs" title={sub.notes}>
+                                                        <span className="text-text-tertiary truncate max-w-xs" title={sub.notes}>
                                                             "{sub.notes.slice(0, 60)}{sub.notes.length > 60 ? '…' : ''}"
                                                         </span>
                                                     )}

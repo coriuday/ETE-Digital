@@ -22,6 +22,7 @@ from app.schemas.jobs import (
     ApplicationDetailResponse,
     ApplicationStatusUpdate,
     StatusHistoryEntry,
+    CandidateProfileForEmployer,
 )
 from app.services.jobs import job_service, application_service
 from app.services.notification_service import notification_service
@@ -32,7 +33,7 @@ from app.services.application_pipeline import (
     get_status_history,
     notification_for_status,
 )
-from app.services.audit import log_audit_event
+from app.services.audit import log_audit_event, get_org_id_for_user
 from app.models.notifications import AuditAction
 from app.core.security import get_optional_current_user, get_current_user  # may be None for unauthenticated
 
@@ -469,7 +470,16 @@ async def get_application_detail(
     from app.models.users import User, UserProfile
 
     stmt = (
-        sa_select(Application, Job.title, User.email, UserProfile.full_name)
+        sa_select(
+            Application,
+            Job.title,
+            User.email,
+            UserProfile.full_name,
+            UserProfile.headline,
+            UserProfile.location,
+            UserProfile.skills,
+            UserProfile.resume_url,
+        )
         .outerjoin(Job, Job.id == Application.job_id)
         .outerjoin(User, User.id == Application.candidate_id)
         .outerjoin(UserProfile, UserProfile.user_id == Application.candidate_id)
@@ -481,7 +491,7 @@ async def get_application_detail(
     if not row:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
-    app, job_title, candidate_email, candidate_name = row
+    app, job_title, candidate_email, candidate_name, headline, location, skills, resume_url = row
 
     # Verify this employer owns the job
     if str(app.job_id) not in [
@@ -508,11 +518,68 @@ async def get_application_detail(
         candidate_name=candidate_name or "Unknown Candidate",
         candidate_email=candidate_email or "",
         job_title=job_title or "Unknown Job",
+        candidate_headline=headline,
+        candidate_location=location,
+        candidate_skills=list(skills or []),
+        candidate_resume_url=resume_url,
         status_history=_history_to_entries(history),
         available_actions=get_available_actions(app.status),
         is_locked=is_locked(app.status),
         created_at=app.created_at,
         updated_at=app.updated_at,
+    )
+
+
+@router.get("/applications/{application_id}/candidate-profile", response_model=CandidateProfileForEmployer)
+async def get_application_candidate_profile(
+    application_id: str,
+    current_user: dict = Depends(require_role(UserRole.HR)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Full candidate profile for employer reviewing an application."""
+    from sqlalchemy import select as sa_select
+    from app.models.jobs import Application, Job
+    from app.models.users import User, UserProfile
+
+    stmt = (
+        sa_select(Application, Job.title, User.email, UserProfile)
+        .outerjoin(Job, Job.id == Application.job_id)
+        .outerjoin(User, User.id == Application.candidate_id)
+        .outerjoin(UserProfile, UserProfile.user_id == Application.candidate_id)
+        .where(Application.id == uuid.UUID(application_id))
+    )
+    result = await db.execute(stmt)
+    row = result.first()
+
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+    app, job_title, candidate_email, profile = row
+
+    if str(app.job_id) not in [
+        str(j.id)
+        for j in (await db.execute(sa_select(Job).where(Job.employer_id == uuid.UUID(current_user["user_id"]))))
+        .scalars()
+        .all()
+    ]:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    return CandidateProfileForEmployer(
+        candidate_id=str(app.candidate_id),
+        application_id=str(app.id),
+        full_name=profile.full_name if profile else None,
+        email=candidate_email,
+        phone=profile.phone if profile else None,
+        location=profile.location if profile else None,
+        bio=profile.bio if profile else None,
+        headline=profile.headline if profile else None,
+        skills=list(profile.skills or []) if profile else [],
+        experience_years=profile.experience_years if profile else None,
+        resume_url=profile.resume_url if profile else None,
+        social_links=profile.social_links if profile else None,
+        vault_share_token=app.vault_share_token,
+        has_shared_vault=bool(app.vault_share_token),
+        job_title=job_title or "Unknown Job",
     )
 
 
@@ -540,10 +607,12 @@ async def update_application_status(
     job = transition.job
 
     # Audit trail (org-level)
+    org_id = await get_org_id_for_user(db, current_user["user_id"])
     await log_audit_event(
         db=db,
         action=AuditAction.APPLICATION_STATUS_CHANGED,
         user_id=current_user["user_id"],
+        org_id=org_id,
         resource_type="application",
         resource_id=application.id,
         details={

@@ -10,6 +10,8 @@
  */
 import { useState, useEffect } from 'react';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { hrPageCls, btnPrimary } from './hrShared';
 import { organizationsApi } from '../../api/organizations';
 import {
     Users, UserPlus, Trash2, ChevronDown, Copy,
@@ -33,7 +35,7 @@ const roleConfig: Record<string, { label: string; icon: React.ReactNode; color: 
     admin:          { label: 'Admin',          icon: <ShieldCheck size={13} />, color: 'bg-violet-100 text-violet-700 border-violet-200' },
     hiring_manager: { label: 'Hiring Manager', icon: <UserCog size={13} />,  color: 'bg-blue-100 text-blue-700 border-blue-200' },
     recruiter:      { label: 'Recruiter',      icon: <Briefcase size={13} />, color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-    viewer:         { label: 'Viewer',         icon: <Eye size={13} />,      color: 'bg-gray-100 text-gray-600 border-gray-200' },
+    viewer:         { label: 'Viewer',         icon: <Eye size={13} />,      color: 'bg-background text-text-secondary border-border' },
 };
 
 function RoleBadge({ role }: { role: string }) {
@@ -150,26 +152,19 @@ export default function TeamManagementPage() {
                 </div>
             )}
 
-            <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
-
-                {/* Header */}
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center">
-                            <Users size={20} className="text-violet-600" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold text-gray-900">Team Management</h1>
-                            <p className="text-sm text-gray-500">{members.length} member{members.length !== 1 ? 's' : ''} in your organisation</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={() => { setShowInvite(v => !v); setInviteLink(''); }}
-                        className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-xl text-sm font-semibold hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200"
-                    >
-                        <UserPlus size={16} /> Invite Recruiter
-                    </button>
-                </div>
+            <div className={`${hrPageCls} max-w-4xl`}>
+                <PageHeader
+                    title="Team Management"
+                    description={`${members.length} member${members.length !== 1 ? 's' : ''} in your organisation`}
+                    actions={
+                        <button
+                            onClick={() => { setShowInvite(v => !v); setInviteLink(''); }}
+                            className={btnPrimary}
+                        >
+                            <UserPlus size={16} /> Invite Recruiter
+                        </button>
+                    }
+                />
 
                 {/* Error */}
                 {error && (
@@ -181,8 +176,8 @@ export default function TeamManagementPage() {
 
                 {/* Invite Panel */}
                 {showInvite && (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                        <h2 className="font-semibold text-gray-900">Invite a Team Member</h2>
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6 space-y-4">
+                        <h2 className="font-semibold text-text-primary">Invite a Team Member</h2>
                         {!inviteLink ? (
                             <form onSubmit={handleInvite} className="space-y-3">
                                 <div className="flex gap-3">
@@ -190,11 +185,11 @@ export default function TeamManagementPage() {
                                         type="email" required value={inviteEmail}
                                         onChange={e => setInviteEmail(e.target.value)}
                                         placeholder="recruiter@company.com"
-                                        className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+                                        className="flex-1 border border-border rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
                                     />
                                     <select
                                         value={inviteRole} onChange={e => setInviteRole(e.target.value)}
-                                        className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-white"
+                                        className="border border-border rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-violet-500 outline-none bg-surface"
                                     >
                                         {ROLE_OPTIONS.map(r => (
                                             <option key={r} value={r}>{roleConfig[r]?.label ?? r}</option>
@@ -209,17 +204,17 @@ export default function TeamManagementPage() {
                             </form>
                         ) : (
                             <div className="space-y-3">
-                                <p className="text-sm text-gray-600">Share this invite link with <strong>{inviteEmail}</strong>:</p>
+                                <p className="text-sm text-text-secondary">Share this invite link with <strong>{inviteEmail}</strong>:</p>
                                 <div className="flex items-center gap-2">
-                                    <code className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono text-gray-700 break-all">
+                                    <code className="flex-1 bg-background border border-border rounded-xl px-3 py-2 text-xs font-mono text-text-primary break-all">
                                         {inviteLink}
                                     </code>
                                     <button onClick={copyLink}
-                                        className={`p-2.5 rounded-xl border transition-colors flex-shrink-0 ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'border-gray-200 text-gray-500 hover:bg-gray-50'}`}>
+                                        className={`p-2.5 rounded-xl border transition-colors flex-shrink-0 ${copied ? 'bg-emerald-50 border-emerald-200 text-emerald-600' : 'border-border text-text-secondary hover:bg-background'}`}>
                                         {copied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
                                     </button>
                                 </div>
-                                <p className="text-xs text-gray-400">Link expires in 7 days. The invitee must be registered on JobsRow.</p>
+                                <p className="text-xs text-text-tertiary">Link expires in 7 days. The invitee must be registered on JobsRow.</p>
                                 <button onClick={() => { setInviteLink(''); setInviteEmail(''); }}
                                     className="text-sm text-violet-600 hover:underline">Invite another person</button>
                             </div>
@@ -233,17 +228,17 @@ export default function TeamManagementPage() {
                         <Loader2 className="animate-spin text-violet-500" size={28} />
                     </div>
                 ) : members.length === 0 ? (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-12 text-center">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-12 text-center">
                         <div className="w-14 h-14 bg-violet-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Users size={24} className="text-violet-400" />
                         </div>
-                        <p className="font-semibold text-gray-700">No team yet</p>
-                        <p className="text-sm text-gray-400 mt-1">Invite your first recruiter to get started.</p>
+                        <p className="font-semibold text-text-primary">No team yet</p>
+                        <p className="text-sm text-text-tertiary mt-1">Invite your first recruiter to get started.</p>
                     </div>
                 ) : (
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm overflow-hidden">
                         <div className="px-5 py-3 border-b border-gray-50 bg-gray-50/60">
-                            <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-gray-400 uppercase tracking-widest">
+                            <div className="grid grid-cols-12 gap-4 text-xs font-semibold text-text-tertiary uppercase tracking-widest">
                                 <div className="col-span-4">Member</div>
                                 <div className="col-span-3">Role</div>
                                 <div className="col-span-3">Joined</div>
@@ -253,7 +248,7 @@ export default function TeamManagementPage() {
 
                         <div className="divide-y divide-gray-50">
                             {members.map(member => (
-                                <div key={member.user_id} className="px-5 py-4 grid grid-cols-12 gap-4 items-center hover:bg-gray-50/50 transition-colors">
+                                <div key={member.user_id} className="px-5 py-4 grid grid-cols-12 gap-4 items-center hover:bg-background/50 transition-colors">
                                     {/* Member info */}
                                     <div className="col-span-4">
                                         <div className="flex items-center gap-3">
@@ -261,10 +256,10 @@ export default function TeamManagementPage() {
                                                 {member.email[0].toUpperCase()}
                                             </div>
                                             <div className="min-w-0">
-                                                <p className="text-sm font-semibold text-gray-900 truncate">
+                                                <p className="text-sm font-semibold text-text-primary truncate">
                                                     {member.full_name ?? member.email.split('@')[0]}
                                                 </p>
-                                                <p className="text-xs text-gray-400 truncate">{member.email}</p>
+                                                <p className="text-xs text-text-tertiary truncate">{member.email}</p>
                                             </div>
                                         </div>
                                     </div>
@@ -279,13 +274,13 @@ export default function TeamManagementPage() {
                                                     value={member.role}
                                                     disabled={changingRole === member.user_id}
                                                     onChange={e => handleRoleChange(member.user_id, e.target.value)}
-                                                    className="appearance-none pl-2 pr-6 py-1 border border-gray-200 rounded-lg text-xs font-medium text-gray-700 bg-white hover:border-violet-300 focus:ring-2 focus:ring-violet-500 outline-none cursor-pointer"
+                                                    className="appearance-none pl-2 pr-6 py-1 border border-border rounded-lg text-xs font-medium text-text-primary bg-surface hover:border-violet-300 focus:ring-2 focus:ring-violet-500 outline-none cursor-pointer"
                                                 >
                                                     {ROLE_OPTIONS.map(r => (
                                                         <option key={r} value={r}>{roleConfig[r]?.label ?? r}</option>
                                                     ))}
                                                 </select>
-                                                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                                <ChevronDown size={10} className="absolute right-2 top-1/2 -translate-y-1/2 text-text-tertiary pointer-events-none" />
                                             </div>
                                         ) : (
                                             <RoleBadge role={member.role} />
@@ -294,7 +289,7 @@ export default function TeamManagementPage() {
 
                                     {/* Joined */}
                                     <div className="col-span-3">
-                                        <p className="text-sm text-gray-500">{relativeTime(member.joined_at)}</p>
+                                        <p className="text-sm text-text-secondary">{relativeTime(member.joined_at)}</p>
                                     </div>
 
                                     {/* Actions */}
@@ -303,7 +298,7 @@ export default function TeamManagementPage() {
                                             <button
                                                 onClick={() => handleRemove(member.user_id, member.email)}
                                                 disabled={removingId === member.user_id}
-                                                className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                className="p-1.5 text-text-tertiary hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                                                 title="Remove member"
                                             >
                                                 {removingId === member.user_id

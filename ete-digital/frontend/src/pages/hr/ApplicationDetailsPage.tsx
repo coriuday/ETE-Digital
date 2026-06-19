@@ -1,9 +1,12 @@
 /**
  * Application Details Page — HR reviews a single candidate application
  */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { jobsApi } from '../../api/jobs';
+import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { hrPageCls, cardCls } from './hrShared';
+import { jobsApi, ApplicationDetail } from '../../api/jobs';
 import { toastSuccess, toastError } from '../../utils/toast';
 import {
     ACTION_CONFIG,
@@ -13,11 +16,19 @@ import {
     StatusHistoryEntry,
 } from '../../constants/applicationPipeline';
 import {
-    ArrowLeft, Mail, Briefcase, CalendarDays,
-    CheckCircle2, XCircle, Clock, Star,
+    Mail, MapPin, FileText,
+    CheckCircle2, XCircle, Clock, Star, Copy,
     ExternalLink, Loader2, ChevronRight, MessageSquare,
-    Sparkles, TrendingUp, AlertCircle, Info,
+    Sparkles, TrendingUp, AlertCircle, Info, User,
 } from 'lucide-react';
+
+function buildMailtoUrl(email: string, jobTitle: string): string {
+    const subject = encodeURIComponent(`Re: Your application for ${jobTitle}`);
+    const body = encodeURIComponent(
+        `Hi,\n\nThank you for applying for the ${jobTitle} position via JobsRow.\n\n\nBest regards,`
+    );
+    return `mailto:${email}?subject=${subject}&body=${body}`;
+}
 
 function MatchGauge({ score }: { score: number }) {
     const color = score >= 80 ? '#10b981' : score >= 60 ? '#3b82f6' : '#f59e0b';
@@ -27,7 +38,7 @@ function MatchGauge({ score }: { score: number }) {
         <div className="flex items-center gap-4">
             <div className="relative w-[104px] h-[104px] flex-shrink-0">
                 <svg viewBox="0 0 104 104" className="w-full h-full -rotate-90">
-                    <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f3f4f6" strokeWidth={10} />
+                    <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--color-border, #e5e7eb)" strokeWidth={10} />
                     <circle cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={10}
                         strokeDasharray={`${dash} ${circ}`} strokeLinecap="round" />
                 </svg>
@@ -36,11 +47,11 @@ function MatchGauge({ score }: { score: number }) {
                 </div>
             </div>
             <div>
-                <p className="font-bold text-gray-900">Match Score</p>
-                <p className="text-xs text-gray-400 mt-0.5">{score >= 80 ? 'Excellent fit' : score >= 60 ? 'Good match' : 'Partial match'}</p>
+                <p className="font-bold text-text-primary">Match Score</p>
+                <p className="text-xs text-text-tertiary mt-0.5">{score >= 80 ? 'Excellent fit' : score >= 60 ? 'Good match' : 'Partial match'}</p>
                 <div className="flex gap-1 mt-2">
                     {[...Array(5)].map((_, i) => (
-                        <Star key={i} size={13} className={i < Math.round(score / 20) ? 'fill-amber-400 text-amber-400' : 'text-gray-200'} />
+                        <Star key={i} size={13} className={i < Math.round(score / 20) ? 'fill-amber-400 text-amber-400' : 'text-border'} />
                     ))}
                 </div>
             </div>
@@ -54,7 +65,7 @@ const STATUS_CLS: Record<string, string> = {
     shortlisted: 'bg-violet-50 text-violet-700 border-violet-200',
     hired: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-red-50 text-red-700 border-red-200',
-    withdrawn: 'bg-gray-50 text-gray-600 border-gray-200',
+    withdrawn: 'bg-background text-text-tertiary border-border',
 };
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
@@ -68,14 +79,14 @@ function TimelineStep({ label, date, active, last }: { label: string; date?: str
     return (
         <div className="flex gap-3">
             <div className="flex flex-col items-center">
-                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${active ? 'bg-blue-600 border-blue-600' : 'bg-white border-gray-200'}`}>
+                <div className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${active ? 'bg-primary-600 border-primary-600' : 'bg-surface border-border'}`}>
                     {active && <CheckCircle2 size={14} className="text-white" />}
                 </div>
-                {!last && <div className="w-0.5 flex-1 bg-gray-100 my-1" />}
+                {!last && <div className="w-0.5 flex-1 bg-border my-1" />}
             </div>
             <div className="pb-5">
-                <p className={`text-sm font-semibold ${active ? 'text-gray-900' : 'text-gray-400'}`}>{label}</p>
-                {date && <p className="text-xs text-gray-400 mt-0.5">{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
+                <p className={`text-sm font-semibold ${active ? 'text-text-primary' : 'text-text-tertiary'}`}>{label}</p>
+                {date && <p className="text-xs text-text-tertiary mt-0.5">{new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>}
             </div>
         </div>
     );
@@ -86,7 +97,7 @@ export default function ApplicationDetailsPage() {
     const navigate = useNavigate();
     const [notes, setNotes] = useState('');
     const [updating, setUpdating] = useState<string | null>(null);
-    const [appData, setAppData] = useState<any>(null);
+    const [appData, setAppData] = useState<ApplicationDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -105,6 +116,11 @@ export default function ApplicationDetailsPage() {
         })();
     }, [applicationId]);
 
+    const mailtoUrl = useMemo(() => {
+        if (!appData?.candidate_email) return '';
+        return buildMailtoUrl(appData.candidate_email, appData.job_title || 'this role');
+    }, [appData?.candidate_email, appData?.job_title]);
+
     const handleAction = async (newStatus: string) => {
         if (!applicationId || appData?.is_locked) return;
         setUpdating(newStatus);
@@ -121,20 +137,34 @@ export default function ApplicationDetailsPage() {
         }
     };
 
+    const handleCopyEmail = async () => {
+        if (!appData?.candidate_email) return;
+        try {
+            await navigator.clipboard.writeText(appData.candidate_email);
+            toastSuccess('Email copied to clipboard');
+        } catch {
+            toastError('Could not copy email');
+        }
+    };
+
     if (loading) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <Loader2 size={32} className="animate-spin text-blue-500" />
-            </div>
+            <AppShell>
+                <div className="flex items-center justify-center py-32">
+                    <Loader2 size={32} className="animate-spin text-primary-500" />
+                </div>
+            </AppShell>
         );
     }
 
     if (error || !appData) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center gap-4">
-                <p className="text-gray-500">{error || 'Application not found.'}</p>
-                <button onClick={() => navigate(-1)} className="text-blue-600 underline text-sm">Go back</button>
-            </div>
+            <AppShell>
+                <div className="flex flex-col items-center justify-center py-32 gap-4">
+                    <p className="text-text-secondary">{error || 'Application not found.'}</p>
+                    <button onClick={() => navigate(-1)} className="text-primary-600 underline text-sm">Go back</button>
+                </div>
+            </AppShell>
         );
     }
 
@@ -142,255 +172,274 @@ export default function ApplicationDetailsPage() {
     const currentStatus = app.status?.toLowerCase?.() ?? 'pending';
     const availableActions: string[] = app.available_actions ?? [];
     const timelineSteps = buildTimelineFromHistory((app.status_history ?? []) as StatusHistoryEntry[]);
+    const skills: string[] = app.candidate_skills ?? [];
+    const matchExplanation = app.match_explanation as Record<string, unknown> | null;
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Banner */}
-            <div className="bg-gradient-to-br from-slate-900 to-blue-950 relative overflow-hidden">
-                <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.03)_1px,transparent_1px)] bg-[size:48px_48px]" />
-                <div className="relative max-w-6xl mx-auto px-6 py-10">
-                    <button onClick={() => navigate(-1)}
-                        className="inline-flex items-center gap-2 text-blue-300 hover:text-white text-sm font-medium mb-6 transition-colors">
-                        <ArrowLeft size={15} /> Back to applications
-                    </button>
-                    <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2 flex-wrap">
-                                <h1 className="text-2xl md:text-3xl font-extrabold text-white">{app.candidate_name}</h1>
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${STATUS_CLS[currentStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                    {stageLabel(currentStatus)}
-                                </span>
-                            </div>
-                            <p className="text-blue-200 text-sm flex items-center gap-2 flex-wrap">
-                                <Briefcase size={13} /> Applied for <strong className="text-white">{app.job_title}</strong>
-                                <span className="text-blue-400">·</span>
-                                <CalendarDays size={13} />
-                                {new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                            </p>
+        <AppShell>
+            <div className="bg-background min-h-full">
+                <div className={`${hrPageCls} pb-4`}>
+                    <PageHeader
+                        title={app.candidate_name || 'Application'}
+                        description={`Applied for ${app.job_title} · ${new Date(app.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`}
+                        breadcrumbs={[
+                            { label: 'Applications', href: '/hr/applications' },
+                            { label: app.candidate_name || 'Details' },
+                        ]}
+                    />
+                    <div className={`${cardCls} p-5 flex flex-wrap items-center justify-between gap-4`}>
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${STATUS_CLS[currentStatus] ?? 'bg-background text-text-secondary border-border'}`}>
+                                {stageLabel(currentStatus)}
+                            </span>
                         </div>
                         <MatchGauge score={app.match_score ?? 0} />
                     </div>
                 </div>
-            </div>
 
-            {/* Body */}
-            <div className="max-w-6xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Left 60% */}
-                <div className="lg:col-span-3 space-y-6">
-                    {/* Profile card */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="font-bold text-gray-900 text-lg mb-4">Candidate Profile</h2>
-                        <div className="flex items-center gap-4">
-                            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-100 to-violet-100 flex items-center justify-center text-2xl font-extrabold text-blue-700">
-                                {(app.candidate_name || 'U')[0]}
-                            </div>
-                            <div>
-                                <p className="font-bold text-gray-900">{app.candidate_name}</p>
-                                <p className="text-sm text-gray-500 mt-0.5 flex items-center gap-1.5"><Mail size={12} /> {app.candidate_email}</p>
-                            </div>
-                            <Link to={`/vault/candidate/${app.candidate_id}`}
-                                className="ml-auto text-xs font-semibold text-blue-600 flex items-center gap-1 border border-blue-100 bg-blue-50 px-3 py-1.5 rounded-xl hover:bg-blue-100 transition-colors">
-                                Portfolio <ExternalLink size={11} />
-                            </Link>
-                        </div>
-                    </div>
-
-                    {/* Cover Letter */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="font-bold text-gray-900 text-lg mb-4 flex items-center gap-2">
-                            <MessageSquare size={18} className="text-gray-400" /> Cover Letter
-                        </h2>
-                        <p className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                            {app.cover_letter || <span className="text-gray-400 italic">No cover letter provided.</span>}
-                        </p>
-                    </div>
-
-                    {/* ── AI Match Intelligence Card ──────────────────────────── */}
-                    {app.match_explanation && (
-                        <div className="bg-gradient-to-br from-violet-50 via-white to-blue-50 rounded-2xl border border-violet-100 p-6 shadow-sm">
-                            <div className="flex items-center gap-2 mb-4">
-                                <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
-                                    <Sparkles size={16} className="text-violet-600" />
+                <div className="max-w-6xl mx-auto px-6 pb-10 grid grid-cols-1 lg:grid-cols-5 gap-8">
+                    <div className="lg:col-span-3 space-y-6">
+                        {/* Profile card */}
+                        <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
+                            <h2 className="font-bold text-text-primary text-lg mb-4">Candidate Profile</h2>
+                            <div className="flex flex-wrap items-start gap-4">
+                                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-100 to-violet-100 flex items-center justify-center text-2xl font-extrabold text-primary-700 flex-shrink-0">
+                                    {(app.candidate_name || 'U')[0]}
                                 </div>
-                                <div>
-                                    <h2 className="font-bold text-gray-900 text-base leading-tight">AI Match Analysis</h2>
-                                    <p className="text-xs text-gray-400">Powered by Gemini Flash</p>
-                                </div>
-                                <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
-                                    {app.match_score ?? 0}% match
-                                </span>
-                            </div>
-
-                            {/* LLM Narrative */}
-                            {app.match_explanation.llm_summary && (
-                                <div className="mb-5 p-4 bg-white/80 rounded-xl border border-violet-100 text-sm text-gray-700 leading-relaxed">
-                                    <Info size={13} className="inline-block text-violet-400 mr-1.5 -mt-0.5" />
-                                    {app.match_explanation.llm_summary}
-                                </div>
-                            )}
-
-                            {/* Sub-score bars */}
-                            {(() => {
-                                const ex = app.match_explanation;
-                                const scores = [
-                                    { label: 'Skills',     value: ex.skill_score,      color: 'bg-violet-500' },
-                                    { label: 'Experience', value: ex.experience_score,  color: 'bg-blue-500' },
-                                    { label: 'Location',   value: ex.location_score,    color: 'bg-emerald-500' },
-                                    { label: 'Salary Fit', value: ex.salary_score,      color: 'bg-amber-500' },
-                                ].filter(s => s.value != null);
-                                if (!scores.length) return null;
-                                return (
-                                    <div className="space-y-2.5 mb-5">
-                                        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-1.5">
-                                            <TrendingUp size={11} /> Score Breakdown
+                                <div className="flex-1 min-w-0">
+                                    <p className="font-bold text-text-primary">{app.candidate_name}</p>
+                                    {app.candidate_headline && (
+                                        <p className="text-sm text-text-secondary mt-0.5">{app.candidate_headline}</p>
+                                    )}
+                                    <p className="text-sm text-text-tertiary mt-1 flex items-center gap-1.5">
+                                        <Mail size={12} /> {app.candidate_email}
+                                    </p>
+                                    {app.candidate_location && (
+                                        <p className="text-sm text-text-tertiary mt-0.5 flex items-center gap-1.5">
+                                            <MapPin size={12} /> {app.candidate_location}
                                         </p>
-                                        {scores.map(({ label, value, color }) => (
-                                            <div key={label}>
-                                                <div className="flex justify-between text-xs mb-1">
-                                                    <span className="text-gray-600 font-medium">{label}</span>
-                                                    <span className="font-bold text-gray-800">{Math.round(value as number)}%</span>
-                                                </div>
-                                                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                                                    <div
-                                                        className={`h-full rounded-full transition-all duration-700 ${color}`}
-                                                        style={{ width: `${value}%` }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                );
-                            })()}
-
-                            {/* Matched Skills */}
-                            {app.match_explanation.matched_skills?.length > 0 && (
-                                <div className="mb-3">
-                                    <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-2 flex items-center gap-1">
-                                        <CheckCircle2 size={11} /> Matched Skills
-                                    </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {app.match_explanation.matched_skills.map((skill: string) => (
-                                            <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100">
-                                                {skill}
-                                            </span>
-                                        ))}
-                                    </div>
+                                    )}
+                                    {skills.length > 0 && (
+                                        <div className="flex flex-wrap gap-1.5 mt-3">
+                                            {skills.slice(0, 6).map(skill => (
+                                                <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-primary-50 text-primary-700 rounded-md border border-primary-100">
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                            {skills.length > 6 && (
+                                                <span className="text-xs text-text-tertiary self-center">+{skills.length - 6} more</span>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-
-                            {/* Missing Skills */}
-                            {app.match_explanation.missing_skills?.length > 0 && (
-                                <div>
-                                    <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-                                        <AlertCircle size={11} /> Skill Gaps
-                                    </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                        {app.match_explanation.missing_skills.map((skill: string) => (
-                                            <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 rounded-md border border-red-100">
-                                                {skill}
-                                            </span>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Fraud Detection / Alerts */}
-                    {(app.fraud_score !== undefined && app.fraud_score >= 20) && (
-                        <div className="bg-red-50 rounded-2xl border border-red-200 p-6 shadow-sm">
-                            <h2 className="font-bold text-red-900 text-lg mb-3 flex items-center gap-2">
-                                <AlertCircle size={18} className="text-red-600" /> Fraud & Spam Alert (Score: {app.fraud_score})
-                            </h2>
-                            <p className="text-sm text-red-700 mb-3">
-                                This application exhibits patterns commonly associated with spam or fraudulent activity. Please proceed with caution.
-                            </p>
-                            {app.fraud_flags && app.fraud_flags.length > 0 && (
-                                <ul className="list-disc pl-5 space-y-1 text-sm text-red-800">
-                                    {app.fraud_flags.map((flag: string, i: number) => (
-                                        <li key={i}>{flag}</li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Notes */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="font-bold text-gray-900 text-lg mb-3">Reviewer Notes</h2>
-                        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
-                            placeholder="Add private notes about this candidate…"
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none" />
-                    </div>
-                </div>
-
-                {/* Right 40% */}
-                <div className="lg:col-span-2 space-y-4">
-                    {/* Actions */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-3">
-                        <h2 className="font-bold text-gray-900 mb-1">Pipeline</h2>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Current stage:{' '}
-                            <span className="font-semibold text-gray-900">{stageLabel(currentStatus)}</span>
-                        </p>
-
-                        {app.is_locked ? (
-                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600">
-                                This application is locked — no further actions available.
-                            </div>
-                        ) : availableActions.length === 0 ? (
-                            <p className="text-sm text-gray-400">No actions available.</p>
-                        ) : (
-                            <>
-                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Available actions</p>
-                                {availableActions.map(actionKey => {
-                                    const cfg = ACTION_CONFIG[actionKey];
-                                    if (!cfg) return null;
-                                    const cls = ACTION_STYLES[actionKey] ?? 'bg-gray-50 border-gray-200 text-gray-700';
-                                    return (
-                                        <button
-                                            key={actionKey}
-                                            onClick={() => handleAction(cfg.targetStatus)}
-                                            disabled={!!updating}
-                                            className={`w-full flex items-center justify-between px-4 py-3.5 border rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${cls}`}
+                                <div className="flex flex-wrap gap-2 ml-auto">
+                                    <Link
+                                        to={`/hr/applications/${applicationId}/candidate`}
+                                        className="text-xs font-semibold text-primary-600 flex items-center gap-1 border border-primary-100 bg-primary-50 px-3 py-1.5 rounded-xl hover:bg-primary-100 transition-colors"
+                                    >
+                                        <User size={12} /> View Profile
+                                    </Link>
+                                    {app.vault_share_token && (
+                                        <a
+                                            href={`/shared/${app.vault_share_token}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-semibold text-violet-600 flex items-center gap-1 border border-violet-100 bg-violet-50 px-3 py-1.5 rounded-xl hover:bg-violet-100 transition-colors"
                                         >
-                                            <span className="flex items-center gap-2">
-                                                {ACTION_ICONS[actionKey]} {cfg.label}
-                                            </span>
-                                            {updating === cfg.targetStatus
-                                                ? <Loader2 size={14} className="animate-spin" />
-                                                : <ChevronRight size={14} />}
-                                        </button>
+                                            Portfolio <ExternalLink size={11} />
+                                        </a>
+                                    )}
+                                    {app.candidate_resume_url && (
+                                        <a
+                                            href={app.candidate_resume_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-xs font-semibold text-emerald-700 flex items-center gap-1 border border-emerald-100 bg-emerald-50 px-3 py-1.5 rounded-xl hover:bg-emerald-100 transition-colors"
+                                        >
+                                            <FileText size={12} /> Resume
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Cover Letter */}
+                        <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
+                            <h2 className="font-bold text-text-primary text-lg mb-4 flex items-center gap-2">
+                                <MessageSquare size={18} className="text-text-tertiary" /> Cover Letter
+                            </h2>
+                            <p className="text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">
+                                {app.cover_letter || <span className="text-text-tertiary italic">No cover letter provided.</span>}
+                            </p>
+                        </div>
+
+                        {matchExplanation && (
+                            <div className="bg-gradient-to-br from-violet-50 via-white to-blue-50 rounded-2xl border border-violet-100 p-6 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+                                        <Sparkles size={16} className="text-violet-600" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-bold text-text-primary text-base leading-tight">AI Match Analysis</h2>
+                                        <p className="text-xs text-text-tertiary">Powered by Gemini Flash</p>
+                                    </div>
+                                    <span className="ml-auto text-xs font-bold px-2 py-0.5 rounded-full bg-violet-100 text-violet-700">
+                                        {app.match_score ?? 0}% match
+                                    </span>
+                                </div>
+
+                                {typeof matchExplanation.llm_summary === 'string' && matchExplanation.llm_summary && (
+                                    <div className="mb-5 p-4 bg-white/80 rounded-xl border border-violet-100 text-sm text-text-secondary leading-relaxed">
+                                        <Info size={13} className="inline-block text-violet-400 mr-1.5 -mt-0.5" />
+                                        {matchExplanation.llm_summary}
+                                    </div>
+                                )}
+
+                                {(() => {
+                                    const scores = [
+                                        { label: 'Skills', value: matchExplanation.skill_score as number | undefined, color: 'bg-violet-500' },
+                                        { label: 'Experience', value: matchExplanation.experience_score as number | undefined, color: 'bg-blue-500' },
+                                        { label: 'Location', value: matchExplanation.location_score as number | undefined, color: 'bg-emerald-500' },
+                                        { label: 'Salary Fit', value: matchExplanation.salary_score as number | undefined, color: 'bg-amber-500' },
+                                    ].filter(s => s.value != null);
+                                    if (!scores.length) return null;
+                                    return (
+                                        <div className="space-y-2.5 mb-5">
+                                            <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide flex items-center gap-1.5">
+                                                <TrendingUp size={11} /> Score Breakdown
+                                            </p>
+                                            {scores.map(({ label, value, color }) => (
+                                                <div key={label}>
+                                                    <div className="flex justify-between text-xs mb-1">
+                                                        <span className="text-text-secondary font-medium">{label}</span>
+                                                        <span className="font-bold text-text-primary">{Math.round(value as number)}%</span>
+                                                    </div>
+                                                    <div className="h-1.5 bg-border rounded-full overflow-hidden">
+                                                        <div className={`h-full rounded-full transition-all duration-700 ${color}`} style={{ width: `${value}%` }} />
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
                                     );
-                                })}
-                            </>
+                                })()}
+
+                                {Array.isArray(matchExplanation.matched_skills) && matchExplanation.matched_skills.length > 0 && (
+                                    <div className="mb-3">
+                                        <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                            <CheckCircle2 size={11} /> Matched Skills
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {(matchExplanation.matched_skills as string[]).map(skill => (
+                                                <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-md border border-emerald-100">
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {Array.isArray(matchExplanation.missing_skills) && matchExplanation.missing_skills.length > 0 && (
+                                    <div>
+                                        <p className="text-xs font-semibold text-red-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                                            <AlertCircle size={11} /> Skill Gaps
+                                        </p>
+                                        <div className="flex flex-wrap gap-1.5">
+                                            {(matchExplanation.missing_skills as string[]).map(skill => (
+                                                <span key={skill} className="px-2 py-0.5 text-xs font-medium bg-red-50 text-red-600 rounded-md border border-red-100">
+                                                    {skill}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         )}
+
+                        <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
+                            <h2 className="font-bold text-text-primary text-lg mb-3">Reviewer Notes</h2>
+                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
+                                placeholder="Add private notes about this candidate…"
+                                className="w-full px-4 py-3 border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500 resize-none bg-background text-text-primary" />
+                        </div>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="font-bold text-gray-900 mb-4">Application Timeline</h2>
-                        {timelineSteps.map((step, i) => (
-                            <TimelineStep
-                                key={step.label}
-                                label={step.label}
-                                date={step.date}
-                                active={step.active}
-                                last={i === timelineSteps.length - 1}
-                            />
-                        ))}
-                    </div>
+                    <div className="lg:col-span-2 space-y-4">
+                        <div className="bg-surface rounded-2xl border border-border p-6 space-y-3 shadow-sm">
+                            <h2 className="font-bold text-text-primary mb-1">Pipeline</h2>
+                            <p className="text-sm text-text-secondary mb-4">
+                                Current stage:{' '}
+                                <span className="font-semibold text-text-primary">{stageLabel(currentStatus)}</span>
+                            </p>
 
-                    {/* Contact */}
-                    <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 className="font-bold text-gray-900 mb-3">Contact</h2>
-                        <a href={`mailto:${app.candidate_email}`}
-                            className="w-full flex items-center justify-center gap-2 py-3 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            <Mail size={15} /> Send Email
-                        </a>
+                            {app.is_locked ? (
+                                <div className="p-4 bg-background border border-border rounded-xl text-sm text-text-secondary">
+                                    This application is locked — no further actions available.
+                                </div>
+                            ) : availableActions.length === 0 ? (
+                                <p className="text-sm text-text-tertiary">No actions available.</p>
+                            ) : (
+                                <>
+                                    <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Available actions</p>
+                                    {availableActions.map(actionKey => {
+                                        const cfg = ACTION_CONFIG[actionKey];
+                                        if (!cfg) return null;
+                                        const cls = ACTION_STYLES[actionKey] ?? 'bg-background border-border text-text-secondary';
+                                        return (
+                                            <button
+                                                key={actionKey}
+                                                onClick={() => handleAction(cfg.targetStatus)}
+                                                disabled={!!updating}
+                                                className={`w-full flex items-center justify-between px-4 py-3.5 border rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${cls}`}
+                                            >
+                                                <span className="flex items-center gap-2">
+                                                    {ACTION_ICONS[actionKey]} {cfg.label}
+                                                </span>
+                                                {updating === cfg.targetStatus
+                                                    ? <Loader2 size={14} className="animate-spin" />
+                                                    : <ChevronRight size={14} />}
+                                            </button>
+                                        );
+                                    })}
+                                </>
+                            )}
+                        </div>
+
+                        <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
+                            <h2 className="font-bold text-text-primary mb-4">Application Timeline</h2>
+                            {timelineSteps.map((step, i) => (
+                                <TimelineStep
+                                    key={step.label}
+                                    label={step.label}
+                                    date={step.date}
+                                    active={step.active}
+                                    last={i === timelineSteps.length - 1}
+                                />
+                            ))}
+                        </div>
+
+                        <div className="bg-surface rounded-2xl border border-border p-6 shadow-sm">
+                            <h2 className="font-bold text-text-primary mb-3">Contact</h2>
+                            <div className="space-y-2">
+                                <a
+                                    href={mailtoUrl}
+                                    className="w-full flex items-center justify-center gap-2 py-3 border border-border rounded-xl text-sm font-medium text-text-primary hover:bg-background transition-colors"
+                                >
+                                    <Mail size={15} /> Open in mail app
+                                </a>
+                                <button
+                                    onClick={handleCopyEmail}
+                                    className="w-full flex items-center justify-center gap-2 py-3 border border-border rounded-xl text-sm font-medium text-text-secondary hover:bg-background transition-colors"
+                                >
+                                    <Copy size={15} /> Copy email
+                                </button>
+                                <p className="text-xs text-text-tertiary text-center pt-1">
+                                    Opens your device&apos;s default email application.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </AppShell>
     );
 }

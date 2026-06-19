@@ -17,6 +17,7 @@ from app.core.database import get_db
 from app.core.security import require_role
 from app.models.notifications import AuditLog
 from app.models.organization import Organization
+from app.models.organization_member import OrganizationMember
 from app.models.users import User, UserRole
 
 router = APIRouter()
@@ -37,8 +38,19 @@ class AuditLogResponse(BaseModel):
 
 
 async def _get_caller_org(db: AsyncSession, user_id: uuid.UUID) -> Optional[Organization]:
-    result = await db.execute(select(Organization).where(Organization.owner_id == user_id))
-    return result.scalar_one_or_none()
+    """Resolve org for owner or team member."""
+    owner_result = await db.execute(select(Organization).where(Organization.owner_id == user_id))
+    org = owner_result.scalar_one_or_none()
+    if org:
+        return org
+
+    mem_result = await db.execute(select(OrganizationMember).where(OrganizationMember.user_id == user_id))
+    mem = mem_result.scalar_one_or_none()
+    if mem:
+        org_result = await db.execute(select(Organization).where(Organization.id == mem.organization_id))
+        return org_result.scalar_one_or_none()
+
+    return None
 
 
 @router.get("/", response_model=List[AuditLogResponse])
@@ -51,7 +63,7 @@ async def get_audit_logs(
 ):
     """
     Get audit logs for the caller's organisation.
-    Only the org owner can view audit logs.
+    Available to any HR user who belongs to the organisation.
     """
     caller_id = uuid.UUID(current_user["user_id"])
     org = await _get_caller_org(db, caller_id)

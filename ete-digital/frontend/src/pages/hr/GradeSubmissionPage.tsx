@@ -28,7 +28,7 @@ interface Submission {
 }
 
 const paymentBadge: Record<string, { label: string; cls: string }> = {
-    pending:  { label: 'No Escrow', cls: 'bg-gray-100 text-gray-600' },
+    pending:  { label: 'No Escrow', cls: 'bg-gray-100 text-text-secondary' },
     escrowed: { label: 'Escrowed 🔒', cls: 'bg-violet-100 text-violet-700' },
     released: { label: 'Released ✓', cls: 'bg-emerald-100 text-emerald-700' },
     refunded: { label: 'Refunded', cls: 'bg-red-100 text-red-700' },
@@ -163,27 +163,27 @@ export default function GradeSubmissionPage() {
                     {/* Header */}
                     <div className="flex items-center justify-between">
                         <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Grade Submission</h1>
-                            <p className="text-gray-500 mt-0.5">Review and score this tryout submission</p>
+                            <h1 className="text-2xl font-bold text-text-primary">Grade Submission</h1>
+                            <p className="text-text-secondary mt-0.5">Review and score this tryout submission</p>
                         </div>
-                        <button onClick={() => navigate(-1)} className="text-sm text-gray-600 hover:text-gray-800 border border-gray-200 rounded-xl px-4 py-2">
+                        <button onClick={() => navigate(-1)} className="text-sm text-text-secondary hover:text-text-primary border border-border rounded-xl px-4 py-2">
                             ← Back
                         </button>
                     </div>
 
                     {/* Submission Info + Payment Status */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
                         <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-semibold text-gray-900">Submission Details</h2>
+                            <h2 className="text-base font-semibold text-text-primary">Submission Details</h2>
                             <span className={`text-xs font-semibold px-3 py-1 rounded-full ${pmBadge.cls}`}>{pmBadge.label}</span>
                         </div>
                         {loadingSub ? (
-                            <div className="h-16 bg-gray-50 rounded-xl animate-pulse" />
+                            <div className="h-16 bg-background rounded-xl animate-pulse" />
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                                 {submission?.submission_url && (
                                     <div>
-                                        <p className="text-gray-500 mb-1">Submission Link</p>
+                                        <p className="text-text-secondary mb-1">Submission Link</p>
                                         <a href={submission.submission_url} target="_blank" rel="noreferrer"
                                             className="inline-flex items-center gap-1.5 text-violet-600 font-medium hover:underline">
                                             View Work <ExternalLink size={12} />
@@ -192,14 +192,14 @@ export default function GradeSubmissionPage() {
                                 )}
                                 {submission?.auto_score != null && (
                                     <div>
-                                        <p className="text-gray-500 mb-1">AI Auto-Score</p>
-                                        <span className="font-bold text-gray-900">{submission.auto_score}/100</span>
+                                        <p className="text-text-secondary mb-1">AI Auto-Score</p>
+                                        <span className="font-bold text-text-primary">{submission.auto_score}/100</span>
                                     </div>
                                 )}
                                 {submission?.notes && (
                                     <div className="md:col-span-2">
-                                        <p className="text-gray-500 mb-1">Candidate Notes</p>
-                                        <p className="text-gray-700 bg-gray-50 rounded-xl p-3">{submission.notes}</p>
+                                        <p className="text-text-secondary mb-1">Candidate Notes</p>
+                                        <p className="text-text-primary bg-background rounded-xl p-3">{submission.notes}</p>
                                     </div>
                                 )}
                             </div>
@@ -207,12 +207,12 @@ export default function GradeSubmissionPage() {
                     </div>
 
                     {/* Payment Actions */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
                         <div className="flex items-center gap-2 mb-4">
                             <DollarSign size={18} className="text-violet-600" />
-                            <h2 className="text-base font-semibold text-gray-900">Payment Management</h2>
+                            <h2 className="text-base font-semibold text-text-primary">Payment Management</h2>
                         </div>
-                        <p className="text-sm text-gray-500 mb-5">
+                        <p className="text-sm text-text-secondary mb-5">
                             Manage the escrow payment for this tryout. Escrow funds before grading, then release or refund after your decision.
                         </p>
                         <div className="flex flex-wrap gap-3">
@@ -248,11 +248,11 @@ export default function GradeSubmissionPage() {
                     </div>
 
                     {/* Scoring Rubric */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
                         <div className="flex items-center justify-between mb-5">
                             <div className="flex items-center gap-2">
                                 <Star size={18} className="text-amber-500" />
-                                <h2 className="text-base font-semibold text-gray-900">Scoring Rubric</h2>
+                                <h2 className="text-base font-semibold text-text-primary">Scoring Rubric</h2>
                             </div>
                             <div className={`text-2xl font-extrabold ${totalScore >= 70 ? 'text-emerald-600' : totalScore >= 50 ? 'text-amber-600' : 'text-red-600'}`}>
                                 {totalScore} / 100
@@ -262,8 +262,8 @@ export default function GradeSubmissionPage() {
                             {rubric.map((item, index) => (
                                 <div key={index}>
                                     <div className="flex justify-between items-center mb-2">
-                                        <h3 className="text-sm font-medium text-gray-800">{item.criterion}</h3>
-                                        <span className="text-xs text-gray-500">Max {item.maxPoints} pts</span>
+                                        <h3 className="text-sm font-medium text-text-primary">{item.criterion}</h3>
+                                        <span className="text-xs text-text-secondary">Max {item.maxPoints} pts</span>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <input type="range" min={0} max={item.maxPoints} value={scores[index]}
@@ -271,7 +271,7 @@ export default function GradeSubmissionPage() {
                                             className="flex-1 accent-violet-600" />
                                         <input type="number" min={0} max={item.maxPoints} value={scores[index]}
                                             onChange={(e) => { const n = [...scores]; n[index] = Math.min(item.maxPoints, Math.max(0, +e.target.value || 0)); setScores(n); }}
-                                            className="w-16 border border-gray-200 rounded-lg px-2 py-1.5 text-center text-sm font-semibold" />
+                                            className="w-16 border border-border rounded-lg px-2 py-1.5 text-center text-sm font-semibold" />
                                     </div>
                                 </div>
                             ))}
@@ -279,26 +279,26 @@ export default function GradeSubmissionPage() {
                     </div>
 
                     {/* Feedback */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                        <h2 className="text-base font-semibold text-gray-900 mb-3">Your Feedback</h2>
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
+                        <h2 className="text-base font-semibold text-text-primary mb-3">Your Feedback</h2>
                         <textarea value={feedback} onChange={(e) => setFeedback(e.target.value)} rows={5}
                             placeholder="Provide detailed, constructive feedback to the candidate..."
-                            className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none resize-none" />
+                            className="w-full px-4 py-3 border border-border rounded-xl text-sm focus:ring-2 focus:ring-violet-500 focus:border-violet-500 outline-none resize-none" />
                     </div>
 
                     {/* Decision */}
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                        <h2 className="text-base font-semibold text-gray-900 mb-4">Final Decision</h2>
+                    <div className="bg-surface rounded-2xl border border-border shadow-sm p-6">
+                        <h2 className="text-base font-semibold text-text-primary mb-4">Final Decision</h2>
                         <div className="grid grid-cols-2 gap-4">
                             <button onClick={() => setDecision('pass')}
                                 className={`flex items-center justify-center gap-2 py-4 rounded-xl font-semibold transition-all border-2 ${
-                                    decision === 'pass' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' : 'border-gray-200 text-gray-600 hover:border-emerald-300 hover:text-emerald-700'
+                                    decision === 'pass' ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-200' : 'border-border text-text-secondary hover:border-emerald-300 hover:text-emerald-700'
                                 }`}>
                                 <CheckCircle2 size={18} /> Pass & Approve Payment
                             </button>
                             <button onClick={() => setDecision('fail')}
                                 className={`flex items-center justify-center gap-2 py-4 rounded-xl font-semibold transition-all border-2 ${
-                                    decision === 'fail' ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-200' : 'border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-700'
+                                    decision === 'fail' ? 'bg-red-600 border-red-600 text-white shadow-lg shadow-red-200' : 'border-border text-text-secondary hover:border-red-300 hover:text-red-700'
                                 }`}>
                                 <XCircle size={18} /> Fail & Reject
                             </button>
@@ -315,7 +315,7 @@ export default function GradeSubmissionPage() {
                     {/* Submit */}
                     <div className="flex justify-end gap-3 pb-6">
                         <button type="button" onClick={() => navigate(-1)}
-                            className="px-6 py-2.5 text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition font-medium text-sm">
+                            className="px-6 py-2.5 text-text-primary bg-surface border border-border rounded-xl hover:bg-background transition font-medium text-sm">
                             Cancel
                         </button>
                         <button onClick={handleGrade} disabled={submitting || !decision}
