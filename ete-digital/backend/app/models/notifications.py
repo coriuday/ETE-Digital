@@ -71,6 +71,7 @@ class AuditAction(str, enum.Enum):
     MEMBER_REMOVED = "member_removed"
     ROLE_CHANGED = "role_changed"
     SUBSCRIPTION_UPDATED = "subscription_updated"
+    APPLICATION_STATUS_CHANGED = "application_status_changed"
 
 
 class AuditLog(Base):

@@ -185,10 +185,25 @@ class ApplicationResponse(BaseModel):
     job_title: Optional[str] = None
     company_name: Optional[str] = None
 
+    # ATS pipeline
+    available_actions: List[str] = Field(default_factory=list)
+    is_locked: bool = False
+    pipeline_progress: Optional[Dict] = None
+
     created_at: datetime
     updated_at: Optional[datetime]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class StatusHistoryEntry(BaseModel):
+    """Single pipeline stage change record."""
+
+    old_status: Optional[ApplicationStatus]
+    new_status: ApplicationStatus
+    changed_by: str
+    changed_at: datetime
+    notes: Optional[str] = None
 
 
 class ApplicationDetailResponse(BaseModel):
@@ -211,6 +226,11 @@ class ApplicationDetailResponse(BaseModel):
     candidate_name: Optional[str] = None
     candidate_email: Optional[str] = None
     job_title: Optional[str] = None
+
+    # ATS pipeline
+    status_history: List[StatusHistoryEntry] = Field(default_factory=list)
+    available_actions: List[str] = Field(default_factory=list)
+    is_locked: bool = False
 
     created_at: datetime
     updated_at: Optional[datetime]

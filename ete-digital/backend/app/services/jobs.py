@@ -301,6 +301,11 @@ class ApplicationService:
             match_explanation=breakdown_dict,
         )
         db.add(application)
+        await db.flush()
+
+        from app.services.application_pipeline import record_initial_status  # noqa: PLC0415
+
+        await record_initial_status(db, application, candidate_id)
 
         # Increment application count
         job.applications_count += 1
@@ -383,14 +388,15 @@ class ApplicationService:
         employer_id: uuid.UUID,
         new_status: ApplicationStatus,
         employer_notes: Optional[str] = None,
-    ) -> Application:
-        """Update application status (employer action)"""
+    ):
+        """Update application status via ATS pipeline (employer action)."""
+        from app.services.application_pipeline import transition_application_status  # noqa: PLC0415
+
         application = await self.get_application(db, application_id)
 
         if not application:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
 
-        # Verify employer owns the job
         job_result = await db.execute(select(Job).where(Job.id == application.job_id))
         job = job_result.scalar_one_or_none()
 
@@ -400,13 +406,18 @@ class ApplicationService:
                 detail="Not authorized to update this application",
             )
 
-        application.status = new_status
-        if employer_notes:
-            application.employer_notes = employer_notes
+        result = await transition_application_status(
+            db=db,
+            application=application,
+            job=job,
+            new_status=new_status,
+            changed_by=employer_id,
+            employer_notes=employer_notes,
+        )
 
-        await db.commit()
+        await db.flush()
         await db.refresh(application)
-        return application
+        return result
 
     async def get_candidate_applications(
         self,

@@ -21,12 +21,92 @@ from app.schemas.jobs import (
     ApplicationListResponse,
     ApplicationDetailResponse,
     ApplicationStatusUpdate,
+    StatusHistoryEntry,
 )
 from app.services.jobs import job_service, application_service
 from app.services.notification_service import notification_service
+from app.services.application_pipeline import (
+    get_available_actions,
+    is_locked,
+    build_pipeline_progress,
+    get_status_history,
+    notification_for_status,
+)
+from app.services.audit import log_audit_event
+from app.models.notifications import AuditAction
 from app.core.security import get_optional_current_user, get_current_user  # may be None for unauthenticated
 
 router = APIRouter()
+
+
+def _history_to_entries(history) -> list[StatusHistoryEntry]:
+    return [
+        StatusHistoryEntry(
+            old_status=h.old_status,
+            new_status=h.new_status,
+            changed_by=str(h.changed_by),
+            changed_at=h.changed_at,
+            notes=h.notes,
+        )
+        for h in history
+    ]
+
+
+def _application_to_response(app, **extra) -> ApplicationResponse:
+    return ApplicationResponse(
+        id=str(app.id),
+        job_id=str(app.job_id),
+        candidate_id=str(app.candidate_id),
+        cover_letter=app.cover_letter,
+        vault_share_token=app.vault_share_token,
+        custom_answers=app.custom_answers,
+        status=app.status,
+        match_score=app.match_score,
+        match_explanation=app.match_explanation,
+        employer_notes=app.employer_notes,
+        available_actions=get_available_actions(app.status),
+        is_locked=is_locked(app.status),
+        pipeline_progress=build_pipeline_progress(app.status),
+        created_at=app.created_at,
+        updated_at=app.updated_at,
+        **extra,
+    )
+
+
+async def _send_status_email_async(
+    candidate_id: uuid.UUID,
+    candidate_email: str,
+    candidate_name: str,
+    job_title: str,
+    company: str,
+    new_status: str,
+) -> None:
+    """Background task: email candidate if preferences allow."""
+    try:
+        from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+        from app.models.users import UserProfile  # noqa: PLC0415
+        from app.services.email import email_service  # noqa: PLC0415
+
+        async with AsyncSessionLocal() as session:
+            result = await session.execute(select(UserProfile).where(UserProfile.user_id == candidate_id))
+            profile = result.scalar_one_or_none()
+            prefs = (profile.preferences or {}) if profile else {}
+            notifications = prefs.get("notifications") or {}
+            if notifications.get("email_applications", True) is False:
+                return
+
+        if candidate_email:
+            email_service.send_application_status_email(
+                candidate_email,
+                candidate_name or "Candidate",
+                job_title,
+                company,
+                new_status,
+            )
+    except Exception as exc:
+        import logging  # noqa: PLC0415
+
+        logging.getLogger(__name__).warning("Status email failed: %s", exc)
 
 
 # --------------------------------------------------------------------------- #
@@ -363,21 +443,10 @@ async def get_my_applications(
     total = (await db.execute(count_stmt)).scalar_one()
 
     def to_app_response(app, job_title, company):
-        return ApplicationResponse(
-            id=str(app.id),
-            job_id=str(app.job_id),
-            candidate_id=str(app.candidate_id),
-            cover_letter=app.cover_letter,
-            vault_share_token=app.vault_share_token,
-            custom_answers=app.custom_answers,
-            status=app.status,
-            match_score=app.match_score,
-            match_explanation=app.match_explanation,
-            employer_notes=app.employer_notes,
+        return _application_to_response(
+            app,
             job_title=job_title,
             company_name=company,
-            created_at=app.created_at,
-            updated_at=app.updated_at,
         )
 
     return ApplicationListResponse(
@@ -423,6 +492,8 @@ async def get_application_detail(
     ]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
+    history = await get_status_history(db, app.id)
+
     return ApplicationDetailResponse(
         id=str(app.id),
         job_id=str(app.job_id),
@@ -437,20 +508,27 @@ async def get_application_detail(
         candidate_name=candidate_name or "Unknown Candidate",
         candidate_email=candidate_email or "",
         job_title=job_title or "Unknown Job",
+        status_history=_history_to_entries(history),
+        available_actions=get_available_actions(app.status),
+        is_locked=is_locked(app.status),
         created_at=app.created_at,
         updated_at=app.updated_at,
     )
 
 
-@router.put("/applications/{application_id}/status", response_model=ApplicationResponse)
+@router.put("/applications/{application_id}/status", response_model=ApplicationDetailResponse)
 async def update_application_status(
     application_id: str,
     status_data: ApplicationStatusUpdate,
+    background_tasks: BackgroundTasks,
     current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
     """Update application status (Employer only, must own the job)"""
-    application = await application_service.update_application_status(
+    from sqlalchemy import select as sa_select
+    from app.models.users import User, UserProfile
+
+    transition = await application_service.update_application_status(
         db=db,
         application_id=uuid.UUID(application_id),
         employer_id=uuid.UUID(current_user["user_id"]),
@@ -458,17 +536,65 @@ async def update_application_status(
         employer_notes=status_data.employer_notes,
     )
 
-    # Push real-time notification to candidate
-    await notification_service.create_and_push(
-        db=db,
-        user_id=str(application.candidate_id),
-        notif_type="application",
-        title="Application Status Updated",
-        message=f"Your application status has been updated to: {application.status.value}",
-        link="/dashboard/applications",
-    )
+    application = transition.application
+    job = transition.job
 
-    return ApplicationResponse(
+    # Audit trail (org-level)
+    await log_audit_event(
+        db=db,
+        action=AuditAction.APPLICATION_STATUS_CHANGED,
+        user_id=current_user["user_id"],
+        resource_type="application",
+        resource_id=application.id,
+        details={
+            "old_status": transition.old_status.value,
+            "new_status": transition.new_status.value,
+            "application_id": str(application.id),
+            "job_id": str(job.id),
+        },
+    )
+    notif_copy = notification_for_status(transition.new_status)
+    notification = None
+    if notif_copy:
+        title, message = notif_copy
+        notification = await notification_service.create_in_session(
+            db=db,
+            user_id=str(application.candidate_id),
+            notif_type="application",
+            title=title,
+            message=message,
+            link="/dashboard/applications",
+        )
+
+    await db.commit()
+
+    if notification:
+        await notification_service.push_notification(application.candidate_id, notification)
+
+    cand_result = await db.execute(
+        sa_select(User.email, UserProfile.full_name)
+        .select_from(User)
+        .outerjoin(UserProfile, UserProfile.user_id == User.id)
+        .where(User.id == application.candidate_id)
+    )
+    cand_row = cand_result.first()
+    candidate_email = cand_row[0] if cand_row else ""
+    candidate_name = (cand_row[1] if cand_row else None) or "Candidate"
+
+    if notif_copy:
+        background_tasks.add_task(
+            _send_status_email_async,
+            application.candidate_id,
+            candidate_email,
+            candidate_name,
+            job.title,
+            job.company,
+            transition.new_status.value,
+        )
+
+    history = await get_status_history(db, application.id)
+
+    return ApplicationDetailResponse(
         id=str(application.id),
         job_id=str(application.job_id),
         candidate_id=str(application.candidate_id),
@@ -479,6 +605,12 @@ async def update_application_status(
         match_score=application.match_score,
         match_explanation=application.match_explanation,
         employer_notes=application.employer_notes,
+        candidate_name=candidate_name,
+        candidate_email=candidate_email,
+        job_title=job.title,
+        status_history=_history_to_entries(history),
+        available_actions=get_available_actions(application.status),
+        is_locked=is_locked(application.status),
         created_at=application.created_at,
         updated_at=application.updated_at,
     )

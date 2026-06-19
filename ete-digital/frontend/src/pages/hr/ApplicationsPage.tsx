@@ -28,11 +28,11 @@ interface Application {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-    pending: { label: 'Pending', color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+    pending: { label: 'Applied', color: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
+    shortlisted: { label: 'Shortlisted', color: 'bg-violet-100 text-violet-700', dot: 'bg-violet-500' },
     reviewed: { label: 'Reviewed', color: 'bg-blue-100 text-blue-700', dot: 'bg-blue-500' },
-    shortlisted: { label: 'Shortlisted ⭐', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     rejected: { label: 'Rejected', color: 'bg-red-100 text-red-600', dot: 'bg-red-500' },
-    hired: { label: 'Hired 🎉', color: 'bg-violet-100 text-violet-700', dot: 'bg-violet-500' },
+    hired: { label: 'Hired', color: 'bg-emerald-100 text-emerald-700', dot: 'bg-emerald-500' },
     withdrawn: { label: 'Withdrawn', color: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' },
 };
 

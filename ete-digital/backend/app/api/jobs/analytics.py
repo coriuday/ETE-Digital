@@ -5,7 +5,7 @@ Analytics API endpoints for employer dashboard data
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime, timedelta, timezone
 
@@ -13,6 +13,12 @@ from app.core.database import get_db
 from app.core.security import require_role
 from app.models.users import UserRole
 from app.models.jobs import Job, Application, ApplicationStatus
+from app.services.pipeline_analytics import (
+    get_funnel_counts,
+    get_rejection_count,
+    get_avg_hiring_days,
+    get_avg_time_in_stage_hours,
+)
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -52,6 +58,9 @@ class AnalyticsSummary(BaseModel):
     top_jobs: List[TopJobEntry]
     application_funnel: List[FunnelStage]
     period_days: int
+    rejection_rate_pct: float = 0.0
+    avg_hiring_days: Optional[float] = None
+    avg_hours_in_stage: Optional[dict] = None
 
 
 # ---- Endpoints ----
@@ -91,6 +100,9 @@ async def get_analytics_summary(
             top_jobs=[],
             application_funnel=[],
             period_days=days,
+            rejection_rate_pct=0.0,
+            avg_hiring_days=None,
+            avg_hours_in_stage=None,
         )
 
     # ---- KPIs ----
@@ -175,23 +187,13 @@ async def get_analytics_summary(
         for row in sorted(employer_jobs, key=lambda r: r.applications_count or 0, reverse=True)[:5]
     ]
 
-    # ---- Application funnel ----
+    # ---- Application funnel (history-aware, correct order) ----
     total_apps_result = await db.execute(select(func.count(Application.id)).where(Application.job_id.in_(job_ids)))
     total_apps = total_apps_result.scalar() or 1
 
-    funnel_stages = [
-        ("Applied", ApplicationStatus.PENDING),
-        ("Reviewed", ApplicationStatus.REVIEWED),
-        ("Shortlisted", ApplicationStatus.SHORTLISTED),
-        ("Hired", ApplicationStatus.HIRED),
-    ]
-
+    funnel_counts = await get_funnel_counts(db, job_ids)
     funnel = []
-    for stage_name, stage_status in funnel_stages:
-        stage_result = await db.execute(
-            select(func.count(Application.id)).where(and_(Application.job_id.in_(job_ids), Application.status == stage_status))
-        )
-        stage_count = stage_result.scalar() or 0
+    for stage_name, stage_count in funnel_counts:
         funnel.append(
             FunnelStage(
                 stage=stage_name,
@@ -200,10 +202,21 @@ async def get_analytics_summary(
             )
         )
 
+    rejected = await get_rejection_count(db, job_ids)
+    rejection_rate = round(rejected / total_apps * 100, 1) if total_apps else 0.0
+    avg_hiring_days = await get_avg_hiring_days(db, job_ids)
+    avg_hours_in_stage = {
+        "shortlisted": await get_avg_time_in_stage_hours(db, job_ids, ApplicationStatus.SHORTLISTED),
+        "reviewed": await get_avg_time_in_stage_hours(db, job_ids, ApplicationStatus.REVIEWED),
+    }
+
     return AnalyticsSummary(
         kpis=kpis,
         applications_over_time=apps_over_time,
         top_jobs=top_jobs,
         application_funnel=funnel,
         period_days=days,
+        rejection_rate_pct=rejection_rate,
+        avg_hiring_days=avg_hiring_days,
+        avg_hours_in_stage=avg_hours_in_stage,
     )

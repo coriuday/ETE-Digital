@@ -53,6 +53,36 @@ class NotificationService:
         await self._push(str(user_id), notification)
         return notification
 
+    async def create_in_session(
+        self,
+        db: AsyncSession,
+        user_id: str | uuid.UUID,
+        notif_type: str,
+        title: str,
+        message: str,
+        link: Optional[str] = None,
+    ) -> Notification:
+        """Create a notification within the caller's transaction (no commit)."""
+        uid = uuid.UUID(str(user_id))
+        type_enum = self._resolve_type(notif_type)
+
+        notification = Notification(
+            user_id=uid,
+            type=type_enum,
+            title=title,
+            message=message,
+            link=link,
+            is_read=False,
+            created_at=datetime.now(timezone.utc),
+        )
+        db.add(notification)
+        await db.flush()
+        return notification
+
+    async def push_notification(self, user_id: str | uuid.UUID, notification: Notification) -> None:
+        """Push an existing notification via WebSocket only."""
+        await self._push(str(user_id), notification)
+
     async def _push(self, user_id: str, notification: Notification):
         """Push a notification payload to WebSocket if user is online."""
         try:

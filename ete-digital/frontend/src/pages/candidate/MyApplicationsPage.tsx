@@ -4,12 +4,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
+import ApplicationProgressTimeline from '../../components/applications/ApplicationProgressTimeline';
+import { derivePipelineProgress, stageLabel } from '../../constants/applicationPipeline';
 import { api } from '../../api/client';
 import { FileText, ArrowRight, Briefcase } from 'lucide-react';
 
 interface Application {
     id: string; job_id: string; candidate_id: string; cover_letter: string | null;
     status: string; match_score: number | null; created_at: string; updated_at: string | null;
+    pipeline_progress?: ReturnType<typeof derivePipelineProgress>;
 }
 interface JobInfo {
     id: string; title: string; company: string; location: string | null;
@@ -18,11 +21,11 @@ interface JobInfo {
 interface EnrichedApplication extends Application { job?: JobInfo; }
 
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
-    pending: { color: 'bg-amber-100 text-amber-700', label: 'Under Review' },
+    pending: { color: 'bg-amber-100 text-amber-700', label: 'Applied' },
     reviewed: { color: 'bg-blue-100 text-blue-700', label: 'Reviewed' },
-    shortlisted: { color: 'bg-violet-100 text-violet-700', label: 'Shortlisted ⭐' },
+    shortlisted: { color: 'bg-violet-100 text-violet-700', label: 'Shortlisted' },
     rejected: { color: 'bg-red-100 text-red-600', label: 'Rejected' },
-    hired: { color: 'bg-emerald-100 text-emerald-700', label: 'Hired! 🎉' },
+    hired: { color: 'bg-emerald-100 text-emerald-700', label: 'Hired' },
     withdrawn: { color: 'bg-gray-100 text-gray-500', label: 'Withdrawn' },
 };
 
@@ -116,6 +119,7 @@ export default function MyApplicationsPage() {
                     <div className="space-y-3">
                         {filtered.map((app) => {
                             const cfg = STATUS_CONFIG[app.status] ?? STATUS_CONFIG.pending;
+                            const progress = app.pipeline_progress ?? derivePipelineProgress(app.status);
                             const salary = app.job ? formatSalary(app.job.salary_min, app.job.salary_max, app.job.salary_currency) : null;
                             return (
                                 <div key={app.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all">
@@ -137,7 +141,9 @@ export default function MyApplicationsPage() {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-start sm:items-end gap-1.5 flex-shrink-0">
-                                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+                                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${cfg.color}`}>
+                                                {cfg.label || stageLabel(app.status)}
+                                            </span>
                                             {app.match_score !== null && (
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-xs text-gray-400">Match</span>
@@ -151,6 +157,7 @@ export default function MyApplicationsPage() {
                                             <p className="text-xs text-gray-400">Applied {new Date(app.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
                                         </div>
                                     </div>
+                                    <ApplicationProgressTimeline progress={progress} />
                                 </div>
                             );
                         })}

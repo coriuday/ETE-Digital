@@ -2,6 +2,27 @@
  * Jobs API
  */
 import api from './client';
+import type { PipelineProgress, StatusHistoryEntry } from '../constants/applicationPipeline';
+
+export interface ApplicationDetail {
+    id: string;
+    job_id: string;
+    candidate_id: string;
+    cover_letter: string | null;
+    status: string;
+    match_score: number | null;
+    match_explanation: Record<string, unknown> | null;
+    employer_notes: string | null;
+    candidate_name?: string;
+    candidate_email?: string;
+    job_title?: string;
+    status_history?: StatusHistoryEntry[];
+    available_actions?: string[];
+    is_locked?: boolean;
+    pipeline_progress?: PipelineProgress;
+    created_at: string;
+    updated_at: string | null;
+}
 
 export interface Job {
     id: string;
@@ -129,16 +150,15 @@ export const jobsApi = {
         return response.data;
     },
 
-    updateApplicationStatus: async (applicationId: string, status: string, notes?: string): Promise<Application> => {
+    updateApplicationStatus: async (applicationId: string, status: string, notes?: string): Promise<ApplicationDetail> => {
         const response = await api.put(`/api/jobs/applications/${applicationId}/status`, {
             status,
-            employer_notes: notes,  // backend schema uses employer_notes, not notes
+            employer_notes: notes,
         });
         return response.data;
     },
 
-    // Get full application detail for employer (real candidate name, email, job title)
-    getApplicationDetail: async (applicationId: string): Promise<any> => {
+    getApplicationDetail: async (applicationId: string): Promise<ApplicationDetail> => {
         const response = await api.get(`/api/jobs/applications/${applicationId}`);
         return response.data;
     },

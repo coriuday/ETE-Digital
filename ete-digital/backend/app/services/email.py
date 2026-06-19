@@ -269,6 +269,53 @@ class EmailService:
         """
         return self.send_email(to_email, subject, html_content)
 
+    def send_application_status_email(
+        self,
+        to_email: str,
+        candidate_name: str,
+        job_title: str,
+        company: str,
+        new_status: str,
+    ) -> bool:
+        """Notify candidate when their application stage changes."""
+        messages = {
+            "shortlisted": (
+                "Application Shortlisted",
+                f"Great news, {candidate_name}! Your application for <strong>{job_title}</strong> at {company} has been shortlisted.",
+            ),
+            "reviewed": (
+                "Application Under Review",
+                f"Hi {candidate_name}, your application for <strong>{job_title}</strong> at {company} is now under review.",
+            ),
+            "hired": (
+                "Congratulations — You're Hired!",
+                f"Congratulations, {candidate_name}! You have been selected for <strong>{job_title}</strong> at {company}.",
+            ),
+            "rejected": (
+                "Application Update",
+                f"Hi {candidate_name}, thank you for applying to <strong>{job_title}</strong> at {company}. "
+                "We have decided to move forward with another candidate.",
+            ),
+        }
+        copy = messages.get(new_status)
+        if not copy:
+            return False
+        subject, body_html = copy
+        html_content = f"""
+        <html><body style="font-family: Arial, sans-serif; padding: 24px; background: #f5f5f5;">
+            <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden;">
+                <div style="background: #176BBE; padding: 24px;">
+                    <h1 style="color: white; margin: 0; font-size: 20px;">{subject}</h1>
+                </div>
+                <div style="padding: 24px;">
+                    <p style="color: #444; line-height: 1.6;">{body_html}</p>
+                    <p style="color: #888; font-size: 13px;">Log in to JobsRow to view your application progress.</p>
+                </div>
+            </div>
+        </body></html>
+        """
+        return self.send_email(to_email, subject, html_content)
+
     def send_org_invite(self, to_email: str, company_name: str, invite_link: str) -> bool:
         """Send organisation team invite email."""
         subject = f"You're invited to join {company_name} on Jobrows"

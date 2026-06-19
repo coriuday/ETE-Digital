@@ -4,6 +4,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { jobsApi } from '../../api/jobs';
+import { toastSuccess, toastError } from '../../utils/toast';
+import {
+    ACTION_CONFIG,
+    ACTION_STYLES,
+    buildTimelineFromHistory,
+    stageLabel,
+    StatusHistoryEntry,
+} from '../../constants/applicationPipeline';
 import {
     ArrowLeft, Mail, Briefcase, CalendarDays,
     CheckCircle2, XCircle, Clock, Star,
@@ -41,11 +49,19 @@ function MatchGauge({ score }: { score: number }) {
 }
 
 const STATUS_CLS: Record<string, string> = {
-    applied: 'bg-blue-50 text-blue-700 border-blue-200',
+    pending: 'bg-blue-50 text-blue-700 border-blue-200',
     reviewed: 'bg-amber-50 text-amber-700 border-amber-200',
     shortlisted: 'bg-violet-50 text-violet-700 border-violet-200',
     hired: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-red-50 text-red-700 border-red-200',
+    withdrawn: 'bg-gray-50 text-gray-600 border-gray-200',
+};
+
+const ACTION_ICONS: Record<string, React.ReactNode> = {
+    shortlisted: <Star size={15} className="fill-violet-400 text-violet-400" />,
+    reviewed: <Clock size={15} />,
+    hired: <CheckCircle2 size={15} />,
+    rejected: <XCircle size={15} />,
 };
 
 function TimelineStep({ label, date, active, last }: { label: string; date?: string; active: boolean; last?: boolean }) {
@@ -90,13 +106,16 @@ export default function ApplicationDetailsPage() {
     }, [applicationId]);
 
     const handleAction = async (newStatus: string) => {
-        if (!applicationId) return;
+        if (!applicationId || appData?.is_locked) return;
         setUpdating(newStatus);
         try {
-            await jobsApi.updateApplicationStatus(applicationId, newStatus, notes);
-            setAppData((prev: any) => ({ ...prev, status: newStatus }));
-        } catch {
-            alert('Failed to update status');
+            const data = await jobsApi.updateApplicationStatus(applicationId, newStatus, notes);
+            setAppData(data);
+            setNotes(data.employer_notes || notes);
+            toastSuccess(`Moved to ${stageLabel(newStatus)}`);
+        } catch (err: unknown) {
+            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toastError(typeof detail === 'string' ? detail : 'Failed to update status');
         } finally {
             setUpdating(null);
         }
@@ -120,9 +139,9 @@ export default function ApplicationDetailsPage() {
     }
 
     const app = appData;
-    const statuses = ['applied', 'reviewed', 'shortlisted', 'hired'];
-    const currentStatus = app.status?.toLowerCase?.() ?? 'applied';
-    const currentIdx = statuses.indexOf(currentStatus);
+    const currentStatus = app.status?.toLowerCase?.() ?? 'pending';
+    const availableActions: string[] = app.available_actions ?? [];
+    const timelineSteps = buildTimelineFromHistory((app.status_history ?? []) as StatusHistoryEntry[]);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -138,8 +157,8 @@ export default function ApplicationDetailsPage() {
                         <div>
                             <div className="flex items-center gap-3 mb-2 flex-wrap">
                                 <h1 className="text-2xl md:text-3xl font-extrabold text-white">{app.candidate_name}</h1>
-                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border capitalize ${STATUS_CLS[currentStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
-                                    {currentStatus}
+                                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${STATUS_CLS[currentStatus] ?? 'bg-gray-100 text-gray-600 border-gray-200'}`}>
+                                    {stageLabel(currentStatus)}
                                 </span>
                             </div>
                             <p className="text-blue-200 text-sm flex items-center gap-2 flex-wrap">
@@ -309,28 +328,56 @@ export default function ApplicationDetailsPage() {
                 <div className="lg:col-span-2 space-y-4">
                     {/* Actions */}
                     <div className="bg-white rounded-2xl border border-gray-100 p-6 space-y-3">
-                        <h2 className="font-bold text-gray-900 mb-4">Decision</h2>
-                        {[
-                            { status: 'shortlisted', label: 'Shortlist', icon: <Star size={15} className="fill-violet-400 text-violet-400" />, cls: 'bg-violet-50 hover:bg-violet-100 border-violet-200 text-violet-700' },
-                            { status: 'hired', label: 'Hire Candidate', icon: <CheckCircle2 size={15} />, cls: 'bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-700' },
-                            { status: 'reviewed', label: 'Mark Reviewed', icon: <Clock size={15} />, cls: 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700' },
-                            { status: 'rejected', label: 'Reject', icon: <XCircle size={15} />, cls: 'bg-red-50 hover:bg-red-100 border-red-200 text-red-700' },
-                        ].map(({ status, label, icon, cls }) => (
-                            <button key={status} onClick={() => handleAction(status)} disabled={!!updating}
-                                className={`w-full flex items-center justify-between px-4 py-3.5 border rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${cls}`}>
-                                <span className="flex items-center gap-2">{icon} {label}</span>
-                                {updating === status ? <Loader2 size={14} className="animate-spin" /> : <ChevronRight size={14} />}
-                            </button>
-                        ))}
+                        <h2 className="font-bold text-gray-900 mb-1">Pipeline</h2>
+                        <p className="text-sm text-gray-500 mb-4">
+                            Current stage:{' '}
+                            <span className="font-semibold text-gray-900">{stageLabel(currentStatus)}</span>
+                        </p>
+
+                        {app.is_locked ? (
+                            <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600">
+                                This application is locked — no further actions available.
+                            </div>
+                        ) : availableActions.length === 0 ? (
+                            <p className="text-sm text-gray-400">No actions available.</p>
+                        ) : (
+                            <>
+                                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Available actions</p>
+                                {availableActions.map(actionKey => {
+                                    const cfg = ACTION_CONFIG[actionKey];
+                                    if (!cfg) return null;
+                                    const cls = ACTION_STYLES[actionKey] ?? 'bg-gray-50 border-gray-200 text-gray-700';
+                                    return (
+                                        <button
+                                            key={actionKey}
+                                            onClick={() => handleAction(cfg.targetStatus)}
+                                            disabled={!!updating}
+                                            className={`w-full flex items-center justify-between px-4 py-3.5 border rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 ${cls}`}
+                                        >
+                                            <span className="flex items-center gap-2">
+                                                {ACTION_ICONS[actionKey]} {cfg.label}
+                                            </span>
+                                            {updating === cfg.targetStatus
+                                                ? <Loader2 size={14} className="animate-spin" />
+                                                : <ChevronRight size={14} />}
+                                        </button>
+                                    );
+                                })}
+                            </>
+                        )}
                     </div>
 
                     {/* Timeline */}
                     <div className="bg-white rounded-2xl border border-gray-100 p-6">
                         <h2 className="font-bold text-gray-900 mb-4">Application Timeline</h2>
-                        {statuses.map((s, i) => (
-                            <TimelineStep key={s} label={s.charAt(0).toUpperCase() + s.slice(1)}
-                                date={i <= currentIdx ? app.updated_at : undefined}
-                                active={i <= currentIdx} last={i === statuses.length - 1} />
+                        {timelineSteps.map((step, i) => (
+                            <TimelineStep
+                                key={step.label}
+                                label={step.label}
+                                date={step.date}
+                                active={step.active}
+                                last={i === timelineSteps.length - 1}
+                            />
                         ))}
                     </div>
 
