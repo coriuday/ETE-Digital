@@ -25,6 +25,7 @@ export interface Job {
     applications_count: number;
     created_at: string;
     published_at: string | null;
+    employer_verified?: boolean;
 }
 
 export interface JobSearchParams {

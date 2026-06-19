@@ -19,11 +19,11 @@ import { useAuthStore } from '../../stores/authStore';
 import { useNotifications } from '../../utils/useNotifications';
 import NotificationDrawer from '../ui/NotificationDrawer';
 import {
-    LayoutDashboard, Search, Briefcase, FileText, Trophy,
+    LayoutDashboard, Search, Briefcase, FileText, Trophy, Building2,
     Share2, BarChart2, Users, Settings, Bell, LogOut,
     ChevronLeft, ChevronRight, Menu, X,
     PlusCircle, ClipboardList, Star, UserCheck,
-    ChevronDown, User, Globe, CreditCard, Upload, ShieldAlert,
+    ChevronDown, User, Globe, CreditCard, Upload, ShieldAlert, ShieldCheck,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
@@ -55,13 +55,15 @@ const hrNav: NavItem[] = [
     { label: 'Team',           icon: <Users size={18} />,           href: '/hr/team' },
     { label: 'Billing',        icon: <CreditCard size={18} />,      href: '/hr/billing' },
     { label: 'Audit Logs',     icon: <ShieldAlert size={18} />,     href: '/hr/audit-logs' },
-    { label: 'Domain Verify',  icon: <Globe size={18} />,           href: '/hr/domain-verify' },
+    { label: 'Company Setup', icon: <Globe size={18} />,           href: '/hr/onboarding' },
+    { label: 'Domain Verify',  icon: <ShieldCheck size={18} />,    href: '/hr/domain-verify' },
 ];
 
 const adminNav: NavItem[] = [
     { label: 'Overview',       icon: <LayoutDashboard size={18} />, href: '/admin' },
     { label: 'Users',          icon: <Users size={18} />,           href: '/admin/users' },
     { label: 'Jobs',           icon: <Briefcase size={18} />,       href: '/admin/jobs' },
+    { label: 'Organisations',  icon: <Building2 size={18} />,       href: '/admin/organizations' },
 ];
 
 function getNav(role?: string): NavItem[] {

@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
     Search, MapPin, Briefcase, SlidersHorizontal,
-    LayoutGrid, List, ArrowRight, Building2, Clock, DollarSign, X, Zap
+    LayoutGrid, List, ArrowRight, Building2, Clock, DollarSign, X, Zap, ShieldCheck
 } from 'lucide-react';
 import { jobsApi, Job, JobSearchParams } from '../../api/jobs';
 import { useAuthStore } from '../../stores/authStore';
@@ -163,8 +163,13 @@ function JobCard({ job, view }: { job: Job; view: 'grid' | 'list' }) {
                         </h3>
                     </div>
 
-                    <p className="text-sm font-medium mb-4 truncate text-gray-500">
+                    <p className="text-sm font-medium mb-4 truncate text-gray-500 flex items-center gap-2">
                         {job.company ?? 'Confidential Company'}
+                        {job.employer_verified && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 border border-emerald-200 text-emerald-700">
+                                <ShieldCheck size={10} /> Verified
+                            </span>
+                        )}
                     </p>
 
                     <div className="flex flex-wrap gap-2 mb-4">

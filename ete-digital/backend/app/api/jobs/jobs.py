@@ -4,6 +4,7 @@ Job posting and application API endpoints
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from typing import Optional
 import uuid
 
@@ -33,7 +34,7 @@ router = APIRouter()
 # --------------------------------------------------------------------------- #
 
 
-def _job_to_response(job, match_score: int = None, match_hint: str = None):
+def _job_to_response(job, match_score: int = None, match_hint: str = None, employer_verified: bool = None):
     """Convert a Job ORM object to a JobResponse, optionally injecting match score."""
     from app.schemas.jobs import JobResponse  # noqa: PLC0415 (avoid circular at module level)
 
@@ -69,6 +70,8 @@ def _job_to_response(job, match_score: int = None, match_hint: str = None):
         base.match_score = match_score
     if match_hint:
         base.match_hint = match_hint
+    if employer_verified is not None:
+        base.employer_verified = employer_verified
     return base
 
 
@@ -240,6 +243,11 @@ async def search_jobs(
 
     jobs, total = await job_service.search_jobs(db=db, filters=filters, page=page, page_size=page_size)
 
+    from app.services.organization_service import get_employer_verified_map  # noqa: PLC0415
+
+    employer_ids = list({j.employer_id for j in jobs})
+    verified_map = await get_employer_verified_map(db, employer_ids)
+
     def to_response(job):
         return JobResponse(
             id=str(job.id),
@@ -267,6 +275,7 @@ async def search_jobs(
             updated_at=job.updated_at,
             published_at=job.published_at,
             expires_at=job.expires_at,
+            employer_verified=verified_map.get(job.employer_id, False),
         )
 
     return JobListResponse(jobs=[to_response(j) for j in jobs], total=total, page=page, page_size=page_size)
@@ -485,6 +494,11 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if not job or job.status != JobStatus.ACTIVE:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Job not found")
 
+    from app.services.organization_service import get_employer_verified_map  # noqa: PLC0415
+
+    verified_map = await get_employer_verified_map(db, [job.employer_id])
+    employer_verified = verified_map.get(job.employer_id, False)
+
     # Build the response BEFORE calling increment_view_count.
     # increment_view_count commits, which expires all ORM objects in the session.
     # Accessing job.status after expiry triggers a lazy load → MissingGreenlet in async.
@@ -514,6 +528,7 @@ async def get_job(job_id: str, db: AsyncSession = Depends(get_db)):
         updated_at=job.updated_at,
         published_at=job.published_at,
         expires_at=job.expires_at,
+        employer_verified=employer_verified,
     )
 
     # Fire view count increment after response is built (commit will expire the job object)

@@ -45,6 +45,18 @@ class Organization(Base):
     verification_token: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     verified_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    # Trust tiers (standard registration path + admin review)
+    trust_tier: Mapped[str] = mapped_column(String(20), default="unverified", nullable=False)
+    registration_path: Mapped[str] = mapped_column(String(20), default="domain", nullable=False)
+
+    # Standard-path company profile (optional)
+    linkedin_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    company_size: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    industry: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    gst_number: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    admin_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    admin_reviewed_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
+
     # Owner (the HR user who created the org)
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

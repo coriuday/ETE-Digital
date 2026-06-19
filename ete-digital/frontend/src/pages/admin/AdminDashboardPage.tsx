@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
-import { Users, Briefcase, Star, TrendingUp, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Users, Briefcase, Star, TrendingUp, ShieldCheck, ArrowRight, Building2 } from 'lucide-react';
 import { api } from '../../api/client';
 
 interface PlatformStats {
@@ -69,6 +69,7 @@ export default function AdminDashboardPage() {
                     {[
                         { label: 'Manage Users', sub: 'View, activate, or deactivate users', href: '/admin/users', icon: <Users size={20} /> },
                         { label: 'Moderate Jobs', sub: 'Close or reopen job listings', href: '/admin/jobs', icon: <Briefcase size={20} /> },
+                        { label: 'Review Organisations', sub: 'Approve standard-path employer registrations', href: '/admin/organizations', icon: <Building2 size={20} /> },
                     ].map((a) => (
                         <Link
                             key={a.href}

@@ -23,6 +23,27 @@ class JobService:
 
     async def create_job(self, db: AsyncSession, employer_id: uuid.UUID, job_data: dict) -> Job:
         """Create a new job posting"""
+        from app.models.organization import Organization  # noqa: PLC0415
+        from app.services.organization_service import max_active_jobs_for_tier  # noqa: PLC0415
+
+        org_result = await db.execute(select(Organization).where(Organization.owner_id == employer_id))
+        org = org_result.scalar_one_or_none()
+        if org:
+            limit = max_active_jobs_for_tier(org.trust_tier, org.is_verified)
+            if limit is not None:
+                count_result = await db.execute(
+                    select(func.count()).select_from(Job).where(Job.employer_id == employer_id, Job.status == JobStatus.ACTIVE)
+                )
+                active_count = count_result.scalar_one()
+                if active_count >= limit:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=(
+                            f"Your organisation tier allows up to {limit} active job(s). "
+                            "Complete verification or upgrade to post more."
+                        ),
+                    )
+
         job = Job(
             employer_id=employer_id,
             status=JobStatus.ACTIVE,

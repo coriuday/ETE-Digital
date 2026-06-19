@@ -4,7 +4,7 @@
  */
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import api from '../../api/client';
+import { organizationsApi } from '../../api/organizations';
 import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 
 export default function AcceptInvitePage() {
@@ -23,8 +23,8 @@ export default function AcceptInvitePage() {
         }
         (async () => {
             try {
-                const res = await api.post(`/organizations/accept-invite?token=${encodeURIComponent(token)}`);
-                setMessage(res.data.message);
+                const res = await organizationsApi.acceptInvite(token);
+                setMessage(res.message);
                 setState('success');
                 // Redirect to team page after 3s
                 setTimeout(() => navigate('/hr/team'), 3000);

@@ -9,7 +9,7 @@ import { jobsApi, Job } from '../../api/jobs';
 import { useAuthStore } from '../../stores/authStore';
 import {
     ArrowLeft, MapPin, Clock, Globe, Eye, Users,
-    CheckCircle2, Star, Loader2, Building2, CalendarDays, Zap, Code2, ChevronRight, ExternalLink
+    CheckCircle2, Star, Loader2, Building2, CalendarDays, Zap, Code2, ChevronRight, ExternalLink, ShieldCheck
 } from 'lucide-react';
 
 export default function JobDetailsPage() {
@@ -121,8 +121,13 @@ export default function JobDetailsPage() {
                                 <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight">{job.title}</h1>
                             </div>
 
-                            <p className="text-xl md:text-2xl font-medium text-slate-300 mb-6 flex items-center gap-2">
+                            <p className="text-xl md:text-2xl font-medium text-slate-300 mb-6 flex items-center gap-2 flex-wrap">
                                 {job.company ?? (job as any).company_name ?? 'Confidential Company'}
+                                {job.employer_verified && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-full uppercase tracking-wider">
+                                        <ShieldCheck size={12} /> Verified Employer
+                                    </span>
+                                )}
                                 {job.has_tryout && (
                                     <span className="ml-2 inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/10 border border-purple-500/30 text-purple-400 text-xs font-bold rounded-full uppercase tracking-wider">
                                         <Zap size={10} className="fill-purple-400" /> Tryout Expected

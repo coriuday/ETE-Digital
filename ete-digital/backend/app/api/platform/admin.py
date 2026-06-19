@@ -13,7 +13,7 @@ from app.core.security import require_role
 from app.models.users import User, UserProfile, UserRole
 from app.models.jobs import Job, JobStatus, Application, ApplicationStatus
 from pydantic import BaseModel, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 
 router = APIRouter()
 
@@ -290,3 +290,109 @@ async def list_all_applications(
         ],
         total=total,
     )
+
+
+# ---- Organisation admin (standard-path approval) ----
+
+
+class AdminOrgResponse(BaseModel):
+    id: str
+    company_name: str
+    domain: str
+    website: str
+    owner_email: Optional[str] = None
+    trust_tier: str
+    registration_path: str
+    is_verified: bool
+    industry: Optional[str] = None
+    company_size: Optional[str] = None
+    created_at: datetime
+
+
+class AdminOrgListResponse(BaseModel):
+    organizations: List[AdminOrgResponse]
+    total: int
+
+
+@router.get("/organizations", response_model=AdminOrgListResponse)
+async def list_organizations_admin(
+    trust_tier: Optional[str] = Query(None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=20, ge=1, le=100),
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.organization import Organization  # noqa: PLC0415
+
+    query = select(Organization)
+    if trust_tier:
+        query = query.where(Organization.trust_tier == trust_tier)
+    count_q = select(func.count()).select_from(query.subquery())
+    total = (await db.execute(count_q)).scalar_one()
+    offset = (page - 1) * page_size
+    result = await db.execute(query.order_by(Organization.created_at.desc()).offset(offset).limit(page_size))
+    orgs = result.scalars().all()
+    owner_ids = [o.owner_id for o in orgs]
+    users_result = await db.execute(select(User).where(User.id.in_(owner_ids))) if owner_ids else None
+    owners_map = {u.id: u for u in users_result.scalars().all()} if users_result else {}
+
+    return AdminOrgListResponse(
+        organizations=[
+            AdminOrgResponse(
+                id=str(o.id),
+                company_name=o.company_name,
+                domain=o.domain,
+                website=o.website,
+                owner_email=owners_map.get(o.owner_id).email if owners_map.get(o.owner_id) else None,
+                trust_tier=o.trust_tier,
+                registration_path=o.registration_path,
+                is_verified=o.is_verified,
+                industry=o.industry,
+                company_size=o.company_size,
+                created_at=o.created_at,
+            )
+            for o in orgs
+        ],
+        total=total,
+    )
+
+
+@router.post("/organizations/{org_id}/approve")
+async def approve_organization(
+    org_id: str,
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.organization import Organization  # noqa: PLC0415
+
+    result = await db.execute(select(Organization).where(Organization.id == uuid.UUID(org_id)))
+    org = result.scalar_one_or_none()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organisation not found.")
+    org.trust_tier = "verified"
+    org.is_verified = True
+    org.verified_at = datetime.now(timezone.utc)
+    org.admin_reviewed_at = datetime.now(timezone.utc)
+    org.admin_reviewed_by = uuid.UUID(current_user["user_id"])
+    await db.commit()
+    return {"message": f"Organisation '{org.company_name}' approved.", "trust_tier": "verified"}
+
+
+@router.post("/organizations/{org_id}/reject")
+async def reject_organization(
+    org_id: str,
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.models.organization import Organization  # noqa: PLC0415
+
+    result = await db.execute(select(Organization).where(Organization.id == uuid.UUID(org_id)))
+    org = result.scalar_one_or_none()
+    if not org:
+        raise HTTPException(status_code=404, detail="Organisation not found.")
+    org.trust_tier = "unverified"
+    org.is_verified = False
+    org.admin_reviewed_at = datetime.now(timezone.utc)
+    org.admin_reviewed_by = uuid.UUID(current_user["user_id"])
+    await db.commit()
+    return {"message": f"Organisation '{org.company_name}' marked unverified.", "trust_tier": "unverified"}

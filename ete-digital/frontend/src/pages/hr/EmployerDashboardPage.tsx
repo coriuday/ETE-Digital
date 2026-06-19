@@ -12,7 +12,7 @@
  *  - Consistent border/shadow usage
  */
 import { useState, useEffect, useCallback, memo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import AppShell from '../../components/layout/AppShell';
 import EmptyState from '../../components/ui/EmptyState';
 import { Skeleton } from '../../components/ui/Skeleton';
@@ -22,6 +22,7 @@ import {
     Eye, CheckCircle2, XCircle,
 } from 'lucide-react';
 import { jobsApi } from '../../api/jobs';
+import { organizationsApi } from '../../api/organizations';
 
 /* ── Types ─────────────────────────────────────────────────────────────── */
 interface Application {
@@ -129,10 +130,19 @@ function CandidateAvatar({ name }: { name: string }) {
 
 /* ── Main Dashboard ─────────────────────────────────────────────────────── */
 export default function EmployerDashboardPage() {
+    const navigate = useNavigate();
     const [jobs, setJobs]           = useState<Job[]>([]);
     const [applications, setApplications] = useState<Application[]>([]);
     const [stats, setStats]         = useState<DashboardStats>({ jobs: 0, applications: 0, tryouts: 0, hired: 0 });
     const [loading, setLoading]     = useState(true);
+
+    useEffect(() => {
+        organizationsApi.getMine().catch((e: any) => {
+            if (e.response?.status === 404) {
+                navigate('/hr/onboarding', { replace: true });
+            }
+        });
+    }, [navigate]);
 
     const fetchData = useCallback(async (signal: AbortSignal) => {
         try {

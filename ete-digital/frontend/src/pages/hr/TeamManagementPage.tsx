@@ -10,7 +10,7 @@
  */
 import { useState, useEffect } from 'react';
 import AppShell from '../../components/layout/AppShell';
-import api from '../../api/client';
+import { organizationsApi } from '../../api/organizations';
 import {
     Users, UserPlus, Trash2, ChevronDown, Copy,
     CheckCircle2, Loader2, AlertCircle, ShieldCheck,
@@ -76,11 +76,11 @@ export default function TeamManagementPage() {
 
     const fetchMembers = async () => {
         try {
-            const res = await api.get('/organizations/members');
-            setMembers(res.data);
+            const data = await organizationsApi.listMembers();
+            setMembers(data);
         } catch (e: any) {
             if (e.response?.status === 404) {
-                setError("You don't have an organisation yet. Go to Domain Verify to set one up first.");
+                setError("You don't have an organisation yet. Go to Company Setup to create one first.");
             } else {
                 setError('Failed to load team members.');
             }
@@ -96,8 +96,8 @@ export default function TeamManagementPage() {
         setInviting(true);
         setError('');
         try {
-            const res = await api.post('/organizations/invite', { email: inviteEmail, role: inviteRole });
-            setInviteLink(res.data.invite_link);
+            const res = await organizationsApi.invite(inviteEmail, inviteRole);
+            setInviteLink(res.invite_link);
             showToast(`Invite created for ${inviteEmail}`);
         } catch (e: any) {
             setError(e.response?.data?.detail || 'Failed to create invite.');
@@ -116,7 +116,7 @@ export default function TeamManagementPage() {
     const handleRoleChange = async (userId: string, newRole: string) => {
         setChangingRole(userId);
         try {
-            await api.patch(`/organizations/members/${userId}/role`, { role: newRole });
+            await organizationsApi.updateMemberRole(userId, newRole);
             setMembers(prev => prev.map(m => m.user_id === userId ? { ...m, role: newRole } : m));
             showToast('Role updated.');
         } catch (e: any) {
@@ -130,7 +130,7 @@ export default function TeamManagementPage() {
         if (!window.confirm(`Remove ${email} from your team?`)) return;
         setRemovingId(userId);
         try {
-            await api.delete(`/organizations/members/${userId}`);
+            await organizationsApi.removeMember(userId);
             setMembers(prev => prev.filter(m => m.user_id !== userId));
             showToast('Member removed.');
         } catch (e: any) {

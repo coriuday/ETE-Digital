@@ -78,7 +78,11 @@ export default function RegisterPage() {
         try {
             await register(formData.email, formData.password, formData.fullName, formData.role);
             navigate('/login', {
-                state: { message: 'Account created! Please check your email to verify.' }
+                state: {
+                    message: formData.role === 'employer'
+                        ? 'Account created! Verify your email, then complete company setup.'
+                        : 'Account created! Please check your email to verify.',
+                },
             });
         } catch (_error) {
             // Error handled by store
@@ -238,6 +242,11 @@ export default function RegisterPage() {
                                     </button>
                                 ))}
                             </div>
+                            {formData.role === 'employer' && (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Use your work email for instant domain verification, or a personal email for admin-reviewed setup.
+                                </p>
+                            )}
                         </div>
 
                         {/* Password */}

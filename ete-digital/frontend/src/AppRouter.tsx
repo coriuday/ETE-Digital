@@ -3,7 +3,7 @@
  * Main routing configuration with React.lazy code splitting
  */
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import ProtectedRoute from './components/ProtectedRoute';
 import GoogleAnalytics from './components/GoogleAnalytics';
@@ -59,6 +59,7 @@ const GradeTryoutsPage = lazy(() => import('./pages/hr/GradeTryoutsPage'));
 const GradeSubmissionPage = lazy(() => import('./pages/hr/GradeSubmissionPage'));
 const AnalyticsDashboardPage = lazy(() => import('./pages/hr/AnalyticsDashboardPage'));
 const DomainVerificationPage = lazy(() => import('./pages/hr/DomainVerificationPage'));
+const EmployerOnboardingPage = lazy(() => import('./pages/hr/EmployerOnboardingPage'));
 const TeamManagementPage = lazy(() => import('./pages/hr/TeamManagementPage'));
 const AcceptInvitePage = lazy(() => import('./pages/hr/AcceptInvitePage'));
 const BillingPage = lazy(() => import('./pages/hr/BillingPage'));
@@ -70,6 +71,7 @@ const AdminDashboardPage = lazy(() => import('./pages/admin/AdminDashboardPage')
 const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'));
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'));
+const AdminOrganizationsPage = lazy(() => import('./pages/admin/AdminOrganizationsPage'));
 
 // ---- Marketing Pages ----
 const AboutPage = lazy(() => import('./pages/marketing/AboutPage'));
@@ -97,6 +99,20 @@ const OnboardingWizard = lazy(() => import('./pages/candidate/OnboardingWizard')
 
 // ---- Company Page ----
 const CompanyPage = lazy(() => import('./pages/public/CompanyPage'));
+
+function AcceptInviteGate() {
+    const { isAuthenticated } = useAuthStore();
+    const location = useLocation();
+    if (!isAuthenticated) {
+        return <Navigate to="/login" state={{ returnTo: `/accept-invite${location.search}` }} replace />;
+    }
+    return <AcceptInvitePage />;
+}
+
+function LegacyAcceptInviteRedirect() {
+    const location = useLocation();
+    return <Navigate to={`/accept-invite${location.search}`} replace />;
+}
 
 export default function AppRouter() {
     const { isAuthenticated, user } = useAuthStore();
@@ -155,6 +171,10 @@ export default function AppRouter() {
 
                     {/* OAuth Callback — must be public (no auth guard) */}
                     <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+
+                    {/* Org invite accept — any authenticated user (not HR-only) */}
+                    <Route path="/accept-invite" element={<AcceptInviteGate />} />
+                    <Route path="/hr/accept-invite" element={<LegacyAcceptInviteRedirect />} />
 
                     {/* Public Job Search */}
                     <Route path="/jobs" element={<JobSearchPage />} />
@@ -223,9 +243,9 @@ export default function AppRouter() {
                         <Route path="/hr/tryouts/grade/:submissionId" element={<GradeSubmissionPage />} />
                         <Route path="/hr/analytics" element={<AnalyticsDashboardPage />} />
                         <Route path="/hr/dashboard" element={<HRDashboardPage />} />
+                        <Route path="/hr/onboarding" element={<EmployerOnboardingPage />} />
                         <Route path="/hr/domain-verify" element={<DomainVerificationPage />} />
                         <Route path="/hr/team" element={<TeamManagementPage />} />
-                        <Route path="/hr/accept-invite" element={<AcceptInvitePage />} />
                         <Route path="/hr/billing" element={<BillingPage />} />
                         <Route path="/hr/bulk-post" element={<BulkJobPostPage />} />
                         <Route path="/hr/audit-logs" element={<AuditLogsPage />} />
@@ -243,6 +263,7 @@ export default function AppRouter() {
                         <Route path="/admin/users" element={<AdminUsersPage />} />
                         <Route path="/admin/jobs" element={<AdminJobsPage />} />
                         <Route path="/admin/applications" element={<AdminApplicationsPage />} />
+                        <Route path="/admin/organizations" element={<AdminOrganizationsPage />} />
                     </Route>
 
                     {/* 404 - Catch All */}

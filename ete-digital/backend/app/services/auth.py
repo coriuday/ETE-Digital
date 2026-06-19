@@ -77,6 +77,17 @@ class AuthService:
             preferences={},
         )
         db.add(profile)
+        await db.flush()
+
+        if role == UserRole.HR:
+            from app.services.organization_service import (  # noqa: PLC0415
+                sync_user_email_domain_fields,
+                try_auto_join_verified_org,
+            )
+
+            await sync_user_email_domain_fields(user)
+            await try_auto_join_verified_org(db, user)
+
         await db.commit()
         await db.refresh(user)
 

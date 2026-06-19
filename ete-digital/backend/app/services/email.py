@@ -269,6 +269,19 @@ class EmailService:
         """
         return self.send_email(to_email, subject, html_content)
 
+    def send_org_invite(self, to_email: str, company_name: str, invite_link: str) -> bool:
+        """Send organisation team invite email."""
+        subject = f"You're invited to join {company_name} on Jobrows"
+        html_content = f"""
+        <html><body style="font-family: Arial, sans-serif; padding: 24px;">
+            <h2>Team invite</h2>
+            <p>You have been invited to join <strong>{company_name}</strong> on Jobrows.</p>
+            <p><a href="{invite_link}" style="background:#7c3aed;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;">Accept Invite</a></p>
+            <p style="color:#888;font-size:12px;">This link expires in 7 days.</p>
+        </body></html>
+        """
+        return self.send_email(to_email, subject, html_content)
+
 
 # Singleton instance
 email_service = EmailService()

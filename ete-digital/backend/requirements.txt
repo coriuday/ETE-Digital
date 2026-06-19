@@ -27,6 +27,7 @@ hiredis==3.1.0
 
 # HTTP Client
 httpx==0.28.1
+dnspython==2.7.0
 
 # Email
 email-validator==2.2.0

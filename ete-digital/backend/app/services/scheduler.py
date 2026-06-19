@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +45,33 @@ async def expire_jobs() -> None:
         logger.debug("Job expiry: no jobs to close at %s", now.isoformat())
 
 
+async def poll_organization_verifications() -> None:
+    """Retry domain verification for pending domain-path organisations."""
+    from app.core.database import AsyncSessionLocal  # noqa: PLC0415
+    from app.models.organization import Organization  # noqa: PLC0415
+    from app.api.platform.organizations import _run_verification  # noqa: PLC0415
+
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            select(Organization).where(
+                Organization.registration_path == "domain",
+                Organization.is_verified == False,  # noqa: E712
+                Organization.verification_token.isnot(None),
+            )
+        )
+        orgs = result.scalars().all()
+        verified_count = 0
+        for org in orgs:
+            if await _run_verification(org):
+                org.is_verified = True
+                org.trust_tier = "verified"
+                org.verified_at = datetime.now(timezone.utc)
+                verified_count += 1
+        if verified_count:
+            await session.commit()
+            logger.info("Domain verification poll: verified %d organisation(s)", verified_count)
+
+
 def start_scheduler() -> None:
     """Register all periodic tasks and start the scheduler."""
     scheduler.add_job(
@@ -54,8 +81,15 @@ def start_scheduler() -> None:
         replace_existing=True,
         max_instances=1,
     )
+    scheduler.add_job(
+        poll_organization_verifications,
+        trigger=IntervalTrigger(minutes=5),
+        id="poll_org_verifications",
+        replace_existing=True,
+        max_instances=1,
+    )
     scheduler.start()
-    logger.info("Background scheduler started (job expiry every 30 min)")
+    logger.info("Background scheduler started (job expiry every 30 min, org verification every 5 min)")
 
 
 def stop_scheduler() -> None:
