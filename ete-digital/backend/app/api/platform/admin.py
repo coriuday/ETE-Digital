@@ -173,6 +173,10 @@ async def toggle_user_active(
         )
     user.is_active = not user.is_active
     await db.commit()
+    if not user.is_active:
+        from app.services.auth import auth_service
+
+        await auth_service.revoke_all_refresh_tokens(db, user.id)
     return {
         "message": f"User {'activated' if user.is_active else 'deactivated'} successfully",
         "is_active": user.is_active,
@@ -209,6 +213,9 @@ async def update_user_role(
         details={"action": "role_changed", "old_role": old_role, "new_role": body.role},
     )
     await db.commit()
+    from app.services.auth import auth_service
+
+    await auth_service.revoke_all_refresh_tokens(db, user.id)
     return {"message": f"Role updated to {body.role}", "role": body.role}
 
 

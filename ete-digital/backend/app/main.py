@@ -209,7 +209,8 @@ app.include_router(organizations.router, prefix="/api/organizations", tags=["Dom
 app.include_router(billing.router, prefix="/api/billing", tags=["Billing"])
 app.include_router(audit.router, prefix="/api/audit", tags=["Audit"])
 
-# Serve uploaded files (resumes, avatars)
-_uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
-os.makedirs(_uploads_dir, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")
+# Serve uploaded files locally only in DEBUG (production uses presigned MinIO URLs)
+if settings.DEBUG:
+    _uploads_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "uploads")
+    os.makedirs(_uploads_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=_uploads_dir), name="uploads")

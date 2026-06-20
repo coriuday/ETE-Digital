@@ -24,6 +24,8 @@ import json
 import uuid
 from typing import Optional
 
+from datetime import timedelta
+
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
@@ -33,7 +35,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.database import get_db
-from app.core.security import create_access_token, create_refresh_token
+from app.core.security import create_access_token, create_partial_token, create_refresh_token
 from app.models.users import User, UserProfile, UserRole
 
 router = APIRouter(prefix="/api/auth/oauth", tags=["oauth"])
@@ -45,6 +47,47 @@ GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 def _google_configured() -> bool:
     return bool(settings.GOOGLE_CLIENT_ID and settings.GOOGLE_CLIENT_SECRET)
+
+
+def _role_value(user: User) -> str:
+    return user.role.value if hasattr(user.role, "value") else str(user.role)
+
+
+def _oauth_callback_hash(user: User) -> str:
+    """Build URL hash fragment for frontend callback (MFA-aware)."""
+    role_value = _role_value(user)
+    if user.totp_enabled:
+        partial = create_partial_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(minutes=5),
+        )
+        return f"partial_token={partial}&requires_2fa=1&role={role_value}"
+    jwt_access = create_access_token(data={"sub": str(user.id), "email": user.email, "role": role_value})
+    jwt_refresh = create_refresh_token(data={"sub": str(user.id)})
+    return f"access_token={jwt_access}&refresh_token={jwt_refresh}&role={role_value}"
+
+
+def _oauth_mobile_tokens(user: User) -> dict:
+    """JSON token payload for mobile OAuth (MFA-aware)."""
+    role_value = _role_value(user)
+    if user.totp_enabled:
+        partial = create_partial_token(
+            data={"sub": str(user.id)},
+            expires_delta=timedelta(minutes=5),
+        )
+        return {
+            "requires_2fa": True,
+            "partial_token": partial,
+            "token_type": "bearer",
+            "role": role_value,
+        }
+    return {
+        "access_token": create_access_token(data={"sub": str(user.id), "email": user.email, "role": role_value}),
+        "refresh_token": create_refresh_token(data={"sub": str(user.id)}),
+        "token_type": "bearer",
+        "role": role_value,
+        "requires_2fa": False,
+    }
 
 
 # ─── Redirect to Google ──────────────────────────────────────
@@ -182,6 +225,7 @@ async def google_callback(
             )
         )
         await db.commit()
+        await db.refresh(user)
     else:
         # New user — create account with the role passed via state
         new_user_id = uuid.uuid4()
@@ -210,20 +254,10 @@ async def google_callback(
         await db.commit()
         await db.refresh(user)
 
-    # Issue Jobrows JWT tokens
-    role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
-    jwt_access = create_access_token(data={"sub": str(user.id), "email": user.email, "role": role_value})
-    jwt_refresh = create_refresh_token(data={"sub": str(user.id)})
+        await db.refresh(user)
 
-    # Redirect to frontend using URL hash fragment.
-    # Hash fragments are NEVER sent to the server, never stored in access logs,
-    # and never included in Referer headers — tokens stay purely client-side.
-    frontend_redirect = (
-        f"{settings.FRONTEND_URL}/auth/callback"
-        f"#access_token={jwt_access}"
-        f"&refresh_token={jwt_refresh}"
-        f"&role={role_value}"
-    )
+    token_hash = _oauth_callback_hash(user)
+    frontend_redirect = f"{settings.FRONTEND_URL}/auth/callback#{token_hash}"
     return RedirectResponse(url=frontend_redirect)
 
 
@@ -277,6 +311,7 @@ async def google_mobile_auth(
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalars().first()
 
+    is_new_user = False
     if user:
         await db.execute(
             update(User)
@@ -284,7 +319,9 @@ async def google_mobile_auth(
             .values(oauth_provider="google", oauth_provider_id=google_id, avatar_url=avatar_url, email_verified=email_verified)
         )
         await db.commit()
+        await db.refresh(user)
     else:
+        is_new_user = True
         new_id = uuid.uuid4()
         user = User(
             id=new_id,
@@ -304,11 +341,6 @@ async def google_mobile_auth(
         await db.commit()
         await db.refresh(user)
 
-    role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
-    return {
-        "access_token": create_access_token(data={"sub": str(user.id), "email": user.email, "role": role_value}),
-        "refresh_token": create_refresh_token(data={"sub": str(user.id)}),
-        "token_type": "bearer",
-        "role": role_value,
-        "is_new_user": not user,
-    }
+    payload = _oauth_mobile_tokens(user)
+    payload["is_new_user"] = is_new_user
+    return payload

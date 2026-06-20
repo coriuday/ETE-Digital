@@ -111,7 +111,5 @@ async def test_logout_no_token(client: AsyncClient):
 
 async def test_forgot_password_always_succeeds(client: AsyncClient):
     """Forgot password endpoint always returns 200 to prevent user enumeration."""
-    response = await client.post(
-        "/api/auth/forgot-password", json={"email": "doesnotexist@example.com"}
-    )
+    response = await client.post("/api/auth/forgot-password", json={"email": "doesnotexist@example.com"})
     assert response.status_code == 200

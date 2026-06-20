@@ -261,6 +261,11 @@ async def stripe_webhook(
       customer.subscription.deleted → downgrade to free
     """
     if not STRIPE_AVAILABLE or not STRIPE_WEBHOOK_SECRET:
+        if settings.ENVIRONMENT == "production":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Billing webhooks are not configured.",
+            )
         return {"received": True, "simulation": True}
 
     payload = await request.body()

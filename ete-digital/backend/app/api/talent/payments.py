@@ -23,6 +23,7 @@ import uuid
 import logging
 
 from app.core.database import get_db
+from app.core.config import settings
 from app.core.security import get_current_user, require_role
 from app.models.users import UserRole
 from app.models.tryouts import TryoutSubmission, Tryout, PaymentStatus, SubmissionStatus
@@ -145,20 +146,17 @@ async def escrow_payment(
             detail="Failed to create payment intent — please try again",
         )
 
-    # Persist the intent ID and update status
+    # Persist intent ID — ESCROWED is set by Stripe webhook when funds are capturable
     submission.payment_intent_id = intent_id
-    submission.payment_status = PaymentStatus.ESCROWED
-    submission.payment_escrowed_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(submission)
 
-    # Notify candidate
     await notification_service.create_and_push(
         db=db,
         user_id=str(submission.candidate_id),
         notif_type="payment",
-        title="Payment Escrowed 🔒",
-        message=f"₹{tryout.payment_amount // 100:,} has been held in escrow for your tryout submission. Complete your work to get paid!",
+        title="Payment initiated",
+        message=f"Complete payment of ₹{tryout.payment_amount // 100:,} for your tryout submission.",
         link=f"/tryouts/{tryout.id}/payment",
     )
 
@@ -305,22 +303,22 @@ async def get_payment_status(
     current_user: dict = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get current payment status for a submission (visible to HR and the candidate who submitted)."""
+    """Get current payment status for a submission (HR owner or submitting candidate)."""
     sub_id = uuid.UUID(submission_id)
     user_id = uuid.UUID(current_user["user_id"])
     user_role = current_user.get("role")
 
-    result = await db.execute(select(TryoutSubmission).where(TryoutSubmission.id == sub_id))
-    submission = result.scalar_one_or_none()
-    if not submission:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
-
-    # Candidates can only see their own
-    if user_role == "candidate" and submission.candidate_id != user_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
-
-    tryout_result = await db.execute(select(Tryout).where(Tryout.id == submission.tryout_id))
-    tryout = tryout_result.scalar_one_or_none()
+    if user_role == "employer":
+        submission, tryout = await _get_submission_with_auth(db, sub_id, user_id)
+    else:
+        result = await db.execute(select(TryoutSubmission).where(TryoutSubmission.id == sub_id))
+        submission = result.scalar_one_or_none()
+        if not submission:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+        if user_role == "candidate" and submission.candidate_id != user_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        tryout_result = await db.execute(select(Tryout).where(Tryout.id == submission.tryout_id))
+        tryout = tryout_result.scalar_one_or_none()
 
     return {
         "submission_id": str(submission.id),
@@ -353,6 +351,12 @@ async def stripe_webhook(
     """
     payload = await request.body()
 
+    if settings.ENVIRONMENT == "production" and not payment_service._is_available():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Payment webhooks are not configured.",
+        )
+
     if payment_service._is_available():
         if not stripe_signature:
             raise HTTPException(
@@ -366,7 +370,11 @@ async def stripe_webhook(
                 detail="Invalid webhook signature",
             )
     else:
-        # Dev/simulation only: parse raw JSON without signature check
+        if settings.ENVIRONMENT == "production":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Payment webhooks are not configured.",
+            )
         import json
 
         if not stripe_signature:
@@ -399,7 +407,14 @@ async def stripe_webhook(
 
     now = datetime.now(timezone.utc)
 
-    if event_type == "payment_intent.succeeded":
+    if event_type == "payment_intent.amount_capturable_updated":
+        if submission.payment_status == PaymentStatus.PENDING:
+            submission.payment_status = PaymentStatus.ESCROWED
+            submission.payment_escrowed_at = now
+            await db.commit()
+            logger.info(f"[Webhook] Escrowed payment for submission {submission.id}")
+
+    elif event_type == "payment_intent.succeeded":
         if submission.payment_status != PaymentStatus.RELEASED:
             submission.payment_status = PaymentStatus.RELEASED
             submission.payment_released_at = now

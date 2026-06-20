@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 import uuid
 from app.models.users import User, UserProfile
+from app.services.storage import storage_service
 from app.schemas.users import (
     UserProfileUpdate,
     UserProfileResponse,
@@ -21,6 +22,13 @@ from app.schemas.users import (
 )
 
 router = APIRouter()
+
+
+def _profile_urls_for_response(profile: UserProfile) -> tuple[Optional[str], Optional[str]]:
+    return (
+        storage_service.resolve_presigned_url(profile.avatar_url),
+        storage_service.resolve_presigned_url(profile.resume_url),
+    )
 
 
 @router.get("/me", response_model=UserResponse)
@@ -47,6 +55,7 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
     )
 
     if profile:
+        avatar_url, resume_url = _profile_urls_for_response(profile)
         user_response.profile = UserProfileResponse(
             user_id=str(profile.user_id),
             full_name=profile.full_name,
@@ -54,8 +63,8 @@ async def get_current_user_profile(current_user: dict = Depends(get_current_user
             phone=profile.phone,
             location=profile.location,
             bio=profile.bio,
-            avatar_url=profile.avatar_url,
-            resume_url=profile.resume_url,
+            avatar_url=avatar_url,
+            resume_url=resume_url,
             skills=profile.skills or [],
             experience_years=profile.experience_years,
             social_links=profile.social_links or {},
@@ -92,14 +101,15 @@ async def update_current_user_profile(
     await db.commit()
     await db.refresh(profile)
 
+    avatar_url, resume_url = _profile_urls_for_response(profile)
     return UserProfileResponse(
         user_id=str(profile.user_id),
         full_name=profile.full_name,
         phone=profile.phone,
         location=profile.location,
         bio=profile.bio,
-        avatar_url=profile.avatar_url,
-        resume_url=profile.resume_url,
+        avatar_url=avatar_url,
+        resume_url=resume_url,
         skills=profile.skills or [],
         experience_years=profile.experience_years,
         social_links=profile.social_links or {},
@@ -164,14 +174,14 @@ async def upload_resume(
     file_path = storage_service.get_file_path("resumes", user_id, file.filename or "resume.pdf")
 
     # Upload to MinIO/S3
-    resume_url = storage_service.upload_file(
+    object_key = storage_service.upload_file(
         file_data=io.BytesIO(contents),
         file_path=file_path,
         content_type=file.content_type or "application/pdf",
         file_size=file_size,
     )
 
-    if resume_url is None:
+    if object_key is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="File storage is not available. Configure MinIO/S3 to enable uploads.",
@@ -184,10 +194,13 @@ async def upload_resume(
     if not profile:
         profile = UserProfile(user_id=user_uuid)
         db.add(profile)
-    profile.resume_url = resume_url
+    profile.resume_url = object_key
     await db.commit()
 
-    return {"resume_url": resume_url, "filename": file.filename}
+    return {
+        "resume_url": storage_service.resolve_presigned_url(object_key),
+        "filename": file.filename,
+    }
 
 
 @router.post("/me/avatar", response_model=dict)
@@ -220,14 +233,14 @@ async def upload_avatar(
         ".webp": "image/webp",
     }
     ext = next((e for e in allowed_exts if fname.endswith(e)), ".jpg")
-    avatar_url = storage_service.upload_file(
+    object_key = storage_service.upload_file(
         file_data=io.BytesIO(contents),
         file_path=file_path,
         content_type=file.content_type or content_types.get(ext, "image/jpeg"),
         file_size=file_size,
     )
 
-    if avatar_url is None:
+    if object_key is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="File storage is not available. Configure MinIO/S3 to enable uploads.",
@@ -239,10 +252,13 @@ async def upload_avatar(
     if not profile:
         profile = UserProfile(user_id=user_uuid)
         db.add(profile)
-    profile.avatar_url = avatar_url
+    profile.avatar_url = object_key
     await db.commit()
 
-    return {"avatar_url": avatar_url, "filename": file.filename}
+    return {
+        "avatar_url": storage_service.resolve_presigned_url(object_key),
+        "filename": file.filename,
+    }
 
 
 # ─── Onboarding Endpoints (Task 1.3) ──────────────────────────────────────────
@@ -368,6 +384,9 @@ async def change_password(
 
     user.password_hash = hash_password(body.new_password)
     await db.commit()
+    from app.services.auth import auth_service
+
+    await auth_service.revoke_all_refresh_tokens(db, user_id)
     return {"message": "Password changed successfully"}
 
 

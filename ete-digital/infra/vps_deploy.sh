@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 # ============================================================
-# jobsrow.com — Full VPS Deployment Script
-# Run as root: sudo bash vps_deploy.sh
+# DEPRECATED — Initial VPS bootstrap only (Arch/PM2 stack).
+# For production updates use: infra/production_deploy.sh (systemd)
+#
+# SECURITY: Never embed secrets in this script. Provide via:
+#   export POSTGRES_PASSWORD='...'  (required on first run)
+#   backend/.env copied from backend/.env.example (required)
+#
+# After any historical secret exposure, follow infra/SECRET_ROTATION.md
 # ============================================================
-set -e
+set -euo pipefail
 
 APP_DIR="/home/etedigital/jobsrow/ete-digital"
 BACKEND="$APP_DIR/backend"
@@ -43,34 +49,36 @@ systemctl is-active postgresql && echo "Postgres: OK" || (systemctl start postgr
 redis-cli ping && echo "Redis: OK" || (pacman -S --noconfirm redis && systemctl enable --now redis && echo "Redis: Installed")
 
 echo "===== [5/10] Create DB user and database ====="
-sudo -u postgres psql -c "CREATE USER ete_user WITH PASSWORD 'Prav1234' SUPERUSER;" 2>/dev/null || echo "User already exists"
+if [ -z "${POSTGRES_PASSWORD:-}" ]; then
+  echo "ERROR: Set POSTGRES_PASSWORD before running (e.g. export POSTGRES_PASSWORD=\$(openssl rand -hex 24))"
+  exit 1
+fi
+sudo -u postgres psql -c "CREATE USER ete_user WITH PASSWORD '${POSTGRES_PASSWORD}';" 2>/dev/null || \
+  sudo -u postgres psql -c "ALTER USER ete_user WITH PASSWORD '${POSTGRES_PASSWORD}';"
 sudo -u postgres psql -c "CREATE DATABASE ete_digital OWNER ete_user;" 2>/dev/null || echo "DB already exists"
 sudo -u postgres psql -c "\l" | grep ete_digital
 
-echo "===== [6/10] Writing backend .env ====="
-cat > "$BACKEND/.env" << 'ENVEOF'
-ENVIRONMENT=production
-DEBUG=false
-LOG_LEVEL=INFO
-DEPLOY_MODE=vps
-DATABASE_URL=postgresql+asyncpg://ete_user:Prav1234@localhost:5432/ete_digital
-REDIS_URL=redis://localhost:6379/0
-JWT_SECRET_KEY=a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
-ENCRYPTION_KEY=b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3
-FRONTEND_URL=https://jobsrow.com
-CORS_ORIGINS=["https://jobsrow.com","https://www.jobsrow.com","http://localhost:5173"]
-MINIO_ENDPOINT=localhost
-MINIO_PORT=9000
-MINIO_ACCESS_KEY=minioadmin
-MINIO_SECRET_KEY=minioadmin123
-MINIO_SECURE=false
-MINIO_BUCKET_NAME=ete-digital
-EMAIL_ENABLED=false
-SMTP_HOST=localhost
-SMTP_PORT=25
-PORT=8000
-ENVEOF
-echo "Backend .env written."
+echo "===== [6/10] Backend .env (must exist — never auto-write secrets) ====="
+if [ ! -f "$BACKEND/.env" ]; then
+  if [ -f "$BACKEND/.env.example" ]; then
+    cp "$BACKEND/.env.example" "$BACKEND/.env"
+    echo "Created $BACKEND/.env from .env.example — EDIT IT before continuing."
+    echo "Set JWT_SECRET_KEY, ENCRYPTION_KEY, DATABASE_URL, MINIO keys, etc."
+    exit 1
+  else
+    echo "ERROR: Missing $BACKEND/.env — create it from .env.example"
+    exit 1
+  fi
+fi
+# shellcheck source=/dev/null
+set -a && source "$BACKEND/.env" && set +a
+for var in JWT_SECRET_KEY ENCRYPTION_KEY DATABASE_URL; do
+  if [ -z "${!var:-}" ] || [[ "${!var}" == *CHANGE_ME* ]]; then
+    echo "ERROR: $var is missing or still placeholder in $BACKEND/.env"
+    exit 1
+  fi
+done
+echo "Backend .env present and required vars set."
 
 echo "===== [7/10] Running Alembic migrations ====="
 cd "$BACKEND"

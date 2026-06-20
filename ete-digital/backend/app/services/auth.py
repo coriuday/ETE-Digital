@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 import asyncio
 import secrets
+import uuid
 
 from app.models.users import User, UserProfile, RefreshToken, UserRole
 from app.core.security import (
@@ -312,6 +313,11 @@ class AuthService:
             await db.commit()
 
         return True
+
+    async def revoke_all_refresh_tokens(self, db: AsyncSession, user_id: uuid.UUID) -> None:
+        """Revoke all refresh tokens for a user (password change, admin action, etc.)."""
+        await db.execute(update(RefreshToken).where(RefreshToken.user_id == user_id).values(is_revoked=True))
+        await db.commit()
 
 
 # Singleton instance

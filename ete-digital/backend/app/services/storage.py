@@ -2,6 +2,7 @@
 Storage service for file uploads using MinIO
 """
 
+import re
 from typing import Optional, BinaryIO
 from app.core.config import settings
 
@@ -21,7 +22,6 @@ class StorageService:
         self.bucket_name = settings.MINIO_BUCKET_NAME
 
     def _get_client(self):
-        """Lazy-load MinIO client"""
         if self._client is None and MINIO_AVAILABLE:
             self._client = Minio(
                 endpoint=settings.MINIO_ENDPOINT,
@@ -33,13 +33,28 @@ class StorageService:
         return self._client
 
     def _ensure_bucket(self):
-        """Create bucket if it doesn't exist"""
         try:
             client = self._client
             if not client.bucket_exists(self.bucket_name):
                 client.make_bucket(self.bucket_name)
         except Exception as e:
             print(f"Warning: Could not ensure bucket exists: {e}")
+
+    def extract_object_key(self, stored: str) -> Optional[str]:
+        """Normalize legacy public URLs or raw object keys to bucket-relative path."""
+        if not stored:
+            return None
+        stored = stored.strip()
+        if stored.startswith(("http://", "https://")):
+            marker = f"/{self.bucket_name}/"
+            idx = stored.find(marker)
+            if idx >= 0:
+                return stored[idx + len(marker) :].split("?")[0]
+            parts = stored.split("/")
+            if len(parts) >= 2:
+                return "/".join(parts[-3:]) if len(parts) >= 4 else parts[-1]
+            return None
+        return stored
 
     def upload_file(
         self,
@@ -51,14 +66,8 @@ class StorageService:
         """
         Upload a file to MinIO storage.
 
-        Args:
-            file_data: File-like object
-            file_path: Path in bucket (e.g., 'avatars/user-id.jpg')
-            content_type: MIME type
-            file_size: File size in bytes (-1 for unknown)
-
         Returns:
-            Public URL of uploaded file, or None on failure
+            Object key (path within bucket), or None on failure
         """
         client = self._get_client()
         if not client:
@@ -73,78 +82,54 @@ class StorageService:
                 length=file_size,
                 content_type=content_type,
             )
-            protocol = "https" if settings.MINIO_SECURE else "http"
-            return f"{protocol}://{settings.MINIO_ENDPOINT}/{self.bucket_name}/{file_path}"
+            return file_path
         except Exception as e:
             print(f"Failed to upload file: {e}")
             return None
 
     def delete_file(self, file_path: str) -> bool:
-        """
-        Delete a file from MinIO storage.
-
-        Args:
-            file_path: Path in bucket
-
-        Returns:
-            True if deleted successfully
-        """
+        key = self.extract_object_key(file_path) or file_path
         client = self._get_client()
         if not client:
             return False
 
         try:
-            client.remove_object(self.bucket_name, file_path)
+            client.remove_object(self.bucket_name, key)
             return True
         except Exception as e:
             print(f"Failed to delete file: {e}")
             return False
 
     def get_presigned_url(self, file_path: str, expires_seconds: int = 3600) -> Optional[str]:
-        """
-        Get a temporary presigned URL for a file.
-
-        Args:
-            file_path: Path in bucket
-            expires_seconds: URL validity in seconds
-
-        Returns:
-            Presigned URL or None
-        """
         from datetime import timedelta
 
+        key = self.extract_object_key(file_path) or file_path
         client = self._get_client()
-        if not client:
+        if not client or not key:
             return None
 
         try:
             return client.presigned_get_object(
                 bucket_name=self.bucket_name,
-                object_name=file_path,
+                object_name=key,
                 expires=timedelta(seconds=expires_seconds),
             )
         except Exception as e:
             print(f"Failed to generate presigned URL: {e}")
             return None
 
+    def resolve_presigned_url(self, stored: Optional[str], expires_seconds: int = 3600) -> Optional[str]:
+        """Return a short-lived presigned URL for a stored key or legacy URL."""
+        if not stored:
+            return None
+        key = self.extract_object_key(stored)
+        if not key:
+            return None
+        return self.get_presigned_url(key, expires_seconds=expires_seconds)
+
     def get_file_path(self, category: str, user_id: str, filename: str) -> str:
-        """
-        Generate a structured file path.
-
-        Args:
-            category: 'avatars', 'resumes', 'vault', 'submissions'
-            user_id: User UUID string
-            filename: Original filename
-
-        Returns:
-            Structured path: '{category}/{user_id}/{filename}'
-        """
-        import re
-
-        # Sanitize filename
         safe_filename = re.sub(r"[^\w\-_\.]", "_", filename)
         return f"{category}/{user_id}/{safe_filename}"
 
 
-# Singleton instance
 storage_service = StorageService()

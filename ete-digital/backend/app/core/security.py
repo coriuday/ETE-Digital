@@ -275,14 +275,13 @@ def generate_totp_qr_url(email: str, secret: str, issuer: str = "Jobrows") -> st
 # ========== RBAC Decorators ==========
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """
-    Dependency to get current authenticated user from JWT token
-    Returns user_id and role from token payload
-    """
-    token = credentials.credentials
-    payload = decode_token(token)
+async def _user_context_from_access_token(token: str, db: "AsyncSession") -> Dict[str, Any]:
+    """Validate access JWT and load current user state from DB."""
+    import uuid as uuid_module
+    from sqlalchemy import select
+    from app.models.users import User
 
+    payload = decode_token(token)
     if payload.get("type") != "access":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -296,11 +295,33 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             detail="Invalid token payload",
         )
 
+    result = await db.execute(select(User).where(User.id == uuid_module.UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found",
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is deactivated",
+        )
+
+    role_value = user.role.value if hasattr(user.role, "value") else str(user.role)
     return {
-        "user_id": user_id,
-        "email": payload.get("email"),
-        "role": payload.get("role", "").lower(),  # normalise to lowercase
+        "user_id": str(user.id),
+        "email": user.email,
+        "role": role_value.lower(),
     }
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    db: "AsyncSession" = Depends(__import__("app.core.database", fromlist=["get_db"]).get_db),
+):
+    """Dependency: JWT + live DB check for is_active and role."""
+    return await _user_context_from_access_token(credentials.credentials, db)
 
 
 def require_role(*allowed_roles):
@@ -321,35 +342,15 @@ def require_role(*allowed_roles):
 
     async def _require_role(
         credentials: HTTPAuthorizationCredentials = Depends(security),
+        db: "AsyncSession" = Depends(__import__("app.core.database", fromlist=["get_db"]).get_db),
     ):
-        token = credentials.credentials
-        payload = decode_token(token)
-
-        if payload.get("type") != "access":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token type",
-            )
-
-        user_id = payload.get("sub")
-        if not user_id:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token payload",
-            )
-
-        user_role = payload.get("role", "").lower()  # normalise to lowercase
-        if user_role not in role_values:
+        current = await _user_context_from_access_token(credentials.credentials, db)
+        if current["role"] not in role_values:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Requires one of roles: {', '.join(role_values)}",
             )
-
-        return {
-            "user_id": user_id,
-            "email": payload.get("email"),
-            "role": user_role,
-        }
+        return current
 
     return _require_role
 

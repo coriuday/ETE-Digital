@@ -2,16 +2,7 @@
  * OAuth Callback Page
  * Handles the redirect from Google OAuth backend endpoint.
  * URL: /auth/callback#access_token=...&refresh_token=...&role=...
- *
- * Tokens are passed via URL hash fragment (NOT query params) so they are
- * never sent to the server, never logged in access logs, and never leak
- * via the Referer header.
- *
- * This page:
- *  1. Reads tokens from URL hash fragment (window.location.hash)
- *  2. Saves them to the authStore
- *  3. Redirects user to their role-appropriate dashboard
- *  4. Shows error state if something went wrong
+ *   or /auth/callback#partial_token=...&requires_2fa=1&role=... (MFA users)
  */
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -19,14 +10,12 @@ import { useAuthStore } from '../../stores/authStore';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 export default function OAuthCallbackPage() {
-    // Keep useSearchParams for legacy error params that come via query string (e.g. ?error=oauth_denied)
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { setTokensFromOAuth } = useAuthStore();
     const [error, setError] = useState('');
 
     useEffect(() => {
-        // --- Error params still come via query string (backend redirects errors with ?error=...) ---
         const errorParam = searchParams.get('error');
         if (errorParam) {
             const messages: Record<string, string> = {
@@ -40,27 +29,37 @@ export default function OAuthCallbackPage() {
             return;
         }
 
-        // --- Tokens come via URL hash fragment for security ---
-        const hash = window.location.hash.slice(1); // strip leading '#'
+        const hash = window.location.hash.slice(1);
         if (!hash) {
             setError('Invalid callback — no authentication data received.');
             return;
         }
 
         const params = new URLSearchParams(hash);
+        const requires2fa = params.get('requires_2fa') === '1';
+        const partialToken = params.get('partial_token');
         const accessToken = params.get('access_token');
         const refreshToken = params.get('refresh_token');
         const role = params.get('role') ?? 'candidate';
+
+        window.history.replaceState(null, '', window.location.pathname);
+
+        if (requires2fa && partialToken) {
+            useAuthStore.setState({
+                requiresTwoFactor: true,
+                partialToken,
+                isLoading: false,
+                error: null,
+            });
+            navigate('/login', { replace: true, state: { oauthMfa: true, role } });
+            return;
+        }
 
         if (!accessToken || !refreshToken) {
             setError('Invalid callback — missing authentication tokens.');
             return;
         }
 
-        // Clear hash from URL immediately so tokens don't linger in browser history
-        window.history.replaceState(null, '', window.location.pathname);
-
-        // Store tokens and hydrate user in authStore
         setTokensFromOAuth(accessToken, refreshToken, role).then(() => {
             const dashboardMap: Record<string, string> = {
                 employer: '/hr/dashboard',
@@ -78,13 +77,13 @@ export default function OAuthCallbackPage() {
                     <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
                         <AlertCircle className="text-red-500" size={28} />
                     </div>
-                    <h1 className="text-xl font-bold text-gray-900 mb-2">Sign-In Failed</h1>
-                    <p className="text-gray-500 text-sm mb-6">{error}</p>
+                    <h1 className="text-lg font-bold text-gray-900 mb-2">Sign-in failed</h1>
+                    <p className="text-gray-600 text-sm mb-6">{error}</p>
                     <button
                         onClick={() => navigate('/login')}
-                        className="w-full py-2.5 rounded-xl bg-violet-600 text-white font-semibold text-sm hover:bg-violet-700 transition-colors"
+                        className="px-6 py-2.5 bg-primary-600 text-white rounded-lg text-sm font-semibold hover:bg-primary-700"
                     >
-                        Back to Login
+                        Back to login
                     </button>
                 </div>
             </div>
@@ -92,11 +91,9 @@ export default function OAuthCallbackPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="text-center">
-                <Loader2 className="animate-spin text-violet-600 mx-auto mb-3" size={36} />
-                <p className="text-gray-600 font-medium">Signing you in with Google…</p>
-            </div>
+        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 gap-4">
+            <Loader2 className="animate-spin text-primary-600" size={36} />
+            <p className="text-sm text-gray-600">Completing sign-in…</p>
         </div>
     );
 }

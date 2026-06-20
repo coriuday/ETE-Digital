@@ -193,19 +193,24 @@ async def upload_submission_file(
     user_id = current_user["user_id"]
     file_path = storage_service.get_file_path("tryouts", user_id, filename or "submission")
 
-    url = storage_service.upload_file(
+    object_key = storage_service.upload_file(
         file_data=io.BytesIO(content),
         file_path=file_path,
         content_type=content_type,
         file_size=file_size,
     )
-    if url is None:
+    if object_key is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="File storage is not available.",
         )
 
-    return {"file_path": file_path, "file_url": url, "file_name": filename, "file_size": file_size}
+    return {
+        "file_path": object_key,
+        "file_url": storage_service.resolve_presigned_url(object_key),
+        "file_name": filename,
+        "file_size": file_size,
+    }
 
 
 @router.post(

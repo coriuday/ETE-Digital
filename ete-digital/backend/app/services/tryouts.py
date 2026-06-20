@@ -17,6 +17,7 @@ from app.models.tryouts import (
     PaymentStatus,
 )
 from app.models.jobs import Job
+from app.services.payment import payment_service
 from fastapi import HTTPException, status
 
 
@@ -187,11 +188,6 @@ class SubmissionService:
 
         # Increment submission count
         tryout.submissions_count += 1
-
-        # Escrow payment if applicable
-        if tryout.payment_amount > 0:
-            submission.payment_status = PaymentStatus.ESCROWED
-            submission.payment_escrowed_at = datetime.now(timezone.utc)
 
         await db.commit()
         await db.refresh(submission)
@@ -366,16 +362,30 @@ class SubmissionService:
         if approved and submission.final_score >= tryout.passing_score:
             submission.status = SubmissionStatus.PASSED
 
-            # Release payment if applicable
             if tryout.payment_amount > 0 and submission.payment_status == PaymentStatus.ESCROWED:
+                if not submission.payment_intent_id:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Payment intent missing — cannot release escrow",
+                    )
+                if not payment_service.capture_payment(submission.payment_intent_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_502_BAD_GATEWAY,
+                        detail="Failed to capture payment — try release via payments API",
+                    )
                 submission.payment_status = PaymentStatus.RELEASED
                 submission.payment_released_at = datetime.now(timezone.utc)
         else:
             submission.status = SubmissionStatus.FAILED
 
-            # Refund payment if applicable
             if tryout.payment_amount > 0 and submission.payment_status == PaymentStatus.ESCROWED:
-                submission.payment_status = PaymentStatus.REFUNDED
+                if submission.payment_intent_id:
+                    if not payment_service.refund_payment(submission.payment_intent_id):
+                        raise HTTPException(
+                            status_code=status.HTTP_502_BAD_GATEWAY,
+                            detail="Failed to refund payment",
+                        )
+                    submission.payment_status = PaymentStatus.REFUNDED
 
         await db.commit()
         await db.refresh(submission)

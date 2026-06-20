@@ -23,28 +23,19 @@ class PaymentService:
     def _is_available(self) -> bool:
         return STRIPE_AVAILABLE and bool(settings.STRIPE_SECRET_KEY)
 
+    def _simulation_allowed(self) -> bool:
+        return settings.ENVIRONMENT != "production"
+
     def create_payment_intent(
         self,
-        amount_minor_units: int,  # Amount in smallest currency unit (paise/INR, cents/USD, etc.)
+        amount_minor_units: int,
         currency: str = "inr",
         metadata: Optional[dict] = None,
-        capture_method: str = "manual",  # 'manual' = escrow; 'automatic' = immediate capture
+        capture_method: str = "manual",
     ) -> Tuple[Optional[str], Optional[str]]:
-        """
-        Create a Stripe PaymentIntent.
-
-        Args:
-            amount_minor_units: Amount in the smallest denomination of the given currency
-                                (paise for INR, cents for USD, etc.)
-            currency: ISO currency code (e.g. 'inr', 'usd')
-            metadata: Optional metadata dict (e.g., tryout_id, candidate_id)
-            capture_method: 'manual' for escrow, 'automatic' for immediate
-
-        Returns:
-            Tuple of (client_secret, payment_intent_id) or (None, None) on error
-        """
         if not self._is_available():
-            print("Stripe not configured. Payments are in simulation mode.")
+            if not self._simulation_allowed():
+                return (None, None)
             return (
                 "simulated_secret",
                 "simulated_pi_" + (metadata or {}).get("tryout_id", "test"),
@@ -65,14 +56,9 @@ class PaymentService:
             return (None, None)
 
     def capture_payment(self, payment_intent_id: str) -> bool:
-        """
-        Capture (release from escrow) a PaymentIntent.
-        Used when employer approves tryout and releases payment to candidate.
-
-        Returns:
-            True if captured successfully
-        """
         if not self._is_available():
+            if not self._simulation_allowed():
+                return False
             print(f"[SIMULATION] Capturing payment: {payment_intent_id}")
             return True
 
@@ -86,14 +72,9 @@ class PaymentService:
             return False
 
     def refund_payment(self, payment_intent_id: str, reason: str = "requested_by_customer") -> bool:
-        """
-        Refund a PaymentIntent back to employer.
-        Used when tryout is rejected or expired.
-
-        Returns:
-            True if refunded successfully
-        """
         if not self._is_available():
+            if not self._simulation_allowed():
+                return False
             print(f"[SIMULATION] Refunding payment: {payment_intent_id}")
             return True
 
@@ -108,19 +89,15 @@ class PaymentService:
 
     def create_checkout_session(
         self,
-        amount_minor_units: int,  # Amount in smallest currency unit (paise/INR, cents/USD, etc.)
+        amount_minor_units: int,
         currency: str,
         success_url: str,
         cancel_url: str,
         metadata: Optional[dict] = None,
     ) -> Optional[str]:
-        """
-        Create a Stripe Checkout session URL for hosted payment page.
-
-        Returns:
-            Checkout session URL or None
-        """
         if not self._is_available():
+            if not self._simulation_allowed():
+                return None
             return f"{success_url}?session_id=simulated"
 
         try:
@@ -156,16 +133,6 @@ class PaymentService:
             return None
 
     def verify_webhook(self, payload: bytes, sig_header: str) -> Optional[dict]:
-        """
-        Verify and parse a Stripe webhook event.
-
-        Args:
-            payload: Raw request body bytes
-            sig_header: Stripe-Signature header value
-
-        Returns:
-            Event dict or None if invalid
-        """
         if not self._is_available() or not settings.STRIPE_WEBHOOK_SECRET:
             return None
 
@@ -179,5 +146,4 @@ class PaymentService:
             return None
 
 
-# Singleton instance
 payment_service = PaymentService()
