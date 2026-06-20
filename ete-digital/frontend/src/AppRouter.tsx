@@ -73,6 +73,7 @@ const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage'));
 const AdminJobsPage = lazy(() => import('./pages/admin/AdminJobsPage'));
 const AdminApplicationsPage = lazy(() => import('./pages/admin/AdminApplicationsPage'));
 const AdminOrganizationsPage = lazy(() => import('./pages/admin/AdminOrganizationsPage'));
+const AdminAuditLogsPage = lazy(() => import('./pages/admin/AdminAuditLogsPage'));
 
 // ---- Marketing Pages ----
 const AboutPage = lazy(() => import('./pages/marketing/AboutPage'));
@@ -266,6 +267,7 @@ export default function AppRouter() {
                     <Route element={<ProtectedRoute requiredRole="employer" />}>
                         <Route path="/hr/jobs" element={<HRJobsPage />} />
                         <Route path="/hr/jobs/create" element={<CreateJobPage />} />
+                        <Route path="/hr/jobs/:jobId/edit" element={<CreateJobPage />} />
                         <Route path="/hr/applications" element={<ApplicationsPage />} />
                         <Route path="/hr/applications/:applicationId" element={<ApplicationDetailsPage />} />
                         <Route path="/hr/applications/:applicationId/candidate" element={<CandidateProfilePage />} />
@@ -295,6 +297,7 @@ export default function AppRouter() {
                         <Route path="/admin/jobs" element={<AdminJobsPage />} />
                         <Route path="/admin/applications" element={<AdminApplicationsPage />} />
                         <Route path="/admin/organizations" element={<AdminOrganizationsPage />} />
+                        <Route path="/admin/audit" element={<AdminAuditLogsPage />} />
                     </Route>
 
                     {/* 404 - Catch All */}

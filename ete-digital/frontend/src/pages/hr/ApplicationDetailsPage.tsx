@@ -65,6 +65,7 @@ const STATUS_CLS: Record<string, string> = {
     shortlisted: 'bg-violet-50 text-violet-700 border-violet-200',
     hired: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     rejected: 'bg-red-50 text-red-700 border-red-200',
+    reopened: 'bg-amber-50 text-amber-700 border-amber-200',
     withdrawn: 'bg-background text-text-tertiary border-border',
 };
 
@@ -100,6 +101,8 @@ export default function ApplicationDetailsPage() {
     const [appData, setAppData] = useState<ApplicationDetail | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [reopenReason, setReopenReason] = useState('');
+    const [reopening, setReopening] = useState(false);
 
     useEffect(() => {
         if (!applicationId) return;
@@ -120,6 +123,22 @@ export default function ApplicationDetailsPage() {
         if (!appData?.candidate_email) return '';
         return buildMailtoUrl(appData.candidate_email, appData.job_title || 'this role');
     }, [appData?.candidate_email, appData?.job_title]);
+
+    const handleReopen = async () => {
+        if (!applicationId) return;
+        setReopening(true);
+        try {
+            const data = await jobsApi.reopenApplication(applicationId, reopenReason || undefined);
+            setAppData(data);
+            setReopenReason('');
+            toastSuccess('Application reopened for consideration');
+        } catch (err: unknown) {
+            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toastError(typeof detail === 'string' ? detail : 'Failed to reopen application');
+        } finally {
+            setReopening(false);
+        }
+    };
 
     const handleAction = async (newStatus: string) => {
         if (!applicationId || appData?.is_locked) return;
@@ -381,8 +400,51 @@ export default function ApplicationDetailsPage() {
                                 <>
                                     <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Available actions</p>
                                     {availableActions.map(actionKey => {
+                                        if (actionKey === 'reopen') {
+                                            return (
+                                                <div key="reopen" className="space-y-3">
+                                                    <textarea
+                                                        value={reopenReason}
+                                                        onChange={(e) => setReopenReason(e.target.value)}
+                                                        rows={2}
+                                                        placeholder="Optional reason for reopening…"
+                                                        className="w-full px-3 py-2 border border-border rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary-500 bg-background text-text-primary resize-none"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleReopen}
+                                                        disabled={reopening}
+                                                        className="w-full flex items-center justify-between px-4 py-3.5 border rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 bg-amber-50 hover:bg-amber-100 border-amber-200 text-amber-800"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <CheckCircle2 size={15} /> Reopen application
+                                                        </span>
+                                                        {reopening ? <Loader2 size={14} className="animate-spin" /> : <ChevronRight size={14} />}
+                                                    </button>
+                                                </div>
+                                            );
+                                        }
                                         const cfg = ACTION_CONFIG[actionKey];
-                                        if (!cfg) return null;
+                                        if (!cfg) {
+                                            if (actionKey === 'pending') {
+                                                return (
+                                                    <button
+                                                        key={actionKey}
+                                                        onClick={() => handleAction('pending')}
+                                                        disabled={!!updating}
+                                                        className="w-full flex items-center justify-between px-4 py-3.5 border rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700"
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <CheckCircle2 size={15} /> Mark as Applied
+                                                        </span>
+                                                        {updating === 'pending'
+                                                            ? <Loader2 size={14} className="animate-spin" />
+                                                            : <ChevronRight size={14} />}
+                                                    </button>
+                                                );
+                                            }
+                                            return null;
+                                        }
                                         const cls = ACTION_STYLES[actionKey] ?? 'bg-background border-border text-text-secondary';
                                         return (
                                             <button

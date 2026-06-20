@@ -3,7 +3,8 @@
  */
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle, Loader2, Briefcase } from 'lucide-react';
+import AuthLayoutHeader from '../../components/layout/AuthLayoutHeader';
+import { Mail, ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
 import api from '../../api/client';
 
 export default function ForgotPasswordPage() {
@@ -30,14 +31,7 @@ export default function ForgotPasswordPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-primary-900 to-secondary-900 flex items-center justify-center p-4">
             <div className="w-full max-w-md">
-                <div className="text-center mb-8">
-                    <Link to="/" className="inline-flex items-center gap-2">
-                        <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-secondary-500 rounded-xl flex items-center justify-center">
-                            <Briefcase className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-2xl font-bold text-white">Jobsrow</span>
-                    </Link>
-                </div>
+                <AuthLayoutHeader variant="dark" />
 
                 <div className="bg-white rounded-2xl shadow-2xl p-8">
                     {!submitted ? (

@@ -27,7 +27,6 @@ PIPELINE_ORDER: dict[ApplicationStatus, int] = {
 TERMINAL_STATUSES = frozenset(
     {
         ApplicationStatus.HIRED,
-        ApplicationStatus.REJECTED,
         ApplicationStatus.WITHDRAWN,
     }
 )
@@ -38,6 +37,7 @@ STAGE_LABELS: dict[ApplicationStatus, str] = {
     ApplicationStatus.REVIEWED: "Reviewed",
     ApplicationStatus.HIRED: "Hired",
     ApplicationStatus.REJECTED: "Rejected",
+    ApplicationStatus.REOPENED: "Reopened",
     ApplicationStatus.WITHDRAWN: "Withdrawn",
 }
 
@@ -49,6 +49,11 @@ PIPELINE_STAGES: list[ApplicationStatus] = [
     ApplicationStatus.HIRED,
 ]
 
+REOPEN_NOTIFICATION = (
+    "Application Reopened",
+    "Your application has been reopened for consideration.",
+)
+
 
 def stage_label(s: ApplicationStatus) -> str:
     return STAGE_LABELS.get(s, s.value.replace("_", " ").title())
@@ -58,8 +63,37 @@ def is_locked(current: ApplicationStatus) -> bool:
     return current in TERMINAL_STATUSES
 
 
-def validate_transition(old: ApplicationStatus, new: ApplicationStatus) -> None:
+def validate_transition(
+    old: ApplicationStatus,
+    new: ApplicationStatus,
+    *,
+    special: str | None = None,
+) -> None:
     """Raise HTTPException if transition is not allowed."""
+    if special == "reopen":
+        if old != ApplicationStatus.REJECTED or new != ApplicationStatus.REOPENED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only rejected applications can be reopened.",
+            )
+        return
+
+    if special == "reopened_to_pending":
+        if old != ApplicationStatus.REOPENED or new != ApplicationStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Reopened applications must return to Applied stage.",
+            )
+        return
+
+    if special == "reapply":
+        if old != ApplicationStatus.REJECTED or new != ApplicationStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Only rejected applications can be resubmitted.",
+            )
+        return
+
     if old in TERMINAL_STATUSES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -81,6 +115,12 @@ def validate_transition(old: ApplicationStatus, new: ApplicationStatus) -> None:
     if new == ApplicationStatus.REJECTED:
         return
 
+    if old == ApplicationStatus.REJECTED or old == ApplicationStatus.REOPENED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Use reopen or reapply workflow from {stage_label(old)}.",
+        )
+
     old_rank = PIPELINE_ORDER.get(old)
     new_rank = PIPELINE_ORDER.get(new)
 
@@ -98,9 +138,15 @@ def validate_transition(old: ApplicationStatus, new: ApplicationStatus) -> None:
 
 
 def get_available_actions(current: ApplicationStatus) -> List[str]:
-    """Return target status values HR can transition to from the current stage."""
+    """Return actions HR can take from the current stage."""
     if current in TERMINAL_STATUSES:
         return []
+
+    if current == ApplicationStatus.REJECTED:
+        return ["reopen"]
+
+    if current == ApplicationStatus.REOPENED:
+        return ["pending"]
 
     actions: list[str] = [ApplicationStatus.REJECTED.value]
 
@@ -110,7 +156,7 @@ def get_available_actions(current: ApplicationStatus) -> List[str]:
 
     for stage, rank in PIPELINE_ORDER.items():
         if rank > current_rank:
-            actions.insert(-1, stage.value)  # reject always last
+            actions.insert(-1, stage.value)
 
     return actions
 
@@ -121,7 +167,7 @@ def build_pipeline_progress(current: ApplicationStatus) -> dict:
         return {
             "current_stage": current.value,
             "current_label": stage_label(current),
-            "is_terminal": True,
+            "is_terminal": False,
             "is_rejected": True,
             "is_hired": False,
             "stages": [
@@ -131,6 +177,31 @@ def build_pipeline_progress(current: ApplicationStatus) -> dict:
                     "state": "completed" if s == ApplicationStatus.PENDING else "skipped",
                 }
                 for s in PIPELINE_STAGES
+            ],
+        }
+
+    if current == ApplicationStatus.REOPENED:
+        return {
+            "current_stage": current.value,
+            "current_label": stage_label(current),
+            "is_terminal": False,
+            "is_rejected": False,
+            "is_hired": False,
+            "stages": [
+                {
+                    "key": ApplicationStatus.PENDING.value,
+                    "label": stage_label(ApplicationStatus.PENDING),
+                    "state": "completed",
+                },
+                *[
+                    {
+                        "key": s.value,
+                        "label": stage_label(s),
+                        "state": "pending",
+                    }
+                    for s in PIPELINE_STAGES
+                    if s != ApplicationStatus.PENDING
+                ],
             ],
         }
 
@@ -177,6 +248,14 @@ class TransitionResult:
     history_entry: ApplicationStatusHistory
 
 
+@dataclass
+class ReopenResult:
+    application: Application
+    job: Job
+    old_status: ApplicationStatus
+    history_entries: list[ApplicationStatusHistory]
+
+
 async def get_status_history(
     db: AsyncSession,
     application_id: uuid.UUID,
@@ -205,6 +284,14 @@ async def record_initial_status(
     db.add(entry)
 
 
+def _apply_status_side_effects(application: Application, old: ApplicationStatus, new: ApplicationStatus) -> None:
+    now = datetime.now(timezone.utc)
+    if new == ApplicationStatus.REJECTED:
+        application.rejected_at = now
+    elif old in {ApplicationStatus.REJECTED, ApplicationStatus.REOPENED} and new == ApplicationStatus.PENDING:
+        application.rejected_at = None
+
+
 async def transition_application_status(
     db: AsyncSession,
     application: Application,
@@ -212,16 +299,20 @@ async def transition_application_status(
     new_status: ApplicationStatus,
     changed_by: uuid.UUID,
     employer_notes: Optional[str] = None,
+    *,
+    special: str | None = None,
 ) -> TransitionResult:
     """Validate and apply a pipeline transition; does not commit."""
     old_status = application.status
-    validate_transition(old_status, new_status)
+    validate_transition(old_status, new_status, special=special)
 
     now = datetime.now(timezone.utc)
     application.status = new_status
     application.stage_entered_at = now
     if employer_notes is not None:
         application.employer_notes = employer_notes
+
+    _apply_status_side_effects(application, old_status, new_status)
 
     history_entry = ApplicationStatusHistory(
         application_id=application.id,
@@ -239,6 +330,53 @@ async def transition_application_status(
         new_status=new_status,
         job=job,
         history_entry=history_entry,
+    )
+
+
+async def reopen_application_hr(
+    db: AsyncSession,
+    application: Application,
+    job: Job,
+    changed_by: uuid.UUID,
+    reason: Optional[str] = None,
+) -> ReopenResult:
+    """HR reopen: rejected → reopened → pending in one transaction."""
+    if application.status != ApplicationStatus.REJECTED:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Only rejected applications can be reopened.",
+        )
+
+    old_status = application.status
+    history_entries: list[ApplicationStatusHistory] = []
+
+    step1 = await transition_application_status(
+        db=db,
+        application=application,
+        job=job,
+        new_status=ApplicationStatus.REOPENED,
+        changed_by=changed_by,
+        employer_notes=reason,
+        special="reopen",
+    )
+    history_entries.append(step1.history_entry)
+
+    step2 = await transition_application_status(
+        db=db,
+        application=application,
+        job=job,
+        new_status=ApplicationStatus.PENDING,
+        changed_by=changed_by,
+        employer_notes=reason or "Reopened by HR",
+        special="reopened_to_pending",
+    )
+    history_entries.append(step2.history_entry)
+
+    return ReopenResult(
+        application=application,
+        job=job,
+        old_status=old_status,
+        history_entries=history_entries,
     )
 
 
@@ -264,3 +402,7 @@ NOTIFICATION_COPY: dict[ApplicationStatus, tuple[str, str]] = {
 
 def notification_for_status(new_status: ApplicationStatus) -> tuple[str, str] | None:
     return NOTIFICATION_COPY.get(new_status)
+
+
+def notification_for_reopen() -> tuple[str, str]:
+    return REOPEN_NOTIFICATION

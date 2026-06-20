@@ -186,6 +186,11 @@ export const jobsApi = {
         return response.data;
     },
 
+    reopenApplication: async (applicationId: string, reason?: string): Promise<ApplicationDetail> => {
+        const response = await api.post(`/api/jobs/applications/${applicationId}/reopen`, { reason });
+        return response.data;
+    },
+
     getCandidateProfile: async (applicationId: string): Promise<CandidateProfile> => {
         const response = await api.get(`/api/jobs/applications/${applicationId}/candidate-profile`);
         return response.data;

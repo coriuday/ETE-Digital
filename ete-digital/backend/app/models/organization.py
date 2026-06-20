@@ -57,6 +57,9 @@ class Organization(Base):
     admin_reviewed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     admin_reviewed_by: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True), nullable=True)
 
+    # Reapplication policy: 30, 60, 90 days, or -1 = never allow reapply
+    reapply_cooldown_days: Mapped[int] = mapped_column(default=60, nullable=False)
+
     # Owner (the HR user who created the org)
     owner_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

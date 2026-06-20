@@ -8,6 +8,7 @@ export type ApplicationStatus =
     | 'reviewed'
     | 'hired'
     | 'rejected'
+    | 'reopened'
     | 'withdrawn';
 
 export interface PipelineStage {
@@ -51,6 +52,7 @@ export const STAGE_LABELS: Record<string, string> = {
     reviewed: 'Reviewed',
     hired: 'Hired',
     rejected: 'Rejected',
+    reopened: 'Reopened',
     withdrawn: 'Withdrawn',
 };
 
@@ -90,6 +92,11 @@ export function buildTimelineFromHistory(history: StatusHistoryEntry[]): { label
         });
     }
 
+    if (reached.has('reopened')) {
+        const entry = history.find(h => h.new_status === 'reopened');
+        steps.push({ label: 'Reopened', date: entry?.changed_at, active: true });
+    }
+
     if (reached.has('rejected')) {
         const rej = history.find(h => h.new_status === 'rejected');
         steps.push({
@@ -110,13 +117,28 @@ export function derivePipelineProgress(status: string): PipelineProgress {
         return {
             current_stage: status,
             current_label: 'Rejected',
-            is_terminal: true,
+            is_terminal: false,
             is_rejected: true,
             is_hired: false,
             stages: PIPELINE_STAGES.map(s => ({
                 key: s.key,
                 label: s.label,
                 state: s.key === 'pending' ? 'completed' : 'skipped',
+            })),
+        };
+    }
+
+    if (status === 'reopened') {
+        return {
+            current_stage: status,
+            current_label: 'Reopened',
+            is_terminal: false,
+            is_rejected: false,
+            is_hired: false,
+            stages: PIPELINE_STAGES.map(s => ({
+                key: s.key,
+                label: s.label,
+                state: s.key === 'pending' ? 'completed' : 'pending',
             })),
         };
     }

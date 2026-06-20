@@ -7,7 +7,7 @@ import logging
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_, and_, text
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Tuple
 import uuid
 
@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 from app.models.jobs import Job, Application, JobStatus, ApplicationStatus
 from app.models.users import UserProfile
+from app.models.organization import Organization
 from fastapi import HTTPException, status
 
 
@@ -230,6 +231,36 @@ class JobService:
 class ApplicationService:
     """Job application service"""
 
+    async def _get_org_reapply_cooldown(self, db: AsyncSession, employer_id: uuid.UUID) -> int:
+        org_result = await db.execute(select(Organization).where(Organization.owner_id == employer_id))
+        org = org_result.scalar_one_or_none()
+        if org:
+            return org.reapply_cooldown_days
+        return 60
+
+    def _check_reapply_eligibility(
+        self,
+        application: Application,
+        cooldown_days: int,
+    ) -> None:
+        if cooldown_days == -1:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You were previously rejected for this role. Reapplication is not allowed.",
+            )
+        if application.rejected_at is None:
+            return
+        eligible_at = application.rejected_at + timedelta(days=cooldown_days)
+        now = datetime.now(timezone.utc)
+        if now < eligible_at:
+            days_left = max(1, (eligible_at.date() - now.date()).days)
+            if days_left == 0:
+                days_left = 1
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You were previously rejected for this role. You may reapply after {days_left} days.",
+            )
+
     async def create_application(self, db: AsyncSession, candidate_id: uuid.UUID, application_data: dict) -> Application:
         """Create a job application"""
         job_id = application_data.get("job_id")
@@ -256,7 +287,33 @@ class ApplicationService:
                 )
             )
         )
-        if existing_result.scalar_one_or_none():
+        existing = existing_result.scalar_one_or_none()
+        if existing:
+            if existing.status == ApplicationStatus.HIRED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This application is closed — a hire has been recorded.",
+                )
+            if existing.status == ApplicationStatus.WITHDRAWN:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="This application was withdrawn and cannot be resubmitted.",
+                )
+            if existing.status == ApplicationStatus.REJECTED:
+                cooldown = await self._get_org_reapply_cooldown(db, job.employer_id)
+                self._check_reapply_eligibility(existing, cooldown)
+                return await self._reapply_after_rejection(
+                    db=db,
+                    application=existing,
+                    job=job,
+                    candidate_id=candidate_id,
+                    application_data=application_data,
+                )
+            if existing.status == ApplicationStatus.REOPENED:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Your application is being reviewed by the hiring team.",
+                )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="You have already applied to this job",
@@ -375,6 +432,85 @@ class ApplicationService:
             asyncio.create_task(_run_llm_explanation())
 
         return application
+
+    async def _reapply_after_rejection(
+        self,
+        db: AsyncSession,
+        application: Application,
+        job: Job,
+        candidate_id: uuid.UUID,
+        application_data: dict,
+    ) -> Application:
+        from app.services.application_pipeline import transition_application_status  # noqa: PLC0415
+        from app.services.audit import get_org_id_for_user, log_audit_event  # noqa: PLC0415
+        from app.models.notifications import AuditAction  # noqa: PLC0415
+
+        cover_letter = application_data.get("cover_letter")
+        if cover_letter is not None:
+            application.cover_letter = cover_letter
+
+        await transition_application_status(
+            db=db,
+            application=application,
+            job=job,
+            new_status=ApplicationStatus.PENDING,
+            changed_by=candidate_id,
+            employer_notes="Candidate reapplied",
+            special="reapply",
+        )
+
+        org_id = await get_org_id_for_user(db, job.employer_id)
+        await log_audit_event(
+            db=db,
+            action=AuditAction.APPLICATION_REAPPLIED,
+            user_id=candidate_id,
+            org_id=org_id,
+            resource_type="application",
+            resource_id=application.id,
+            details={
+                "old_status": ApplicationStatus.REJECTED.value,
+                "new_status": ApplicationStatus.PENDING.value,
+                "application_id": str(application.id),
+                "job_id": str(job.id),
+                "reason": "Candidate reapplied",
+            },
+        )
+
+        await db.commit()
+        await db.refresh(application)
+        return application
+
+    async def reopen_application(
+        self,
+        db: AsyncSession,
+        application_id: uuid.UUID,
+        employer_id: uuid.UUID,
+        reason: Optional[str] = None,
+    ):
+        from app.services.application_pipeline import reopen_application_hr  # noqa: PLC0415
+
+        application = await self.get_application(db, application_id)
+        if not application:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Application not found")
+
+        job_result = await db.execute(select(Job).where(Job.id == application.job_id))
+        job = job_result.scalar_one_or_none()
+        if not job or job.employer_id != employer_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Not authorized to update this application",
+            )
+
+        result = await reopen_application_hr(
+            db=db,
+            application=application,
+            job=job,
+            changed_by=employer_id,
+            reason=reason,
+        )
+        await db.flush()
+        await db.refresh(application)
+        return result
 
     async def get_application(self, db: AsyncSession, application_id: uuid.UUID) -> Optional[Application]:
         """Get application by ID"""

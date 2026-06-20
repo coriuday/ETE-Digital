@@ -20,6 +20,7 @@ export interface Organization {
     linkedin_url?: string | null;
     company_size?: string | null;
     industry?: string | null;
+    reapply_cooldown_days?: number;
 }
 
 export interface OrgMember {
@@ -85,6 +86,7 @@ export const organizationsApi = {
         linkedin_url?: string;
         company_size?: string;
         industry?: string;
+        reapply_cooldown_days?: number;
     }): Promise<Organization> => {
         const res = await api.patch('/api/organizations/me', data);
         return res.data;

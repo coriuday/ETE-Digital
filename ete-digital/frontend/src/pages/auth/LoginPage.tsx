@@ -4,7 +4,7 @@
  */
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import BrandLogo from '../../components/layout/BrandLogo';
+import AuthLayoutHeader from '../../components/layout/AuthLayoutHeader';
 import { useAuthStore } from '../../stores/authStore';
 import { ShieldAlert, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
@@ -160,10 +160,7 @@ export default function LoginPage() {
             <div className="flex-1 flex items-center justify-center px-6 py-12 bg-gray-50">
                 <div className="w-full max-w-md">
 
-                    {/* Mobile logo */}
-                    <Link to="/" className="flex items-center mb-8 lg:hidden w-fit">
-                        <BrandLogo size="md" />
-                    </Link>
+                    <AuthLayoutHeader />
 
                     {requiresTwoFactor ? (
                         /* ── 2FA Step ── */

@@ -3,6 +3,8 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { adminPageCls, adminCardCls } from './adminShared';
 import { Briefcase, Search, XCircle, RotateCcw } from 'lucide-react';
 import { api } from '../../api/client';
 
@@ -61,13 +63,8 @@ export default function AdminJobsPage() {
 
     return (
         <AppShell>
-            <div className="p-6 lg:p-8 space-y-6">
-                {/* Header */}
-                <div className="flex items-center gap-3">
-                    <Briefcase size={24} className="text-red-500" />
-                    <h1 className="text-2xl font-bold text-gray-900">Job Moderation</h1>
-                    <span className="ml-auto text-sm text-gray-500">{total} total</span>
-                </div>
+            <div className={`${adminPageCls} space-y-6`}>
+                <PageHeader title="Job Moderation" description={`${total} jobs on the platform`} />
 
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-3">
@@ -93,7 +90,7 @@ export default function AdminJobsPage() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className={`${adminCardCls} overflow-hidden`}>
                     {loading ? (
                         <div className="divide-y divide-gray-50">
                             {[...Array(5)].map((_, i) => (

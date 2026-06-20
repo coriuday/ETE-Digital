@@ -25,6 +25,7 @@ import {
     ChevronLeft, ChevronRight, Menu, X,
     PlusCircle, ClipboardList, Star, UserCheck,
     ChevronDown, User, Globe, Upload, ShieldAlert, ShieldCheck,
+    Home,
 } from 'lucide-react';
 
 /* ── Types ──────────────────────────────────────────────────────────────── */
@@ -63,7 +64,15 @@ const adminNav: NavItem[] = [
     { label: 'Overview',       icon: <LayoutDashboard size={18} />, href: '/admin' },
     { label: 'Users',          icon: <Users size={18} />,           href: '/admin/users' },
     { label: 'Jobs',           icon: <Briefcase size={18} />,       href: '/admin/jobs' },
+    { label: 'Applications',   icon: <ClipboardList size={18} />, href: '/admin/applications' },
     { label: 'Organisations',  icon: <Building2 size={18} />,       href: '/admin/organizations' },
+    { label: 'Audit Logs',     icon: <ShieldAlert size={18} />,     href: '/admin/audit' },
+];
+
+const adminPlatformLinks: NavItem[] = [
+    { label: 'Public Home',    icon: <Home size={18} />,            href: '/' },
+    { label: 'Job Board',      icon: <Globe size={18} />,           href: '/jobs' },
+    { label: 'HR Dashboard',   icon: <Briefcase size={18} />,       href: '/hr/dashboard' },
 ];
 
 function getNav(role?: string): NavItem[] {
@@ -292,6 +301,20 @@ export default function AppShell({ children }: AppShellProps) {
                             key={item.href}
                             item={item}
                             active={isActive(item.href)}
+                            collapsed={isCollapsed}
+                            onClick={mobile ? () => setMobileOpen(false) : undefined}
+                        />
+                    ))}
+                    {user?.role === 'admin' && !isCollapsed && (
+                        <p className="px-3 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-text-tertiary">
+                            Platform access
+                        </p>
+                    )}
+                    {user?.role === 'admin' && adminPlatformLinks.map((item) => (
+                        <NavLink
+                            key={item.href}
+                            item={item}
+                            active={false}
                             collapsed={isCollapsed}
                             onClick={mobile ? () => setMobileOpen(false) : undefined}
                         />

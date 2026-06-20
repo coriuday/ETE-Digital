@@ -70,6 +70,7 @@ class OrgUpdateRequest(BaseModel):
     linkedin_url: Optional[str] = None
     company_size: Optional[str] = None
     industry: Optional[str] = None
+    reapply_cooldown_days: Optional[int] = Field(None, ge=-1, le=365)
 
 
 class OrgResponse(BaseModel):
@@ -89,6 +90,7 @@ class OrgResponse(BaseModel):
     linkedin_url: str | None = None
     company_size: str | None = None
     industry: str | None = None
+    reapply_cooldown_days: int = 60
 
     class Config:
         from_attributes = True
@@ -213,6 +215,7 @@ def _to_response(org: Organization) -> OrgResponse:
         linkedin_url=org.linkedin_url,
         company_size=org.company_size,
         industry=org.industry,
+        reapply_cooldown_days=org.reapply_cooldown_days,
     )
 
 
@@ -360,6 +363,11 @@ async def update_my_organization(
         org.company_size = updates["company_size"]
     if "industry" in updates:
         org.industry = updates["industry"]
+    if "reapply_cooldown_days" in updates:
+        days = updates["reapply_cooldown_days"]
+        if days not in (-1, 30, 60, 90):
+            raise HTTPException(status_code=400, detail="reapply_cooldown_days must be 30, 60, 90, or -1 (never).")
+        org.reapply_cooldown_days = days
 
     await db.commit()
     await db.refresh(org)

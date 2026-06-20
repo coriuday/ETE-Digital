@@ -3,7 +3,9 @@
  */
 import { useState, useEffect, useCallback } from 'react';
 import AppShell from '../../components/layout/AppShell';
-import { Building2, CheckCircle2, XCircle, Shield, Loader2 } from 'lucide-react';
+import PageHeader from '../../components/ui/PageHeader';
+import { adminPageCls, adminCardCls } from './adminShared';
+import { CheckCircle2, XCircle, Shield, Loader2 } from 'lucide-react';
 import { adminOrganizationsApi, AdminOrganization } from '../../api/organizations';
 
 const tierColors: Record<string, string> = {
@@ -65,12 +67,8 @@ export default function AdminOrganizationsPage() {
 
     return (
         <AppShell>
-            <div className="p-6 lg:p-8 space-y-6">
-                <div className="flex items-center gap-3">
-                    <Building2 size={24} className="text-red-500" />
-                    <h1 className="text-2xl font-bold text-gray-900">Organisation Review</h1>
-                    <span className="ml-auto text-sm text-gray-500">{total} organisations</span>
-                </div>
+            <div className={`${adminPageCls} space-y-6`}>
+                <PageHeader title="Organisation Review" description={`${total} organisations`} />
 
                 <div className="flex gap-3">
                     {['pending', 'verified', 'unverified', ''].map((tier) => (
@@ -88,7 +86,7 @@ export default function AdminOrganizationsPage() {
                     ))}
                 </div>
 
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className={`${adminCardCls} overflow-hidden`}>
                     {loading ? (
                         <div className="flex items-center justify-center py-16">
                             <Loader2 className="animate-spin text-gray-400" size={28} />

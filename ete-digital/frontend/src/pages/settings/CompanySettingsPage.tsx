@@ -12,6 +12,13 @@ import {
 
 const COMPANY_SIZES = ['1-10', '11-50', '51-200', '201-500', '500+'];
 
+const REAPPLY_COOLDOWN_OPTIONS = [
+    { value: 30, label: '30 days' },
+    { value: 60, label: '60 days (default)' },
+    { value: 90, label: '90 days' },
+    { value: -1, label: 'Never allow reapply' },
+];
+
 export default function CompanySettingsPage() {
     const [org, setOrg] = useState<Organization | null>(null);
     const [loading, setLoading] = useState(true);
@@ -23,6 +30,7 @@ export default function CompanySettingsPage() {
         linkedin_url: '',
         company_size: '',
         industry: '',
+        reapply_cooldown_days: 60,
     });
 
     useEffect(() => {
@@ -36,6 +44,7 @@ export default function CompanySettingsPage() {
                     linkedin_url: existing.linkedin_url || '',
                     company_size: existing.company_size || '',
                     industry: existing.industry || '',
+                    reapply_cooldown_days: existing.reapply_cooldown_days ?? 60,
                 });
             } catch (e: unknown) {
                 if ((e as { response?: { status?: number } })?.response?.status === 404) {
@@ -50,7 +59,11 @@ export default function CompanySettingsPage() {
     }, []);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        setForm(prev => ({
+            ...prev,
+            [name]: name === 'reapply_cooldown_days' ? Number(value) : value,
+        }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -63,6 +76,7 @@ export default function CompanySettingsPage() {
                 linkedin_url: form.linkedin_url || undefined,
                 company_size: form.company_size || undefined,
                 industry: form.industry || undefined,
+                reapply_cooldown_days: form.reapply_cooldown_days,
             });
             setOrg(updated);
             toastSuccess('Company profile saved');
@@ -177,6 +191,17 @@ export default function CompanySettingsPage() {
                         <input type="text" name="industry" value={form.industry} onChange={handleChange}
                             placeholder="e.g. Technology, Finance" className={inputCls} />
                     </div>
+                </div>
+                <div>
+                    <label className={labelCls}>Rejected candidate reapply cooldown</label>
+                    <select name="reapply_cooldown_days" value={form.reapply_cooldown_days} onChange={handleChange} className={inputCls}>
+                        {REAPPLY_COOLDOWN_OPTIONS.map(opt => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
+                    <p className="text-xs text-text-tertiary mt-1.5">
+                        How long candidates must wait before reapplying after a rejection for your jobs.
+                    </p>
                 </div>
                 <SaveFeedback saving={saving} />
             </form>

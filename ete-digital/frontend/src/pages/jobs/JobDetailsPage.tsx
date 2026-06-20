@@ -26,6 +26,7 @@ export default function JobDetailsPage() {
     const [coverLetter, setCoverLetter] = useState('');
     const [showForm, setShowForm] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [existingAppStatus, setExistingAppStatus] = useState<string | null>(null);
 
     useEffect(() => {
         if (jobId) {
@@ -36,6 +37,19 @@ export default function JobDetailsPage() {
                 .finally(() => setLoading(false));
         }
     }, [jobId]);
+
+    useEffect(() => {
+        if (!isAuthenticated || user?.role !== 'candidate' || !jobId) {
+            setExistingAppStatus(null);
+            return;
+        }
+        jobsApi.getMyApplications(1)
+            .then((res: { applications?: { job_id: string; status: string }[] }) => {
+                const match = res.applications?.find(a => a.job_id === jobId);
+                setExistingAppStatus(match?.status ?? null);
+            })
+            .catch(() => setExistingAppStatus(null));
+    }, [isAuthenticated, user?.role, jobId]);
 
     const handleApply = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,6 +66,7 @@ export default function JobDetailsPage() {
             await jobsApi.applyToJob(jobId!, { cover_letter: coverLetter });
             setSuccess(true);
             setShowForm(false);
+            setExistingAppStatus('pending');
             toastSuccess('Application submitted successfully');
         } catch (err: unknown) {
             const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
@@ -104,6 +119,9 @@ export default function JobDetailsPage() {
         }
 
         const companyName = job.company ?? (job as Job & { company_name?: string }).company_name ?? 'Confidential Company';
+        const hasActiveApplication = existingAppStatus && !['rejected', 'withdrawn'].includes(existingAppStatus);
+        const wasRejected = existingAppStatus === 'rejected';
+        const canShowApply = !hasActiveApplication && !success;
 
         return (
             <div className="min-h-screen bg-gray-50 pb-20">
@@ -236,19 +254,42 @@ export default function JobDetailsPage() {
                                             You'll be redirected to {companyName}'s careers page.
                                         </p>
                                     </div>
-                                ) : !showForm ? (
+                                ) : hasActiveApplication ? (
+                                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-5 text-center">
+                                        <CheckCircle2 size={28} className="text-blue-600 mx-auto mb-2" />
+                                        <p className="font-bold text-blue-900 mb-1">Application submitted</p>
+                                        <p className="text-xs text-blue-700 mb-3">Your application is being reviewed.</p>
+                                        <Link to="/dashboard/applications" className="text-sm font-semibold text-primary-600 hover:underline flex items-center justify-center gap-1">
+                                            View my applications <ChevronRight size={14} />
+                                        </Link>
+                                    </div>
+                                ) : wasRejected && !showForm ? (
+                                    <div className="space-y-3">
+                                        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-900">
+                                            You were previously rejected for this role. You may reapply after the employer&apos;s cooldown period.
+                                        </div>
+                                        <button
+                                            onClick={() => isAuthenticated ? setShowForm(true) : navigate('/login', { state: { returnTo: `/jobs/${jobId}` } })}
+                                            className="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+                                        >
+                                            Apply Again
+                                        </button>
+                                    </div>
+                                ) : !showForm && canShowApply && !wasRejected ? (
                                     <button
                                         onClick={() => isAuthenticated ? setShowForm(true) : navigate('/login', { state: { returnTo: `/jobs/${jobId}` } })}
                                         className="w-full py-3.5 bg-primary-600 hover:bg-primary-700 text-white font-bold rounded-xl transition-colors shadow-sm"
                                     >
                                         {isAuthenticated ? (job.has_tryout ? 'Take Tryout to Apply' : 'Apply Now') : 'Sign In to Apply'}
                                     </button>
-                                ) : (
+                                ) : showForm && (canShowApply || wasRejected) ? (
                                     <form onSubmit={handleApply} className="space-y-4">
                                         <p className="text-sm text-gray-600 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                                            {job.has_tryout
-                                                ? 'By submitting, you agree to start the timed Tryout challenge.'
-                                                : 'Add an optional cover letter below.'}
+                                            {wasRejected
+                                                ? 'Submit a new application for this role. Cooldown rules may apply.'
+                                                : job.has_tryout
+                                                    ? 'By submitting, you agree to start the timed Tryout challenge.'
+                                                    : 'Add an optional cover letter below.'}
                                         </p>
                                         <div>
                                             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Cover Letter</label>
@@ -263,11 +304,11 @@ export default function JobDetailsPage() {
                                             </button>
                                             <button type="submit" disabled={applying}
                                                 className="flex-1 flex items-center justify-center gap-2 py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl disabled:opacity-50">
-                                                {applying ? <><Loader2 size={16} className="animate-spin" /> Submitting…</> : 'Submit Application'}
+                                                {applying ? <><Loader2 size={16} className="animate-spin" /> Submitting…</> : wasRejected ? 'Submit Reapplication' : 'Submit Application'}
                                             </button>
                                         </div>
                                     </form>
-                                )}
+                                ) : null}
                             </div>
 
                             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3 text-sm">

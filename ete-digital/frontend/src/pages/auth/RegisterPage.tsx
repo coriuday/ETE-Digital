@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import BrandLogo from '../../components/layout/BrandLogo';
+import AuthLayoutHeader from '../../components/layout/AuthLayoutHeader';
 import { Users, Briefcase, CheckCircle, Circle, Loader2, ArrowRight } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
@@ -183,10 +183,7 @@ export default function RegisterPage() {
             <div className="flex-1 flex items-center justify-center px-6 py-10 bg-gray-50">
                 <div className="w-full max-w-md">
 
-                    {/* Mobile logo */}
-                    <Link to="/" className="block mb-8 lg:hidden w-fit">
-                        <BrandLogo size="md" />
-                    </Link>
+                    <AuthLayoutHeader />
 
                     <h2 className="text-3xl font-bold mb-1 text-gray-900"
                         style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>

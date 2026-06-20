@@ -4,7 +4,7 @@ Admin API endpoints (admin users only)
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, desc
 from typing import List, Optional
 import uuid
 
@@ -12,7 +12,10 @@ from app.core.database import get_db
 from app.core.security import require_role
 from app.models.users import User, UserProfile, UserRole
 from app.models.jobs import Job, JobStatus, Application, ApplicationStatus
-from pydantic import BaseModel, ConfigDict
+from app.models.notifications import AuditLog, AuditAction
+from app.services.audit import log_audit_event
+from app.services.jobs import application_service
+from pydantic import BaseModel, ConfigDict, Field
 from datetime import datetime, timezone
 
 router = APIRouter()
@@ -174,6 +177,212 @@ async def toggle_user_active(
         "message": f"User {'activated' if user.is_active else 'deactivated'} successfully",
         "is_active": user.is_active,
     }
+
+
+class AdminRoleUpdate(BaseModel):
+    role: str = Field(..., pattern="^(candidate|employer|admin)$")
+
+
+@router.patch("/users/{user_id}/role", response_model=dict)
+async def update_user_role(
+    user_id: str,
+    body: AdminRoleUpdate,
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Change a user's platform role (Admin only)."""
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if str(user.id) == current_user["user_id"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot change your own role")
+
+    old_role = user.role.value
+    user.role = UserRole(body.role)
+    await log_audit_event(
+        db=db,
+        action=AuditAction.ADMIN_ACTION,
+        user_id=current_user["user_id"],
+        resource_type="user",
+        resource_id=user.id,
+        details={"action": "role_changed", "old_role": old_role, "new_role": body.role},
+    )
+    await db.commit()
+    return {"message": f"Role updated to {body.role}", "role": body.role}
+
+
+@router.delete("/users/{user_id}", response_model=dict)
+async def remove_user(
+    user_id: str,
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Soft-delete and anonymize a user (Admin only). Preserves audit/application history."""
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    if str(user.id) == current_user["user_id"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot remove your own account")
+
+    profile_result = await db.execute(select(UserProfile).where(UserProfile.user_id == user.id))
+    profile = profile_result.scalar_one_or_none()
+
+    user.is_active = False
+    user.email = f"removed_{user.id}@deleted.jobsrow.local"
+    user.password_hash = "!"
+    user.totp_enabled = False
+    user.totp_secret = None
+
+    if profile:
+        profile.full_name = "Removed User"
+        profile.phone = None
+        profile.bio = None
+        profile.avatar_url = None
+        profile.resume_url = None
+
+    await log_audit_event(
+        db=db,
+        action=AuditAction.ADMIN_ACTION,
+        user_id=current_user["user_id"],
+        resource_type="user",
+        resource_id=user.id,
+        details={"action": "user_removed", "previous_email_hash": str(user.id)},
+    )
+    await db.commit()
+    return {"message": "User removed and anonymized successfully"}
+
+
+class AdminApplicationStatusUpdate(BaseModel):
+    status: ApplicationStatus
+    reason: Optional[str] = None
+
+
+@router.post("/applications/{application_id}/status", response_model=dict)
+async def force_application_status(
+    application_id: str,
+    body: AdminApplicationStatusUpdate,
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Force an application status change (Admin override)."""
+    from app.services.application_pipeline import transition_application_status  # noqa: PLC0415
+
+    application = await application_service.get_application(db, uuid.UUID(application_id))
+    if not application:
+        raise HTTPException(status_code=404, detail="Application not found")
+
+    if application.status == ApplicationStatus.HIRED:
+        raise HTTPException(status_code=400, detail="Hired applications cannot be modified.")
+
+    job_result = await db.execute(select(Job).where(Job.id == application.job_id))
+    job = job_result.scalar_one_or_none()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    old_status = application.status
+    special = None
+    if body.status == ApplicationStatus.PENDING and old_status == ApplicationStatus.REJECTED:
+        special = "reapply"
+    elif body.status == ApplicationStatus.REOPENED and old_status == ApplicationStatus.REJECTED:
+        special = "reopen"
+    elif body.status == ApplicationStatus.PENDING and old_status == ApplicationStatus.REOPENED:
+        special = "reopened_to_pending"
+
+    try:
+        await transition_application_status(
+            db=db,
+            application=application,
+            job=job,
+            new_status=body.status,
+            changed_by=uuid.UUID(current_user["user_id"]),
+            employer_notes=body.reason,
+            special=special,
+        )
+    except HTTPException:
+        if old_status not in {ApplicationStatus.HIRED, ApplicationStatus.WITHDRAWN}:
+            now = datetime.now(timezone.utc)
+            application.status = body.status
+            application.stage_entered_at = now
+            if body.status == ApplicationStatus.REJECTED:
+                application.rejected_at = now
+            elif body.status == ApplicationStatus.PENDING:
+                application.rejected_at = None
+            from app.models.application_status_history import ApplicationStatusHistory  # noqa: PLC0415
+
+            db.add(
+                ApplicationStatusHistory(
+                    application_id=application.id,
+                    old_status=old_status,
+                    new_status=body.status,
+                    changed_by=uuid.UUID(current_user["user_id"]),
+                    changed_at=now,
+                    notes=body.reason or "Admin override",
+                )
+            )
+        else:
+            raise
+
+    await log_audit_event(
+        db=db,
+        action=AuditAction.ADMIN_ACTION,
+        user_id=current_user["user_id"],
+        resource_type="application",
+        resource_id=application.id,
+        details={
+            "action": "force_status",
+            "old_status": old_status.value,
+            "new_status": body.status.value,
+            "reason": body.reason,
+        },
+    )
+    await db.commit()
+    return {"message": "Application status updated", "status": body.status.value}
+
+
+class AdminAuditLogResponse(BaseModel):
+    id: str
+    action: str
+    resource_type: Optional[str]
+    resource_id: Optional[str]
+    ip_address: Optional[str]
+    user_email: Optional[str]
+    org_id: Optional[str]
+    details: dict
+    timestamp: datetime
+
+
+@router.get("/audit", response_model=List[AdminAuditLogResponse])
+async def list_platform_audit_logs(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    action: Optional[str] = None,
+    current_user: dict = Depends(require_role(UserRole.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Platform-wide audit log (Admin only)."""
+    query = select(AuditLog, User.email).outerjoin(User, AuditLog.user_id == User.id).order_by(desc(AuditLog.timestamp))
+    if action:
+        query = query.where(AuditLog.action == action)
+
+    result = await db.execute(query.limit(limit).offset(offset))
+    rows = result.all()
+
+    return [
+        AdminAuditLogResponse(
+            id=str(log.id),
+            action=log.action.value if hasattr(log.action, "value") else str(log.action),
+            resource_type=log.resource_type,
+            resource_id=str(log.resource_id) if log.resource_id else None,
+            ip_address=log.ip_address,
+            user_email=email,
+            org_id=str(log.org_id) if log.org_id else None,
+            details=log.details or {},
+            timestamp=log.timestamp,
+        )
+        for log, email in rows
+    ]
 
 
 @router.get("/jobs", response_model=AdminJobListResponse)

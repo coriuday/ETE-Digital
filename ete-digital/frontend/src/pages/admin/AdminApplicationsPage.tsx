@@ -4,7 +4,10 @@
  */
 import { useState, useEffect } from 'react';
 import AppShell from '../../components/layout/AppShell';
+import PageHeader from '../../components/ui/PageHeader';
+import { adminPageCls, adminCardCls } from './adminShared';
 import { api } from '../../api/client';
+import { toastSuccess, toastError } from '../../utils/toast';
 
 interface AdminApplication {
     id: string;
@@ -28,10 +31,13 @@ const STATUS_COLORS: Record<string, string> = {
     pending: 'bg-yellow-100 text-yellow-700',
     reviewed: 'bg-blue-100 text-blue-700',
     shortlisted: 'bg-purple-100 text-purple-700',
-    rejected: 'bg-red-100 text-red-600',
-    hired: 'bg-green-100 text-green-700',
-    withdrawn: 'bg-gray-100 text-gray-500',
+    rejected: 'bg-red-50 text-red-600',
+    reopened: 'bg-amber-50 text-amber-700',
+    hired: 'bg-emerald-50 text-emerald-700',
+    withdrawn: 'bg-background text-text-tertiary',
 };
+
+const STATUS_OPTIONS = ['pending', 'shortlisted', 'reviewed', 'rejected', 'reopened', 'hired', 'withdrawn'];
 
 export default function AdminApplicationsPage() {
     const [applications, setApplications] = useState<AdminApplication[]>([]);
@@ -63,22 +69,27 @@ export default function AdminApplicationsPage() {
         }
     }
 
+    async function forceStatus(appId: string, status: string) {
+        try {
+            await api.post(`/api/admin/applications/${appId}/status`, { status });
+            toastSuccess('Status updated');
+            fetchApplications();
+        } catch (err: unknown) {
+            const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+            toastError(typeof detail === 'string' ? detail : 'Failed to update status');
+        }
+    }
+
     const totalPages = Math.ceil(total / PAGE_SIZE);
 
     return (
         <AppShell>
-            <div className="p-6 lg:p-8">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900">All Applications</h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Platform-wide view — {total} total
-                    </p>
-                </div>
+            <div className={adminPageCls}>
+                <PageHeader title="All Applications" description={`Platform-wide view — ${total} total`} />
 
                 {/* Status filter pills */}
                 <div className="flex flex-wrap gap-2 mb-6">
-                    {['', 'pending', 'reviewed', 'shortlisted', 'rejected', 'hired', 'withdrawn'].map((s) => (
+                    {['', ...STATUS_OPTIONS].map((s) => (
                         <button
                             key={s || 'all'}
                             onClick={() => { setStatusFilter(s); setPage(1); }}
@@ -93,7 +104,7 @@ export default function AdminApplicationsPage() {
                 </div>
 
                 {/* Table */}
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-sm overflow-hidden">
+                <div className={`${adminCardCls} overflow-hidden`}>
                     {loading ? (
                         <div className="flex items-center justify-center h-48">
                             <div className="w-7 h-7 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
@@ -114,6 +125,7 @@ export default function AdminApplicationsPage() {
                                         <th className="text-left px-6 py-3">Status</th>
                                         <th className="text-left px-6 py-3">Match</th>
                                         <th className="text-left px-6 py-3">Applied</th>
+                                        <th className="text-left px-6 py-3">Override</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
@@ -149,10 +161,27 @@ export default function AdminApplicationsPage() {
                                                     <span className="text-gray-300">—</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-xs text-gray-400">
+                                            <td className="px-6 py-4 text-xs text-text-tertiary">
                                                 {new Date(app.created_at).toLocaleDateString('en-IN', {
                                                     day: '2-digit', month: 'short', year: 'numeric'
                                                 })}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {app.status !== 'hired' && (
+                                                    <select
+                                                        defaultValue=""
+                                                        onChange={(e) => {
+                                                            if (e.target.value) forceStatus(app.id, e.target.value);
+                                                            e.target.value = '';
+                                                        }}
+                                                        className="px-2 py-1 border border-border rounded-lg text-xs bg-surface"
+                                                    >
+                                                        <option value="">Set status…</option>
+                                                        {STATUS_OPTIONS.filter(s => s !== app.status).map(s => (
+                                                            <option key={s} value={s}>{s}</option>
+                                                        ))}
+                                                    </select>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

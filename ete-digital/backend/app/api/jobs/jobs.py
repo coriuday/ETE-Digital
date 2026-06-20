@@ -21,6 +21,7 @@ from app.schemas.jobs import (
     ApplicationListResponse,
     ApplicationDetailResponse,
     ApplicationStatusUpdate,
+    ApplicationReopenRequest,
     StatusHistoryEntry,
     CandidateProfileForEmployer,
 )
@@ -32,6 +33,7 @@ from app.services.application_pipeline import (
     build_pipeline_progress,
     get_status_history,
     notification_for_status,
+    notification_for_reopen,
 )
 from app.services.audit import log_audit_event, get_org_id_for_user
 from app.models.notifications import AuditAction
@@ -660,6 +662,104 @@ async def update_application_status(
             job.company,
             transition.new_status.value,
         )
+
+    history = await get_status_history(db, application.id)
+
+    return ApplicationDetailResponse(
+        id=str(application.id),
+        job_id=str(application.job_id),
+        candidate_id=str(application.candidate_id),
+        cover_letter=application.cover_letter,
+        vault_share_token=application.vault_share_token,
+        custom_answers=application.custom_answers,
+        status=application.status,
+        match_score=application.match_score,
+        match_explanation=application.match_explanation,
+        employer_notes=application.employer_notes,
+        candidate_name=candidate_name,
+        candidate_email=candidate_email,
+        job_title=job.title,
+        status_history=_history_to_entries(history),
+        available_actions=get_available_actions(application.status),
+        is_locked=is_locked(application.status),
+        created_at=application.created_at,
+        updated_at=application.updated_at,
+    )
+
+
+@router.post("/applications/{application_id}/reopen", response_model=ApplicationDetailResponse)
+async def reopen_application(
+    application_id: str,
+    body: ApplicationReopenRequest,
+    background_tasks: BackgroundTasks,
+    current_user: dict = Depends(require_role(UserRole.HR)),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reopen a rejected application (HR only)."""
+    from sqlalchemy import select as sa_select
+    from app.models.users import User, UserProfile
+
+    reopen_result = await application_service.reopen_application(
+        db=db,
+        application_id=uuid.UUID(application_id),
+        employer_id=uuid.UUID(current_user["user_id"]),
+        reason=body.reason,
+    )
+
+    application = reopen_result.application
+    job = reopen_result.job
+
+    org_id = await get_org_id_for_user(db, current_user["user_id"])
+    await log_audit_event(
+        db=db,
+        action=AuditAction.APPLICATION_REOPENED,
+        user_id=current_user["user_id"],
+        org_id=org_id,
+        resource_type="application",
+        resource_id=application.id,
+        details={
+            "old_status": reopen_result.old_status.value,
+            "new_status": application.status.value,
+            "application_id": str(application.id),
+            "job_id": str(job.id),
+            "reason": body.reason,
+        },
+    )
+
+    title, message = notification_for_reopen()
+    notification = await notification_service.create_in_session(
+        db=db,
+        user_id=str(application.candidate_id),
+        notif_type="application",
+        title=title,
+        message=message,
+        link="/dashboard/applications",
+    )
+
+    await db.commit()
+
+    if notification:
+        await notification_service.push_notification(application.candidate_id, notification)
+
+    cand_result = await db.execute(
+        sa_select(User.email, UserProfile.full_name)
+        .select_from(User)
+        .outerjoin(UserProfile, UserProfile.user_id == User.id)
+        .where(User.id == application.candidate_id)
+    )
+    cand_row = cand_result.first()
+    candidate_email = cand_row[0] if cand_row else ""
+    candidate_name = (cand_row[1] if cand_row else None) or "Candidate"
+
+    background_tasks.add_task(
+        _send_status_email_async,
+        application.candidate_id,
+        candidate_email,
+        candidate_name,
+        job.title,
+        job.company,
+        "reopened",
+    )
 
     history = await get_status_history(db, application.id)
 

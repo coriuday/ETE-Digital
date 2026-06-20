@@ -280,6 +280,12 @@ class ApplicationStatusUpdate(BaseModel):
     employer_notes: Optional[str] = None
 
 
+class ApplicationReopenRequest(BaseModel):
+    """Reopen a rejected application"""
+
+    reason: Optional[str] = None
+
+
 # ========== Job Search ==========
 
 

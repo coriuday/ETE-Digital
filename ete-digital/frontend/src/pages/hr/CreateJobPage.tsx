@@ -2,8 +2,9 @@
  * Create Job Page — Premium multi-section form with AppShell sidebar
  * Employer-facing: post a new job with salary validation + dark-mode support
  */
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { toastError } from '../../utils/toast';
 import { jobsApi } from '../../api/jobs';
 
 import AppShell from '../../components/layout/AppShell';
@@ -40,8 +41,11 @@ const EXPERIENCE_LEVELS = [
 
 export default function CreateJobPage() {
     const navigate = useNavigate();
+    const { jobId } = useParams<{ jobId?: string }>();
+    const isEditMode = Boolean(jobId);
 
     const [loading, setLoading] = useState(false);
+    const [loadingJob, setLoadingJob] = useState(isEditMode);
     const [error, setError] = useState('');
     const [skillInput, setSkillInput] = useState('');
     const [skills, setSkills] = useState<string[]>([]);
@@ -89,6 +93,42 @@ export default function CreateJobPage() {
         }
     };
 
+    useEffect(() => {
+        if (!jobId) return;
+        let cancelled = false;
+        (async () => {
+            setLoadingJob(true);
+            try {
+                const job = await jobsApi.getJob(jobId);
+                if (cancelled) return;
+                setFormData({
+                    title: job.title,
+                    company: job.company,
+                    description: job.description,
+                    requirements: job.requirements,
+                    job_type: job.job_type,
+                    location: job.location ?? '',
+                    remote_ok: job.remote_ok,
+                    salary_min: job.salary_min != null ? String(job.salary_min) : '',
+                    salary_max: job.salary_max != null ? String(job.salary_max) : '',
+                    salary_currency: job.salary_currency || 'INR',
+                    experience_required: job.experience_required ?? '',
+                    has_tryout: job.has_tryout,
+                    external_apply_url: job.external_apply_url ?? '',
+                });
+                setSkills(job.skills_required ?? []);
+            } catch {
+                if (!cancelled) {
+                    toastError('Job not found or you do not have access.');
+                    navigate('/hr/jobs');
+                }
+            } finally {
+                if (!cancelled) setLoadingJob(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [jobId, navigate]);
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -123,13 +163,17 @@ export default function CreateJobPage() {
             if (formData.experience_required) jobData.experience_required = formData.experience_required;
             if (formData.external_apply_url.trim()) jobData.external_apply_url = formData.external_apply_url.trim();
 
-            await jobsApi.createJob(jobData);
+            if (isEditMode && jobId) {
+                await jobsApi.updateJob(jobId, jobData);
+            } else {
+                await jobsApi.createJob(jobData);
+            }
             navigate('/hr/jobs');
         } catch (err: any) {
             const detail = err.response?.data?.detail;
             const msg = Array.isArray(detail)
                 ? detail.map((d: any) => d.msg || d).join(', ')
-                : detail || err.message || 'Failed to post job. Please try again.';
+                : detail || err.message || (isEditMode ? 'Failed to update job. Please try again.' : 'Failed to post job. Please try again.');
             setError(msg);
         } finally {
             setLoading(false);
@@ -140,10 +184,15 @@ export default function CreateJobPage() {
         <AppShell>
             <div className={`${hrPageCls} max-w-4xl`}>
                 <PageHeader
-                    title="Post a New Job"
-                    description="Fill in the details to attract the right candidates"
+                    title={isEditMode ? 'Edit Job' : 'Post a New Job'}
+                    description={isEditMode ? 'Update job details and save changes' : 'Fill in the details to attract the right candidates'}
                 />
 
+                {loadingJob ? (
+                    <div className="flex items-center justify-center py-24 text-text-secondary">
+                        <Loader2 size={24} className="animate-spin mr-2" /> Loading job…
+                    </div>
+                ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
 
                         {/* Error Banner */}
@@ -354,10 +403,13 @@ export default function CreateJobPage() {
                                 type="submit" disabled={loading}
                                 className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-violet-500/20"
                             >
-                                {loading ? <><Loader2 size={16} className="animate-spin" /> Posting…</> : <><CheckCircle2 size={16} /> Post Job</>}
+                                {loading
+                                    ? <><Loader2 size={16} className="animate-spin" /> {isEditMode ? 'Saving…' : 'Posting…'}</>
+                                    : <><CheckCircle2 size={16} /> {isEditMode ? 'Save Changes' : 'Post Job'}</>}
                             </button>
                         </div>
                     </form>
+                )}
             </div>
         </AppShell>
     );
