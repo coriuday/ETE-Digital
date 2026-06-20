@@ -266,7 +266,7 @@ async def employer_user(_db: AsyncSession):
     user = User(
         email=f"employer_{uid}@test.com",
         password_hash=hash_password("TestPass1!"),
-        role=UserRole.EMPLOYER,
+        role=UserRole.HR,
         is_active=True,
         is_verified=True,
     )

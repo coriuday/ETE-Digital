@@ -1,6 +1,6 @@
 /**
  * useNotifications hook tests
- * Tests the REST-polling implementation (WebSocket was removed due to 403 errors)
+ * Covers REST fetch + WebSocket connection state
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
@@ -116,10 +116,10 @@ describe('useNotifications hook', () => {
         expect(result.current.unreadCount).toBe(0);
     });
 
-    it('isConnected is always true (REST mode has no WebSocket)', () => {
+    it('isConnected starts false until WebSocket connects', () => {
         vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
         const { result } = renderHook(() => useNotifications());
-        expect(result.current.isConnected).toBe(true);
+        expect(result.current.isConnected).toBe(false);
     });
 
     it('silently handles fetch failures', async () => {

@@ -2,6 +2,7 @@
  * Shared HR panel UI — design system tokens and reusable blocks
  * Matches candidate dashboard / settings panel patterns.
  */
+/* eslint-disable react-refresh/only-export-components -- shared tokens + components */
 import { Loader2 } from 'lucide-react';
 
 export const hrPageCls = 'p-6 lg:p-8 space-y-5 max-w-6xl mx-auto';

@@ -13,7 +13,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.jobs import Application
 from app.models.users import UserProfile
 
-
 # --- Simple Rules Engine Heuristics ---
 
 SUSPICIOUS_KEYWORDS = [
