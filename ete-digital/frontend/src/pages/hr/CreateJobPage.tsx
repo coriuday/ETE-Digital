@@ -66,7 +66,7 @@ export default function CreateJobPage() {
         external_apply_url: '',
     });
 
-    const inputCls = `w-full px-3 py-2.5 border border-border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-violet-500 focus:border-violet-400 bg-surface text-text-primary placeholder:text-text-tertiary`;
+    const inputCls = `w-full px-3 py-2.5 border border-border rounded-xl text-sm outline-none transition-all focus:ring-2 focus:ring-primary-500 focus:border-primary-400 bg-surface text-text-primary placeholder:text-text-tertiary`;
     const labelCls = `block text-sm font-medium mb-1.5 text-text-primary`;
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -160,6 +160,10 @@ export default function CreateJobPage() {
             if (formData.location.trim()) jobData.location = formData.location.trim();
             if (salaryMin !== null) jobData.salary_min = salaryMin;
             if (salaryMax !== null) jobData.salary_max = salaryMax;
+            if (isEditMode && salaryMin === null && salaryMax === null) {
+                jobData.salary_min = null;
+                jobData.salary_max = null;
+            }
             if (formData.experience_required) jobData.experience_required = formData.experience_required;
             if (formData.external_apply_url.trim()) jobData.external_apply_url = formData.external_apply_url.trim();
 
@@ -248,7 +252,7 @@ export default function CreateJobPage() {
                                     <label className="flex items-center gap-2.5 cursor-pointer select-none">
                                         <div
                                             onClick={() => setFormData(p => ({ ...p, remote_ok: !p.remote_ok }))}
-                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${formData.remote_ok ? 'bg-violet-600' : 'bg-gray-300'}`}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${formData.remote_ok ? 'bg-primary-600' : 'bg-gray-300'}`}
                                         >
                                             <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-surface shadow transition-transform ${formData.remote_ok ? 'translate-x-4' : 'translate-x-1'}`} />
                                         </div>
@@ -292,7 +296,7 @@ export default function CreateJobPage() {
                                 />
                                 <button
                                     type="button" onClick={addSkill}
-                                    className="flex items-center gap-1.5 px-4 py-2.5 bg-violet-600 text-white text-sm font-medium rounded-xl hover:bg-violet-700 transition-colors flex-shrink-0"
+                                    className="flex items-center gap-1.5 px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded-xl hover:bg-primary-700 transition-colors flex-shrink-0"
                                 >
                                     <Plus size={15} /> Add
                                 </button>
@@ -301,7 +305,7 @@ export default function CreateJobPage() {
                                 <div className="flex flex-wrap gap-2 mt-3">
                                     {skills.map(skill => (
                                         <span key={skill} className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-sm font-medium border ${
-                                            'bg-violet-50 border-violet-200 text-violet-700'
+                                            'bg-primary-50 border-primary-200 text-primary-700'
                                         }`}>
                                             {skill}
                                             <button type="button" onClick={() => removeSkill(skill)} className="hover:text-red-500 transition-colors">
@@ -317,7 +321,7 @@ export default function CreateJobPage() {
                         </SectionCard>
 
                         {/* Section 4 — Compensation */}
-                        <SectionCard title="Compensation" icon={<DollarSign size={16} />}>
+                        <SectionCard title="Salary" icon={<DollarSign size={16} />}>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                                 <div>
                                     <label className={labelCls}>Currency</label>
@@ -346,7 +350,7 @@ export default function CreateJobPage() {
                                 </p>
                             )}
                             <p className="text-xs mt-3 text-text-tertiary">
-                                Leave both fields empty to post as "Salary not disclosed". Transparent salaries attract 3× more applicants.
+                                Leave both fields empty to post as &quot;Salary not disclosed&quot;. Transparent salaries attract 3× more applicants.
                             </p>
                         </SectionCard>
 
@@ -374,7 +378,7 @@ export default function CreateJobPage() {
                             <div className="flex items-start gap-4">
                                 <div
                                     onClick={() => setFormData(p => ({ ...p, has_tryout: !p.has_tryout }))}
-                                    className={`relative inline-flex h-6 w-11 mt-0.5 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${formData.has_tryout ? 'bg-violet-600' : 'bg-gray-300'}`}
+                                    className={`relative inline-flex h-6 w-11 mt-0.5 items-center rounded-full transition-colors cursor-pointer flex-shrink-0 ${formData.has_tryout ? 'bg-primary-600' : 'bg-gray-300'}`}
                                 >
                                     <span className={`inline-block h-4 w-4 transform rounded-full bg-surface shadow transition-transform ${formData.has_tryout ? 'translate-x-6' : 'translate-x-1'}`} />
                                 </div>
@@ -401,7 +405,7 @@ export default function CreateJobPage() {
                             </button>
                             <button
                                 type="submit" disabled={loading}
-                                className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-violet-500/20"
+                                className="flex items-center gap-2 px-8 py-2.5 bg-gradient-to-r from-primary-600 to-primary-600 text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 shadow-lg shadow-primary-500/20"
                             >
                                 {loading
                                     ? <><Loader2 size={16} className="animate-spin" /> {isEditMode ? 'Saving…' : 'Posting…'}</>
@@ -420,7 +424,7 @@ function SectionCard({ title, icon, children }: { title: string; icon: React.Rea
     return (
         <div className={`rounded-2xl border p-6 ${cardBg}`}>
             <div className="flex items-center gap-2 mb-5">
-                <span className="text-violet-600">{icon}</span>
+                <span className="text-primary-600">{icon}</span>
                 <h2 className="text-base font-bold text-text-primary">{title}</h2>
                 <ChevronRight size={14} className="text-gray-300" />
             </div>

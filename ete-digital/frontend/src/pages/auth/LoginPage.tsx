@@ -24,7 +24,7 @@ const GoogleIcon = () => (
 
 /* brandPoints — used in left brand panel (temporarily hidden)
 const brandPoints = [
-    { icon: <Star size={16} className="text-violet-300" />, text: 'Real Skill-Based Job Tryouts' },
+    { icon: <Star size={16} className="text-primary-300" />, text: 'Real Skill-Based Job Tryouts' },
     { icon: <Trophy size={16} className="text-amber-300" />, text: 'Verified Talent Portfolio Vault' },
     { icon: <ShieldCheck size={16} className="text-emerald-400" />, text: 'Top MNC Opportunities, Proven Fast' },
 ];
@@ -151,14 +151,14 @@ export default function LoginPage() {
                     </Link>
 
                     <div className="py-8">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-4">India's Most Result-Oriented Platform</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-primary-400 mb-4">India's Most Result-Oriented Platform</p>
                         <h1 className="text-4xl font-bold text-white leading-tight mb-5"
                             style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
                             Your Skills.<br />
                             <span style={{ backgroundImage: 'linear-gradient(90deg, #a78bfa, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Your Proof.</span><br />
                             Your Career.
                         </h1>
-                        <p className="text-violet-200 text-base leading-relaxed max-w-xs mb-8">
+                        <p className="text-primary-200 text-base leading-relaxed max-w-xs mb-8">
                             Join India's platform where talent is proven through action — not just résumés.
                         </p>
 
@@ -176,7 +176,7 @@ export default function LoginPage() {
 
                     <div className="rounded-2xl p-5"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)' }}>
-                        <p className="text-violet-100 text-sm italic leading-relaxed mb-4">
+                        <p className="text-primary-100 text-sm italic leading-relaxed mb-4">
                             "We found our best backend engineer in 4 days — not weeks. The tryout format made the decision obvious."
                         </p>
                         <div className="flex items-center gap-3">
@@ -184,7 +184,7 @@ export default function LoginPage() {
                                 style={{ background: 'linear-gradient(135deg, #7c4dff, #4f46e5)' }}>SC</div>
                             <div>
                                 <p className="text-white text-xs font-semibold">Sarah Chen</p>
-                                <p className="text-violet-300 text-xs">CTO, NexaCloud</p>
+                                <p className="text-primary-300 text-xs">CTO, NexaCloud</p>
                             </div>
                         </div>
                     </div>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                                         value={totpCode}
                                         onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, ''))}
                                         placeholder="000000"
-                                        className="w-full px-4 py-3 rounded-xl text-center text-2xl tracking-[0.5em] font-mono outline-none transition-all placeholder:text-gray-300 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                        className="w-full px-4 py-3 rounded-xl text-center text-2xl tracking-[0.5em] font-mono outline-none transition-all placeholder:text-gray-300 bg-white text-gray-900 border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10"
                                     />
                                 </div>
 
@@ -257,7 +257,7 @@ export default function LoginPage() {
                             <p className="text-center text-sm text-gray-500 mt-6">
                                 Lost access to your app?{' '}
                                 <Link to="/login" onClick={() => window.location.reload()}
-                                    className="font-semibold hover:underline text-indigo-600">
+                                    className="font-semibold hover:underline text-primary-600">
                                     Use a backup code
                                 </Link>
                             </p>
@@ -296,7 +296,7 @@ export default function LoginPage() {
                                                 type="button"
                                                 onClick={handleResendVerification}
                                                 disabled={resendLoading || !email.trim()}
-                                                className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-700 hover:text-indigo-900 disabled:opacity-50"
+                                                className="inline-flex items-center gap-2 text-xs font-semibold text-primary-700 hover:text-indigo-900 disabled:opacity-50"
                                             >
                                                 {resendLoading
                                                     ? <><Loader2 size={14} className="animate-spin" /> Sending…</>
@@ -324,7 +324,7 @@ export default function LoginPage() {
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="you@company.com"
-                                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                        className="w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10"
                                     />
                                 </div>
 
@@ -335,7 +335,7 @@ export default function LoginPage() {
                                             Password
                                         </label>
                                         <Link to="/forgot-password"
-                                            className="text-xs font-medium hover:underline text-indigo-600">
+                                            className="text-xs font-medium hover:underline text-primary-600">
                                             Forgot password?
                                         </Link>
                                     </div>
@@ -347,7 +347,7 @@ export default function LoginPage() {
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             placeholder="Enter your password"
-                                            className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10"
+                                            className="w-full px-4 py-3 pr-11 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10"
                                         />
                                         <button
                                             type="button"
@@ -393,7 +393,7 @@ export default function LoginPage() {
                                 <a
                                     id="google-login-employer"
                                     href={`${BACKEND_URL}/api/auth/oauth/google?role=employer`}
-                                    className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-indigo-200 bg-indigo-50 font-medium text-sm text-indigo-700 hover:bg-indigo-100 hover:border-indigo-300 transition-all shadow-sm"
+                                    className="w-full flex items-center justify-center gap-3 py-3 rounded-xl border border-primary-200 bg-primary-50 font-medium text-sm text-primary-700 hover:bg-primary-100 hover:border-primary-300 transition-all shadow-sm"
                                 >
                                     <GoogleIcon />
                                     Continue as Employer
@@ -403,7 +403,7 @@ export default function LoginPage() {
                             <p className="text-center text-sm text-gray-500 mt-6">
                                 Don't have an account?{' '}
                                 <Link to="/register"
-                                    className="font-semibold hover:underline text-indigo-600">
+                                    className="font-semibold hover:underline text-primary-600">
                                     Sign up free
                                 </Link>
                             </p>

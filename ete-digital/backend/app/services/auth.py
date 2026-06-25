@@ -22,6 +22,7 @@ from app.core.security import (
     validate_password_strength,
 )
 from app.core.config import settings
+from app.services.domain_auth import extract_email_domain, is_blocked_free_domain
 from app.services.email import email_service
 from fastapi import HTTPException, status
 
@@ -45,6 +46,12 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Admin accounts cannot be created through registration",
+            )
+
+        if role == UserRole.HR and is_blocked_free_domain(extract_email_domain(email)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Employer accounts require a corporate work email (not Gmail, Yahoo, etc.).",
             )
 
         # Check if user already exists

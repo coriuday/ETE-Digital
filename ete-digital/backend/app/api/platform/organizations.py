@@ -247,7 +247,7 @@ async def init_organization(
     if is_blocked_free_domain(domain):
         raise HTTPException(
             status_code=400,
-            detail="Free email domains (Gmail, Yahoo, etc.) cannot be used for domain verification. Use the standard registration path.",
+            detail="Free email domains (Gmail, Yahoo, etc.) cannot be used for domain verification. Register with a corporate work email.",
         )
 
     if is_corporate_email(caller_email) and extract_email_domain(caller_email) != domain:
@@ -289,40 +289,11 @@ async def init_standard_organization(
     current_user: dict = Depends(require_role(UserRole.HR)),
     db: AsyncSession = Depends(get_db),
 ):
-    """Standard path: personal/free email employers submit company info for admin review."""
-    owner_id = uuid.UUID(current_user["user_id"])
-
-    existing = await _get_owner_org(db, owner_id)
-    if existing:
-        return _to_response(existing)
-
-    website = body.website if body.website.startswith("http") else f"https://{body.website}"
-    domain = domain_from_website(website) or f"org-{secrets.token_hex(4)}.local"
-
-    clash = await db.execute(select(Organization).where(Organization.domain == domain))
-    if clash.scalar_one_or_none():
-        domain = f"org-{secrets.token_hex(4)}.local"
-
-    org = Organization(
-        company_name=body.company_name,
-        domain=domain,
-        website=website,
-        owner_id=owner_id,
-        is_verified=False,
-        trust_tier="pending",
-        registration_path="standard",
-        verification_method=None,
-        verification_token=None,
-        linkedin_url=body.linkedin_url,
-        company_size=body.company_size,
-        industry=body.industry,
-        gst_number=body.gst_number,
+    """Deprecated: personal-email employer onboarding is no longer supported."""
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Personal email employer registration is no longer available. Use a corporate work email and domain verification.",
     )
-    db.add(org)
-    await _link_owner_to_org(db, owner_id, org)
-    await db.commit()
-    await db.refresh(org)
-    return _to_response(org)
 
 
 @router.get("/me", response_model=OrgResponse)

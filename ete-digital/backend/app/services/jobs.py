@@ -81,8 +81,7 @@ class JobService:
             )
 
         for field, value in update_data.items():
-            if value is not None:
-                setattr(job, field, value)
+            setattr(job, field, value)
 
         await db.commit()
         await db.refresh(job)

@@ -16,6 +16,7 @@ import {
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import { jobsApi, Job } from '../../api/jobs';
+import { salaryLabelOrDefault } from '../../utils/salary';
 
 /* ── Animated Counter (temporarily hidden with stats strip) ───────────────────
 function AnimatedStat({ value, label }: { value: string; label: string }) {
@@ -26,7 +27,7 @@ function AnimatedStat({ value, label }: { value: string; label: string }) {
             viewport={{ once: true }}
             className="text-center"
         >
-            <div className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-violet-500 to-indigo-500 dark:from-violet-400 dark:to-indigo-400">
+            <div className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-primary-500 to-primary-500 dark:from-primary-400 dark:to-primary-400">
                 {value}
             </div>
             <div className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">{label}</div>
@@ -39,20 +40,17 @@ function AnimatedStat({ value, label }: { value: string; label: string }) {
 function FeaturedJobCard({ job, index }: { job: Job; index: number }) {
     const initials = (job.company ?? 'J').slice(0, 2).toUpperCase();
     const gradients = [
-        'from-violet-600 to-indigo-600',
+        'from-primary-600 to-primary-600',
         'from-blue-600 to-cyan-600',
         'from-emerald-600 to-teal-600',
         'from-orange-500 to-amber-500',
         'from-pink-600 to-rose-600',
-        'from-purple-600 to-violet-600',
+        'from-primary-600 to-primary-600',
     ];
     const grad = gradients[index % gradients.length];
 
-    const formatSalary = () => {
-        if (!job.salary_min) return 'Competitive';
-        const fmt = (n: number) => n >= 100000 ? `₹${(n / 100000).toFixed(0)}L` : `₹${n.toLocaleString()}`;
-        return job.salary_max ? `${fmt(job.salary_min)} – ${fmt(job.salary_max)}` : `${fmt(job.salary_min)}+`;
-    };
+    const formatSalary = () =>
+        salaryLabelOrDefault(job.salary_min, job.salary_max, job.salary_currency, 'Competitive salary');
 
     return (
         <motion.div
@@ -61,7 +59,7 @@ function FeaturedJobCard({ job, index }: { job: Job; index: number }) {
             viewport={{ once: true }}
             transition={{ delay: index * 0.1 }}
             whileHover={{ y: -6 }}
-            className="group relative bg-white dark:bg-slate-900/60 dark:backdrop-blur-md border border-slate-200 dark:border-white/5 hover:border-violet-400/50 dark:hover:border-violet-500/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(139,92,246,0.15)] rounded-2xl p-6 flex flex-col transition-all duration-300 cursor-pointer"
+            className="group relative bg-white dark:bg-slate-900/60 dark:backdrop-blur-md border border-slate-200 dark:border-white/5 hover:border-primary-400/50 dark:hover:border-primary-500/50 hover:shadow-xl dark:hover:shadow-[0_0_30px_rgba(2,94,187,0.15)] rounded-2xl p-6 flex flex-col transition-all duration-300 cursor-pointer"
         >
             <Link to={`/jobs/${job.id}`} className="absolute inset-0 z-10" aria-label={`View ${job.title}`} />
 
@@ -71,7 +69,7 @@ function FeaturedJobCard({ job, index }: { job: Job; index: number }) {
                     {initials}
                 </div>
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors truncate text-base">
+                    <h3 className="font-bold text-slate-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors truncate text-base">
                         {job.title}
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400 truncate font-medium">
@@ -83,7 +81,7 @@ function FeaturedJobCard({ job, index }: { job: Job; index: number }) {
             {/* Tags */}
             <div className="flex flex-wrap gap-1.5 mb-4">
                 {job.has_tryout && (
-                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 text-violet-700 dark:text-violet-300 text-xs font-bold">
+                    <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-50 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/20 text-primary-700 dark:text-primary-300 text-xs font-bold">
                         <Zap size={10} /> Tryout
                     </span>
                 )}
@@ -125,7 +123,7 @@ function FeaturedJobCard({ job, index }: { job: Job; index: number }) {
                 <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                     {formatSalary()}
                 </span>
-                <span className="flex items-center gap-1 text-xs font-bold text-violet-600 dark:text-violet-400 group-hover:gap-2 transition-all relative z-20">
+                <span className="flex items-center gap-1 text-xs font-bold text-primary-600 dark:text-primary-400 group-hover:gap-2 transition-all pointer-events-none">
                     Apply now <ArrowRight size={12} />
                 </span>
             </div>
@@ -180,8 +178,8 @@ export default function LandingPage() {
 
             {/* ── Ambient Background Glows (GPU-composited for perf) ── */}
             <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden" aria-hidden="true">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-violet-500/10 rounded-full blur-[128px] animate-pulse" style={{ willChange: 'transform' }} />
-                <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-indigo-500/8 rounded-full blur-[128px] animate-pulse" style={{ willChange: 'transform', animationDelay: '2s' }} />
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary-500/10 rounded-full blur-[128px] animate-pulse" style={{ willChange: 'transform' }} />
+                <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-primary-500/8 rounded-full blur-[128px] animate-pulse" style={{ willChange: 'transform', animationDelay: '2s' }} />
                 <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-blue-500/6 rounded-full blur-[100px]" />
             </div>
 
@@ -200,8 +198,8 @@ export default function LandingPage() {
                         transition={{ duration: 0.5 }}
                         className="flex justify-center mb-8"
                     >
-                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-violet-700 dark:text-violet-300 bg-violet-100 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 shadow-sm">
-                            <Sparkles size={14} className="text-violet-500 dark:text-violet-400" />
+                        <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold text-primary-700 dark:text-primary-300 bg-primary-100 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/30 shadow-sm">
+                            <Sparkles size={14} className="text-primary-500 dark:text-primary-400" />
                             India’s Most Result-Oriented Hiring Platform
                         </span>
                     </motion.div>
@@ -215,7 +213,7 @@ export default function LandingPage() {
                         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-tight">
                             Prove Your Skills.{' '}
                             <br className="hidden sm:block" />
-                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-600 via-indigo-500 to-blue-600 dark:from-violet-400 dark:via-indigo-400 dark:to-blue-400">
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 via-primary-500 to-blue-600 dark:from-primary-400 dark:via-primary-400 dark:to-blue-400">
                                 Land the Job.
                             </span>
                         </h1>
@@ -233,14 +231,14 @@ export default function LandingPage() {
                     >
                         <Link
                             to="/jobs"
-                            className="group w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white rounded-full font-bold text-lg transition-all shadow-lg shadow-violet-500/30 hover:shadow-violet-500/50 hover:scale-105 flex items-center justify-center gap-2"
+                            className="group w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-primary-600 to-primary-600 hover:from-primary-500 hover:to-primary-500 text-white rounded-full font-bold text-lg transition-all shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 hover:scale-105 flex items-center justify-center gap-2"
                         >
                             <Search size={18} />
                             Find Elite Jobs
                         </Link>
                         <Link
                             to="/register"
-                            className="group w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-800/50 border-2 border-slate-300 dark:border-slate-700 hover:border-violet-400 dark:hover:border-violet-500 text-slate-900 dark:text-white rounded-full font-bold text-lg hover:bg-violet-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
+                            className="group w-full sm:w-auto px-8 py-4 bg-white dark:bg-slate-800/50 border-2 border-slate-300 dark:border-slate-700 hover:border-primary-400 dark:hover:border-primary-500 text-slate-900 dark:text-white rounded-full font-bold text-lg hover:bg-primary-50 dark:hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                         >
                             Post a Job Free
                             <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
@@ -256,13 +254,13 @@ export default function LandingPage() {
                     >
                         <Link
                             to="/jobs"
-                            className="flex items-center gap-3 w-full px-6 py-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md dark:hover:shadow-violet-500/10 backdrop-blur-md transition-all group"
+                            className="flex items-center gap-3 w-full px-6 py-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/10 rounded-2xl shadow-sm hover:shadow-md dark:hover:shadow-primary-500/10 backdrop-blur-md transition-all group"
                         >
-                            <Search size={20} className="text-slate-400 dark:text-slate-500 group-hover:text-violet-500 transition-colors" />
+                            <Search size={20} className="text-slate-400 dark:text-slate-500 group-hover:text-primary-500 transition-colors" />
                             <span className="text-slate-400 dark:text-slate-500 font-medium">
                                 Search by role, skill, or company...
                             </span>
-                            <span className="ml-auto flex items-center gap-2 px-4 py-2 bg-violet-600 hover:bg-violet-500 transition-colors text-white text-sm font-bold rounded-xl">
+                            <span className="ml-auto flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-500 transition-colors text-white text-sm font-bold rounded-xl">
                                 Search <ArrowRight size={14} />
                             </span>
                         </Link>
@@ -297,7 +295,7 @@ export default function LandingPage() {
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                         >
-                            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400 bg-violet-100 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 mb-4">
+                            <span className="inline-block px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-primary-700 dark:text-primary-400 bg-primary-100 dark:bg-primary-500/10 border border-primary-200 dark:border-primary-500/20 mb-4">
                                 Why Jobsrow
                             </span>
                             <h2 className="text-3xl md:text-5xl font-bold mb-4 text-slate-900 dark:text-white">
@@ -322,10 +320,10 @@ export default function LandingPage() {
                             },
                             {
                                 icon: <ShieldCheck className="w-7 h-7" />,
-                                color: 'text-violet-600 dark:text-violet-400',
-                                bg: 'bg-violet-100 dark:bg-violet-500/10',
-                                border: 'border-violet-200 dark:border-violet-500/20',
-                                glow: 'hover:shadow-violet-500/10',
+                                color: 'text-primary-600 dark:text-primary-400',
+                                bg: 'bg-primary-100 dark:bg-primary-500/10',
+                                border: 'border-primary-200 dark:border-primary-500/20',
+                                glow: 'hover:shadow-primary-500/10',
                                 title: 'Secure Talent Vault',
                                 desc: 'Store verified projects, grades, and code in a shareable vault that travels with your career forever.',
                             },
@@ -377,7 +375,7 @@ export default function LandingPage() {
                         <div className="hidden md:block absolute top-8 left-1/6 right-1/6 h-px border-t-2 border-dashed border-slate-200 dark:border-white/10 z-0" style={{ left: '20%', right: '20%' }} />
 
                         {[
-                            { step: '01', icon: <Search size={24} />, color: 'from-violet-600 to-indigo-600', title: 'Browse Roles', desc: 'Find jobs matching your skills from verified employers posting on Jobsrow.' },
+                            { step: '01', icon: <Search size={24} />, color: 'from-primary-600 to-primary-600', title: 'Browse Roles', desc: 'Find jobs matching your skills from verified employers posting on Jobsrow.' },
                             { step: '02', icon: <Zap size={24} />, color: 'from-blue-600 to-cyan-600', title: 'Take the Tryout', desc: 'Complete a skill-based project challenge designed for the specific role.' },
                             { step: '03', icon: <CheckCircle2 size={24} />, color: 'from-emerald-600 to-teal-600', title: 'Get Hired', desc: 'Your verified performance speaks for itself. Get hired faster, better.' },
                         ].map((step, i) => (
@@ -400,7 +398,7 @@ export default function LandingPage() {
                     </div>
 
                     <div className="mt-14 text-center">
-                        <Link to="/how-it-works" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-violet-300 dark:border-violet-500/40 text-violet-700 dark:text-violet-400 font-bold hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors">
+                        <Link to="/how-it-works" className="inline-flex items-center gap-2 px-6 py-3 rounded-full border-2 border-primary-300 dark:border-primary-500/40 text-primary-700 dark:text-primary-400 font-bold hover:bg-primary-50 dark:hover:bg-primary-500/10 transition-colors">
                             Learn more <ChevronRight size={16} />
                         </Link>
                     </div>
@@ -414,13 +412,13 @@ export default function LandingPage() {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
                         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}>
-                            <span className="inline-block text-xs font-bold uppercase tracking-widest text-violet-700 dark:text-violet-400 mb-2">Live from employers</span>
+                            <span className="inline-block text-xs font-bold uppercase tracking-widest text-primary-700 dark:text-primary-400 mb-2">Live from employers</span>
                             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white">Featured Roles</h2>
                             <p className="text-slate-500 dark:text-slate-400 mt-1">Latest jobs posted by companies on Jobsrow</p>
                         </motion.div>
                         <Link
                             to="/jobs"
-                            className="flex items-center gap-2 text-violet-600 dark:text-violet-400 hover:text-violet-500 dark:hover:text-violet-300 font-bold transition-colors shrink-0"
+                            className="flex items-center gap-2 text-primary-600 dark:text-primary-400 hover:text-primary-500 dark:hover:text-primary-300 font-bold transition-colors shrink-0"
                         >
                             View all jobs <ArrowRight size={16} />
                         </Link>
@@ -436,8 +434,8 @@ export default function LandingPage() {
                             animate={{ opacity: 1 }}
                             className="text-center py-24 bg-white dark:bg-slate-900/30 border border-dashed border-slate-300 dark:border-white/10 rounded-3xl"
                         >
-                            <div className="w-16 h-16 bg-violet-100 dark:bg-violet-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <Briefcase className="w-8 h-8 text-violet-500 dark:text-violet-400" />
+                            <div className="w-16 h-16 bg-primary-100 dark:bg-primary-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <Briefcase className="w-8 h-8 text-primary-500 dark:text-primary-400" />
                             </div>
                             <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">No jobs posted yet</h3>
                             <p className="text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto">
@@ -445,7 +443,7 @@ export default function LandingPage() {
                             </p>
                             <Link
                                 to="/register"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-full hover:shadow-lg hover:shadow-violet-500/30 transition-all"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-600 text-white font-bold rounded-full hover:shadow-lg hover:shadow-primary-500/30 transition-all"
                             >
                                 Post a Job Free <ArrowRight size={16} />
                             </Link>
@@ -471,10 +469,10 @@ export default function LandingPage() {
                             initial={{ opacity: 0, x: -30 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
-                            className="relative p-8 rounded-3xl bg-gradient-to-br from-violet-50 to-indigo-50 dark:from-violet-600/10 dark:to-indigo-600/10 border border-violet-100 dark:border-violet-500/20 overflow-hidden"
+                            className="relative p-8 rounded-3xl bg-gradient-to-br from-primary-50 to-primary-50 dark:from-primary-600/10 dark:to-primary-600/10 border border-primary-100 dark:border-primary-500/20 overflow-hidden"
                         >
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-violet-400/10 rounded-full blur-2xl" />
-                            <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-indigo-600 rounded-2xl flex items-center justify-center mb-6">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary-400/10 rounded-full blur-2xl" />
+                            <div className="w-12 h-12 bg-gradient-to-br from-primary-600 to-primary-600 rounded-2xl flex items-center justify-center mb-6">
                                 <Users size={24} className="text-white" />
                             </div>
                             <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-3">For Candidates</h3>
@@ -486,14 +484,14 @@ export default function LandingPage() {
                                     '1.5 Cr+ job opportunities',
                                 ].map((item) => (
                                     <li key={item} className="flex items-center gap-3 text-slate-600 dark:text-slate-300 text-sm font-medium">
-                                        <CheckCircle2 size={16} className="text-violet-500 dark:text-violet-400 flex-shrink-0" />
+                                        <CheckCircle2 size={16} className="text-primary-500 dark:text-primary-400 flex-shrink-0" />
                                         {item}
                                     </li>
                                 ))}
                             </ul>
                             <Link
                                 to="/register"
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 text-white font-bold rounded-full hover:shadow-lg hover:shadow-violet-500/30 transition-all"
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-primary-600 to-primary-600 text-white font-bold rounded-full hover:shadow-lg hover:shadow-primary-500/30 transition-all"
                             >
                                 Find Your Next Job <ArrowRight size={16} />
                             </Link>
@@ -539,20 +537,20 @@ export default function LandingPage() {
             {/* ════════════════════════════════════════════
                 FINAL CTA BANNER
             ════════════════════════════════════════════ */}
-            <section className="py-20 mx-4 md:mx-8 lg:mx-16 mb-12 rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-blue-700 relative overflow-hidden">
+            <section className="py-20 mx-4 md:mx-8 lg:mx-16 mb-12 rounded-3xl bg-gradient-to-br from-primary-600 via-primary-600 to-blue-700 relative overflow-hidden">
                 <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.15),transparent_60%)]" />
                 <div className="relative z-10 text-center px-4">
                     <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
                         <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4">
                             Ready to Find Your Row?
                         </h2>
-                        <p className="text-violet-200 text-lg mb-10 max-w-xl mx-auto">
+                        <p className="text-primary-200 text-lg mb-10 max-w-xl mx-auto">
                             Join 15,000+ verified professionals who get hired based on what they can do, not just what they say.
                         </p>
                         <div className="flex flex-col sm:flex-row justify-center gap-4">
                             <Link
                                 to="/register"
-                                className="px-8 py-4 bg-white text-violet-700 rounded-full font-bold text-lg hover:bg-violet-50 hover:scale-105 transition-all shadow-xl"
+                                className="px-8 py-4 bg-white text-primary-700 rounded-full font-bold text-lg hover:bg-primary-50 hover:scale-105 transition-all shadow-xl"
                             >
                                 Get Started Free
                             </Link>

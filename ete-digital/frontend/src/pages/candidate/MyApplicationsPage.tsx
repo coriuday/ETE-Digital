@@ -8,6 +8,7 @@ import ApplicationProgressTimeline from '../../components/applications/Applicati
 import { derivePipelineProgress, stageLabel } from '../../constants/applicationPipeline';
 import { api } from '../../api/client';
 import { FileText, ArrowRight, Briefcase } from 'lucide-react';
+import { formatJobSalary } from '../../utils/salary';
 
 interface Application {
     id: string; job_id: string; candidate_id: string; cover_letter: string | null;
@@ -23,19 +24,12 @@ interface EnrichedApplication extends Application { job?: JobInfo; }
 const STATUS_CONFIG: Record<string, { color: string; label: string }> = {
     pending: { color: 'bg-amber-100 text-amber-700', label: 'Applied' },
     reviewed: { color: 'bg-blue-100 text-blue-700', label: 'Reviewed' },
-    shortlisted: { color: 'bg-violet-100 text-violet-700', label: 'Shortlisted' },
+    shortlisted: { color: 'bg-primary-100 text-primary-700', label: 'Shortlisted' },
     rejected: { color: 'bg-red-100 text-red-600', label: 'Rejected' },
     hired: { color: 'bg-emerald-100 text-emerald-700', label: 'Hired' },
     withdrawn: { color: 'bg-gray-100 text-gray-500', label: 'Withdrawn' },
 };
 
-function formatSalary(min: number | null, max: number | null, currency: string) {
-    if (!min && !max) return null;
-    const fmt = (n: number) => currency === 'INR' ? `₹${(n / 100000).toFixed(1)}L` : `$${(n / 1000).toFixed(0)}K`;
-    if (min && max) return `${fmt(min)} – ${fmt(max)}`;
-    if (min) return `${fmt(min)}+`;
-    return `Up to ${fmt(max!)}`;
-}
 
 export default function MyApplicationsPage() {
     const [applications, setApplications] = useState<EnrichedApplication[]>([]);
@@ -120,7 +114,7 @@ export default function MyApplicationsPage() {
                         {filtered.map((app) => {
                             const cfg = STATUS_CONFIG[app.status] ?? STATUS_CONFIG.pending;
                             const progress = app.pipeline_progress ?? derivePipelineProgress(app.status);
-                            const salary = app.job ? formatSalary(app.job.salary_min, app.job.salary_max, app.job.salary_currency) : null;
+                            const salary = app.job ? formatJobSalary(app.job.salary_min, app.job.salary_max, app.job.salary_currency) : null;
                             return (
                                 <div key={app.id} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all">
                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

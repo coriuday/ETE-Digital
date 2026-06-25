@@ -41,12 +41,12 @@ export default {
                 mono: ['var(--font-mono)', 'monospace'],
             },
             boxShadow: {
-                'glass':      '0 4px 24px 0 rgba(109, 40, 217, 0.08)',
+                'glass':      '0 4px 24px 0 rgba(2, 94, 187, 0.08)',
                 'card':       '0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05)',
                 'card-hover': '0 4px 16px 0 rgba(0, 0, 0, 0.10), 0 2px 6px -2px rgba(0, 0, 0, 0.08)',
                 'dropdown':   '0 8px 24px 0 rgba(0, 0, 0, 0.12), 0 4px 8px -4px rgba(0, 0, 0, 0.08)',
-                'violet':     '0 0 0 3px rgba(124, 58, 237, 0.2)',
-                'focus':      '0 0 0 2px rgba(124, 58, 237, 0.4)',
+                'violet':     '0 0 0 3px rgba(2, 94, 187, 0.2)',
+                'focus':      '0 0 0 2px rgba(2, 94, 187, 0.4)',
             },
             backdropBlur: {
                 'glass': '10px',

@@ -13,6 +13,7 @@ import {
     Linkedin, Twitter, Github, Building2,
 } from 'lucide-react';
 import api from '../../api/client';
+import { formatJobSalary } from '../../utils/salary';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface CompanyData {
@@ -59,14 +60,6 @@ const JOB_TYPE_LABEL: Record<string, string> = {
     internship: 'Internship',
 };
 
-function formatSalary(min: number | null, max: number | null, currency = 'INR') {
-    if (!min && !max) return null;
-    const fmt = (n: number) =>
-        n >= 100000 ? `${(n / 100000).toFixed(1)}L` : `${(n / 1000).toFixed(0)}K`;
-    if (min && max) return `${currency} ${fmt(min)}–${fmt(max)}`;
-    if (min) return `${currency} ${fmt(min)}+`;
-    return `Up to ${currency} ${fmt(max!)}`;
-}
 
 function SocialIcon({ name }: { name: string }) {
     if (name === 'linkedin') return <Linkedin size={16} />;
@@ -77,22 +70,22 @@ function SocialIcon({ name }: { name: string }) {
 
 // ── Job Card ───────────────────────────────────────────────────────────────────
 function JobCard({ job, companyName }: { job: CompanyJob; companyName: string }) {
-    const salary = formatSalary(job.salary_min, job.salary_max, job.salary_currency);
+    const salary = formatJobSalary(job.salary_min, job.salary_max, job.salary_currency);
     return (
         <Link
             to={`/jobs/${job.id}`}
-            className="group block bg-white border border-gray-100 rounded-2xl p-5 hover:border-violet-200 hover:shadow-md transition-all duration-200"
+            className="group block bg-white border border-gray-100 rounded-2xl p-5 hover:border-primary-200 hover:shadow-md transition-all duration-200"
         >
             <div className="flex items-start justify-between gap-3 mb-3">
                 <div>
-                    <h3 className="font-bold text-gray-900 group-hover:text-violet-600 transition-colors">{job.title}</h3>
+                    <h3 className="font-bold text-gray-900 group-hover:text-primary-600 transition-colors">{job.title}</h3>
                     <p className="text-sm text-gray-500 mt-0.5">
                         {companyName}
                         {job.location && <> · {job.location}</>}
                         {job.remote_ok && <> · <span className="text-emerald-600 font-medium">Remote OK</span></>}
                     </p>
                 </div>
-                <ArrowRight size={16} className="text-gray-300 group-hover:text-violet-500 flex-shrink-0 mt-1 transition-colors" />
+                <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-500 flex-shrink-0 mt-1 transition-colors" />
             </div>
 
             <div className="flex flex-wrap gap-2 mb-3">
@@ -100,7 +93,7 @@ function JobCard({ job, companyName }: { job: CompanyJob; companyName: string })
                     {JOB_TYPE_LABEL[job.job_type] ?? job.job_type}
                 </span>
                 {job.has_tryout && (
-                    <span className="px-2.5 py-0.5 text-xs font-bold bg-violet-50 text-violet-700 border border-violet-100 rounded-full">
+                    <span className="px-2.5 py-0.5 text-xs font-bold bg-primary-50 text-primary-700 border border-primary-100 rounded-full">
                         Paid Tryout
                     </span>
                 )}
@@ -177,7 +170,7 @@ export default function CompanyPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <Loader2 size={28} className="animate-spin text-violet-600" />
+                <Loader2 size={28} className="animate-spin text-primary-600" />
             </div>
         );
     }
@@ -187,7 +180,7 @@ export default function CompanyPage() {
             <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-gray-50">
                 <Building2 size={40} className="text-gray-300" />
                 <p className="text-gray-500 font-medium">{error ?? 'Company not found.'}</p>
-                <Link to="/jobs" className="text-violet-600 underline text-sm">Browse all jobs</Link>
+                <Link to="/jobs" className="text-primary-600 underline text-sm">Browse all jobs</Link>
             </div>
         );
     }
@@ -237,7 +230,7 @@ export default function CompanyPage() {
                             <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900">{company.name}</h1>
                             {company.is_verified && (
                                 <span title="Verified company">
-                                    <CheckCircle2 size={20} className="text-violet-600" />
+                                    <CheckCircle2 size={20} className="text-primary-600" />
                                 </span>
                             )}
                         </div>
@@ -250,7 +243,7 @@ export default function CompanyPage() {
                             {company.company_size && <span className="flex items-center gap-1"><Users size={12} /> {company.company_size} employees</span>}
                             {company.founded_year && <span className="flex items-center gap-1"><Calendar size={12} /> Founded {company.founded_year}</span>}
                             {company.website && (
-                                <a href={company.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-violet-600 hover:underline">
+                                <a href={company.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-primary-600 hover:underline">
                                     <Globe size={12} /> Website <ExternalLink size={10} />
                                 </a>
                             )}
@@ -266,7 +259,7 @@ export default function CompanyPage() {
                                     href={url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="w-9 h-9 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-500 hover:text-violet-600 hover:border-violet-200 transition-colors"
+                                    className="w-9 h-9 rounded-xl border border-gray-200 bg-white flex items-center justify-center text-gray-500 hover:text-primary-600 hover:border-primary-200 transition-colors"
                                     title={key}
                                 >
                                     <SocialIcon name={key} />
@@ -299,13 +292,13 @@ export default function CompanyPage() {
 
                             {jobsLoading ? (
                                 <div className="flex justify-center py-8">
-                                    <Loader2 size={24} className="animate-spin text-violet-500" />
+                                    <Loader2 size={24} className="animate-spin text-primary-500" />
                                 </div>
                             ) : jobs.length === 0 ? (
                                 <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
                                     <Briefcase size={32} className="text-gray-200 mx-auto mb-3" />
                                     <p className="text-gray-400 text-sm">No open positions right now.</p>
-                                    <Link to="/jobs" className="text-violet-600 text-sm underline mt-2 block">Browse all jobs</Link>
+                                    <Link to="/jobs" className="text-primary-600 text-sm underline mt-2 block">Browse all jobs</Link>
                                 </div>
                             ) : (
                                 <div className="space-y-3">
@@ -321,7 +314,7 @@ export default function CompanyPage() {
                                     <button
                                         onClick={() => loadPage(page - 1)}
                                         disabled={page === 1 || jobsLoading}
-                                        className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 bg-white text-gray-600 disabled:opacity-40 hover:border-violet-300 transition-colors"
+                                        className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 bg-white text-gray-600 disabled:opacity-40 hover:border-primary-300 transition-colors"
                                     >
                                         ← Prev
                                     </button>
@@ -331,7 +324,7 @@ export default function CompanyPage() {
                                     <button
                                         onClick={() => loadPage(page + 1)}
                                         disabled={page === totalPages || jobsLoading}
-                                        className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 bg-white text-gray-600 disabled:opacity-40 hover:border-violet-300 transition-colors"
+                                        className="px-4 py-2 text-sm font-semibold rounded-xl border border-gray-200 bg-white text-gray-600 disabled:opacity-40 hover:border-primary-300 transition-colors"
                                     >
                                         Next →
                                     </button>
@@ -348,7 +341,7 @@ export default function CompanyPage() {
                                 <h3 className="font-bold text-gray-900 mb-3 text-sm">Culture</h3>
                                 <div className="flex flex-wrap gap-2">
                                     {company.culture_tags.map(tag => (
-                                        <span key={tag} className="px-3 py-1 text-xs font-semibold bg-violet-50 text-violet-700 rounded-full border border-violet-100">
+                                        <span key={tag} className="px-3 py-1 text-xs font-semibold bg-primary-50 text-primary-700 rounded-full border border-primary-100">
                                             {tag}
                                         </span>
                                     ))}

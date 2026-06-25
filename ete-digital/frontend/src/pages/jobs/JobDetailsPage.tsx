@@ -9,6 +9,7 @@ import { useAuthStore } from '../../stores/authStore';
 import AppShell from '../../components/layout/AppShell';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import { toastSuccess, toastError } from '../../utils/toast';
+import { formatJobSalary } from '../../utils/salary';
 import {
     ArrowLeft, MapPin, Clock, Globe, Eye, Users,
     CheckCircle2, Star, Loader2, Building2, CalendarDays, Zap, Code2,
@@ -128,10 +129,16 @@ export default function JobDetailsPage() {
                 {/* Hero */}
                 <div className="bg-white border-b border-gray-200 pt-6 pb-10">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <Link to="/jobs" className="inline-flex items-center gap-2 text-gray-500 hover:text-primary-600 text-sm font-semibold mb-6 transition-colors group">
-                            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-                            Back to Search
-                        </Link>
+                        <div className="flex items-center gap-4 mb-6 text-sm font-semibold">
+                            <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-primary-600 transition-colors group">
+                                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                                Home
+                            </Link>
+                            <span className="text-gray-300">·</span>
+                            <Link to="/jobs" className="text-gray-500 hover:text-primary-600 transition-colors">
+                                Back to Search
+                            </Link>
+                        </div>
 
                         <div className="flex flex-col md:flex-row items-start gap-6">
                             <div className="w-16 h-16 md:w-20 md:h-20 bg-primary-50 border border-primary-100 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -147,7 +154,7 @@ export default function JobDetailsPage() {
                                         </span>
                                     )}
                                     {job.has_tryout && (
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-violet-50 border border-violet-200 text-violet-700 text-xs font-bold rounded-full">
+                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary-50 border border-primary-200 text-primary-700 text-xs font-bold rounded-full">
                                             <Zap size={10} /> Tryout
                                         </span>
                                     )}
@@ -211,15 +218,13 @@ export default function JobDetailsPage() {
                         <div className="sticky top-24 space-y-4">
                             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                                 <div className="mb-6">
-                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Compensation</p>
-                                    {job.salary_min ? (
+                                    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Salary</p>
+                                    {job.salary_min != null || job.salary_max != null ? (
                                         <p className="text-2xl font-extrabold text-gray-900">
-                                            ${job.salary_min.toLocaleString()}
-                                            {job.salary_max && <span className="text-gray-400 mx-1">–</span>}
-                                            {job.salary_max && `$${job.salary_max.toLocaleString()}`}
+                                            {formatJobSalary(job.salary_min, job.salary_max, job.salary_currency)}
                                         </p>
                                     ) : (
-                                        <p className="text-xl font-bold text-gray-700">Competitive</p>
+                                        <p className="text-xl font-bold text-gray-700">Competitive salary</p>
                                     )}
                                 </div>
 

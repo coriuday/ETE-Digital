@@ -34,7 +34,7 @@ const validatePasswordStrength = (password: string) => {
 /* brandPoints + stats — used in left brand panel (temporarily hidden)
 const brandPoints = [
     { icon: <Zap size={16} className="text-amber-300" />, text: 'Complete Your Profile in Minutes' },
-    { icon: <Briefcase size={16} className="text-violet-300" />, text: 'Apply to Premium MNC Jobs' },
+    { icon: <Briefcase size={16} className="text-primary-300" />, text: 'Apply to Premium MNC Jobs' },
     { icon: <CheckCircle size={16} className="text-emerald-400" />, text: 'Get Paid for Real Tryouts' },
 ];
 
@@ -45,9 +45,20 @@ const stats = [
 ];
 */
 
+const FREE_EMAIL_DOMAINS = new Set([
+    'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.co.in', 'hotmail.com', 'outlook.com', 'icloud.com',
+    'protonmail.com', 'proton.me', 'rediffmail.com', 'ymail.com', 'live.com', 'msn.com', 'aol.com', 'zoho.com',
+    'mail.com', 'gmx.com', 'me.com',
+]);
+
+function isFreeEmail(email: string): boolean {
+    const domain = email.split('@')[1]?.toLowerCase() ?? '';
+    return FREE_EMAIL_DOMAINS.has(domain);
+}
+
 export default function RegisterPage() {
     const navigate = useNavigate();
-    const { register, error, isLoading, clearError, registrationMessage } = useAuthStore();
+    const { register, error, isLoading, clearError } = useAuthStore();
 
 
     const [formData, setFormData] = useState({
@@ -76,6 +87,10 @@ export default function RegisterPage() {
             setLocalError('Password does not meet all security requirements');
             return;
         }
+        if (formData.role === 'employer' && isFreeEmail(formData.email)) {
+            setLocalError('Employer accounts require a corporate work email (not Gmail, Yahoo, etc.).');
+            return;
+        }
         try {
             await register(formData.email, formData.password, formData.fullName, formData.role);
             const msg = useAuthStore.getState().registrationMessage;
@@ -97,7 +112,7 @@ export default function RegisterPage() {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    const inputClass = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10`;
+    const inputClass = `w-full px-4 py-3 rounded-xl text-sm outline-none transition-all placeholder:text-gray-400 bg-white text-gray-900 border border-gray-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/10`;
 
     const labelClass = `block text-sm font-semibold mb-1.5 text-gray-700`;
 
@@ -130,14 +145,14 @@ export default function RegisterPage() {
                     </Link>
 
                     <div className="py-6">
-                        <p className="text-xs font-semibold uppercase tracking-widest text-violet-400 mb-4">Join 50,000+ Professionals</p>
+                        <p className="text-xs font-semibold uppercase tracking-widest text-primary-400 mb-4">Join 50,000+ Professionals</p>
                         <h1 className="text-4xl font-bold text-white leading-tight mb-5"
                             style={{ fontFamily: "'Noto Serif', Georgia, serif" }}>
                             Start Proving<br />
                             <span style={{ backgroundImage: 'linear-gradient(90deg, #a78bfa, #6366f1)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Your Skills</span><br />
                             Today.
                         </h1>
-                        <p className="text-violet-200 text-base leading-relaxed max-w-xs mb-8">
+                        <p className="text-primary-200 text-base leading-relaxed max-w-xs mb-8">
                             India's premier platform where earning your next role means proving it — not just claiming it.
                         </p>
 
@@ -158,7 +173,7 @@ export default function RegisterPage() {
                                     className="rounded-xl p-3 text-center"
                                     style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                                     <p className="text-white font-bold text-lg">{s.value}</p>
-                                    <p className="text-violet-300 text-xs mt-0.5">{s.label}</p>
+                                    <p className="text-primary-300 text-xs mt-0.5">{s.label}</p>
                                 </div>
                             ))}
                         </div>
@@ -166,7 +181,7 @@ export default function RegisterPage() {
 
                     <div className="rounded-2xl p-5"
                         style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(20px)' }}>
-                        <p className="text-violet-100 text-sm italic leading-relaxed mb-4">
+                        <p className="text-primary-100 text-sm italic leading-relaxed mb-4">
                             "I landed my first MNC role in 3 weeks — no resume required. Jobsrow's tryout system changed everything for me."
                         </p>
                         <div className="flex items-center gap-3">
@@ -174,7 +189,7 @@ export default function RegisterPage() {
                                 style={{ background: 'linear-gradient(135deg, #7c4dff, #4f46e5)' }}>PM</div>
                             <div>
                                 <p className="text-white text-xs font-semibold">Priya Mehta</p>
-                                <p className="text-violet-300 text-xs">Software Engineer, TCS Digital</p>
+                                <p className="text-primary-300 text-xs">Software Engineer, TCS Digital</p>
                             </div>
                         </div>
                     </div>
@@ -232,8 +247,8 @@ export default function RegisterPage() {
                                         onClick={() => setFormData({ ...formData, role: r })}
                                         className={`flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold transition-all border
                                             ${formData.role === r
-                                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700'
-                                                : 'bg-white border-gray-200 text-gray-600 hover:border-indigo-300'}`}>
+                                                ? 'bg-primary-50 border-primary-500 text-primary-700'
+                                                : 'bg-white border-gray-200 text-gray-600 hover:border-primary-300'}`}>
                                         {r === 'candidate' ? <Users size={15} /> : <Briefcase size={15} />}
                                         {r === 'candidate' ? 'Job Seeker' : 'HR Manager'}
                                     </button>
@@ -241,7 +256,7 @@ export default function RegisterPage() {
                             </div>
                             {formData.role === 'employer' && (
                                 <p className="text-xs text-gray-500 mt-2">
-                                    Use your work email for instant domain verification, or a personal email for admin-reviewed setup.
+                                    Use your corporate work email (e.g. hr@yourcompany.com). Personal emails are not accepted for HR accounts.
                                 </p>
                             )}
                         </div>
@@ -299,9 +314,9 @@ export default function RegisterPage() {
 
                         <p className="text-center text-xs text-gray-400">
                             By signing up, you agree to our{' '}
-                            <Link to="/terms" className="hover:underline text-indigo-600">Terms</Link>
+                            <Link to="/terms" className="hover:underline text-primary-600">Terms</Link>
                             {' '}&amp;{' '}
-                            <Link to="/privacy-policy" className="hover:underline text-indigo-600">Privacy Policy</Link>
+                            <Link to="/privacy-policy" className="hover:underline text-primary-600">Privacy Policy</Link>
                         </p>
                     </form>
 
@@ -325,7 +340,7 @@ export default function RegisterPage() {
                     <p className="text-center text-sm text-gray-500">
                         Already have an account?{' '}
                         <Link to="/login"
-                            className="font-semibold hover:underline text-indigo-600">
+                            className="font-semibold hover:underline text-primary-600">
                             Sign in
                         </Link>
                     </p>

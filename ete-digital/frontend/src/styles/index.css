@@ -1,6 +1,6 @@
 /**
  * Jobsrow — Premium Design System
- * Violet / Zinc enterprise light theme
+ * JobsRow blue / Zinc enterprise light theme
  * Inspired by Linear · Stripe · Vercel
  * Supports light/dark modes with WCAG AA contrast ratios
  */
@@ -13,17 +13,17 @@
 
 @layer base {
   :root {
-    /* ── Brand: Violet spectrum ──────────────────────────────── */
-    --color-primary-50:  263 87% 97%;   /* #F5F3FF */
-    --color-primary-100: 263 85% 93%;   /* #EDE9FE */
-    --color-primary-200: 263 83% 86%;   /* #DDD6FE */
-    --color-primary-300: 263 79% 75%;   /* #C4B5FD */
-    --color-primary-400: 263 75% 64%;   /* #A78BFA */
-    --color-primary-500: 263 72% 57%;   /* #8B5CF6  — hover state  */
-    --color-primary-600: 262 83% 58%;   /* #7C3AED  — CTA default  */
-    --color-primary-700: 263 70% 50%;   /* #6D28D9  — pressed      */
-    --color-primary-800: 263 69% 42%;   /* #5B21B6 */
-    --color-primary-900: 264 67% 35%;   /* #4C1D95 */
+    /* ── Brand: JobsRow blue (#025ebb) ───────────────────────── */
+    --color-primary-50:  210 100% 97%;  /* #F0F7FF */
+    --color-primary-100: 210  96% 93%;  /* #DBEAFE */
+    --color-primary-200: 210  94% 85%;  /* #BFDBFE */
+    --color-primary-300: 210  92% 72%;  /* #93C5FD */
+    --color-primary-400: 210  90% 58%;  /* #3B82F6 */
+    --color-primary-500: 210  95% 48%;  /* #0369C7 */
+    --color-primary-600: 210  98% 37%;  /* #025EBB — logo CTA */
+    --color-primary-700: 210  98% 30%;  /* #024A96 */
+    --color-primary-800: 210  95% 24%;  /* #023A78 */
+    --color-primary-900: 210  90% 18%;  /* #012D5C */
 
     /* ── Semantic: precise Tailwind v3 values ───────────────── */
     --color-success: 163 94% 24%;       /* Emerald-700 #047857 */
@@ -55,8 +55,8 @@
     --color-text-tertiary:   240  4%  46%; /* Zinc-500  #71717A          */
 
     /* Lighten brand slightly in dark for legibility */
-    --color-primary-500: 263 72% 68%;
-    --color-primary-600: 262 83% 72%;
+    --color-primary-500: 210 95% 58%;
+    --color-primary-600: 210 98% 65%;
   }
 
   /* Base styles */
