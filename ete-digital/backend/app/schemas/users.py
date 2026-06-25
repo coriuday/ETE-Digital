@@ -75,6 +75,12 @@ class EmailVerificationRequest(BaseModel):
     token: str
 
 
+class ResendVerificationRequest(BaseModel):
+    """Resend email verification link"""
+
+    email: EmailStr
+
+
 class PasswordResetRequest(BaseModel):
     """Password reset request"""
 

@@ -113,3 +113,74 @@ async def test_forgot_password_always_succeeds(client: AsyncClient):
     """Forgot password endpoint always returns 200 to prevent user enumeration."""
     response = await client.post("/api/auth/forgot-password", json={"email": "doesnotexist@example.com"})
     assert response.status_code == 200
+
+
+async def test_resend_verification_always_returns_generic_message(client: AsyncClient):
+    """Resend verification must not reveal whether the email exists."""
+    response = await client.post(
+        "/api/auth/resend-verification",
+        json={"email": "doesnotexist@example.com"},
+    )
+    assert response.status_code == 200, response.json()
+    assert "verification link has been sent" in response.json()["message"].lower()
+
+
+async def test_resend_verification_for_unverified_user(client: AsyncClient, _db, monkeypatch):
+    """Resend verification regenerates token for unverified users."""
+    from datetime import datetime, timedelta, timezone
+    from app.models.users import User, UserRole
+    from app.core.security import hash_password
+
+    email = unique_email("unverified")
+    user = User(
+        email=email,
+        password_hash=hash_password("SecurePass1!"),
+        role=UserRole.CANDIDATE,
+        is_active=True,
+        is_verified=False,
+        verification_token="old-token",
+        verification_token_expires=datetime.now(timezone.utc) + timedelta(hours=1),
+    )
+    _db.add(user)
+    await _db.commit()
+
+    sent = []
+
+    def fake_send(to_email, verification_url):
+        sent.append((to_email, verification_url))
+        return True
+
+    monkeypatch.setattr("app.services.auth.email_service.send_verification_email", fake_send)
+
+    response = await client.post("/api/auth/resend-verification", json={"email": email})
+    assert response.status_code == 200
+    assert len(sent) == 1
+    assert sent[0][0] == email
+    assert "token=" in sent[0][1]
+
+
+async def test_login_blocks_unverified_in_production(client: AsyncClient, _db, monkeypatch):
+    """Production login returns 403 when email is not verified."""
+    from app.models.users import User, UserRole
+    from app.core.security import hash_password
+    from app.core.config import settings
+
+    email = unique_email("produnverified")
+    user = User(
+        email=email,
+        password_hash=hash_password("SecurePass1!"),
+        role=UserRole.CANDIDATE,
+        is_active=True,
+        is_verified=False,
+    )
+    _db.add(user)
+    await _db.commit()
+
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+
+    response = await client.post(
+        "/api/auth/login",
+        json={"email": email, "password": "SecurePass1!"},
+    )
+    assert response.status_code == 403
+    assert "email not verified" in response.json()["detail"].lower()

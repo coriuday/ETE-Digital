@@ -47,7 +47,7 @@ const stats = [
 
 export default function RegisterPage() {
     const navigate = useNavigate();
-    const { register, error, isLoading, clearError } = useAuthStore();
+    const { register, error, isLoading, clearError, registrationMessage } = useAuthStore();
 
 
     const [formData, setFormData] = useState({
@@ -78,11 +78,14 @@ export default function RegisterPage() {
         }
         try {
             await register(formData.email, formData.password, formData.fullName, formData.role);
+            const msg = useAuthStore.getState().registrationMessage;
             navigate('/login', {
                 state: {
-                    message: formData.role === 'employer'
-                        ? 'Account created! Verify your email, then complete company setup.'
-                        : 'Account created! Please check your email to verify.',
+                    message: msg ?? (
+                        formData.role === 'employer'
+                            ? 'Account created! Verify your email, then complete company setup.'
+                            : 'Account created! Please check your email to verify.'
+                    ),
                 },
             });
         } catch (_error) {

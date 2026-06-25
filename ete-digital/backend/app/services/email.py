@@ -131,8 +131,13 @@ class EmailService:
         html_content: str,
         text_content: Optional[str] = None,
     ) -> bool:
-        """Send an email via configured provider. Falls back to console log if all fail."""
+        """Send an email via configured provider. Console fallback only in non-production."""
+        is_prod = settings.ENVIRONMENT == "production"
+
         if not self.enabled:
+            if is_prod:
+                logger.error("EMAIL_ENABLED=False in production — cannot send to %s", to_email)
+                return False
             self._console_fallback(to_email, subject, html_content)
             return True
 
@@ -149,9 +154,12 @@ class EmailService:
             if success:
                 return True
 
-        # Console fallback
+        if is_prod:
+            logger.error("All email providers failed in production for %s: %s", to_email, subject)
+            return False
+
         self._console_fallback(to_email, subject, html_content)
-        return True  # Always return True — console log is not a failure
+        return True
 
     def send_verification_email(self, to_email: str, verification_url: str) -> bool:
         """Send email verification email."""

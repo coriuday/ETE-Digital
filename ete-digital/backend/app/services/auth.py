@@ -8,6 +8,7 @@ from sqlalchemy import select, update
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Tuple
 import asyncio
+import logging
 import secrets
 import uuid
 
@@ -24,6 +25,8 @@ from app.core.config import settings
 from app.services.email import email_service
 from fastapi import HTTPException, status
 
+logger = logging.getLogger(__name__)
+
 
 class AuthService:
     """Authentication service"""
@@ -35,8 +38,8 @@ class AuthService:
         password: str,
         role: UserRole,
         full_name: Optional[str] = None,
-    ) -> User:
-        """Register a new user"""
+    ) -> Tuple[User, bool]:
+        """Register a new user. Returns (user, verification_email_sent)."""
         # ADMIN role cannot be self-registered — must be created via DB / seed script
         if role == UserRole.ADMIN:
             raise HTTPException(
@@ -93,11 +96,40 @@ class AuthService:
         await db.refresh(user)
 
         # Send verification email in production
+        email_sent = True
         if not is_dev:
             verification_url = f"{settings.FRONTEND_URL}/verify-email?token={user.verification_token}"
-            await asyncio.to_thread(email_service.send_verification_email, user.email, verification_url)
+            email_sent = await asyncio.to_thread(email_service.send_verification_email, user.email, verification_url)
+            if not email_sent:
+                logger.error("Failed to send verification email to %s", user.email)
 
-        return user
+        return user, email_sent
+
+    async def resend_verification_email(self, db: AsyncSession, email: str) -> bool:
+        """
+        Regenerate verification token and resend email for unverified users.
+        Returns True if an email was sent; False if user not found, already verified, or send failed.
+        Caller should always return a generic message to avoid email enumeration.
+        """
+        result = await db.execute(select(User).where(User.email == email))
+        user = result.scalar_one_or_none()
+
+        if not user or not user.is_active or user.is_verified:
+            return False
+
+        if user.password_hash == "OAUTH_NO_PASSWORD":
+            return False
+
+        user.verification_token = secrets.token_urlsafe(32)
+        user.verification_token_expires = datetime.now(timezone.utc) + timedelta(hours=24)
+        await db.commit()
+        await db.refresh(user)
+
+        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={user.verification_token}"
+        sent = await asyncio.to_thread(email_service.send_verification_email, user.email, verification_url)
+        if not sent:
+            logger.error("Failed to resend verification email to %s", user.email)
+        return sent
 
     async def verify_email(self, db: AsyncSession, token: str) -> User:
         """Verify user email with token"""

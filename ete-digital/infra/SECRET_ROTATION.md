@@ -107,6 +107,8 @@ curl -sf https://jobsrow.com/api/jobs/search?page=1
 # Test login, OAuth, file upload (presigned URL), Stripe webhook in staging first
 ```
 
+See also [EMAIL_SETUP.md](EMAIL_SETUP.md) for Resend domain verification before requiring email login in production.
+
 ---
 
 ## If secrets were in git history

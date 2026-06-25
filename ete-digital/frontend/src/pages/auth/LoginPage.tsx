@@ -2,11 +2,12 @@
  * LoginPage — Premium split-screen redesign
  * Design system: "Indigo Ether" (Stitch) — deep indigo/violet palette, glassmorphism, Inter + Noto Serif
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthLayoutHeader from '../../components/layout/AuthLayoutHeader';
 import { useAuthStore } from '../../stores/authStore';
-import { ShieldAlert, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { authApi } from '../../api/auth';
+import { ShieldAlert, Loader2, ArrowRight, Eye, EyeOff, Mail } from 'lucide-react';
 
 const BACKEND_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
@@ -34,7 +35,16 @@ export default function LoginPage() {
     const location = useLocation();
     const { login, completeTwoFactorLogin, requiresTwoFactor } = useAuthStore();
 
-    const returnTo = (location.state as { returnTo?: string } | null)?.returnTo;
+    const returnTo = (location.state as { returnTo?: string; message?: string } | null)?.returnTo;
+    const registerMessage = (location.state as { message?: string } | null)?.message;
+
+    const [successMessage, setSuccessMessage] = useState(registerMessage ?? '');
+
+    useEffect(() => {
+        if (registerMessage) {
+            setSuccessMessage(registerMessage);
+        }
+    }, [registerMessage]);
 
     const navigateAfterLogin = () => {
         if (returnTo) {
@@ -51,10 +61,15 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [totpCode, setTotpCode] = useState('');
+    const [isUnverifiedError, setIsUnverifiedError] = useState(false);
+    const [resendLoading, setResendLoading] = useState(false);
+    const [resendMessage, setResendMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setIsUnverifiedError(false);
+        setResendMessage('');
         setLoading(true);
         try {
             await login(email, password);
@@ -64,9 +79,30 @@ export default function LoginPage() {
                 navigateAfterLogin();
             }
         } catch (err: any) {
-            setError(err?.response?.data?.detail ?? 'Invalid email or password. Please try again.');
+            const detail = err?.response?.data?.detail ?? 'Invalid email or password. Please try again.';
+            setError(detail);
+            setIsUnverifiedError(
+                typeof detail === 'string' && detail.toLowerCase().includes('email not verified'),
+            );
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!email.trim()) {
+            setResendMessage('Enter your email address above, then try again.');
+            return;
+        }
+        setResendLoading(true);
+        setResendMessage('');
+        try {
+            const res = await authApi.resendVerification(email.trim());
+            setResendMessage(res.message);
+        } catch {
+            setResendMessage('Could not send verification email. Please try again in a few minutes.');
+        } finally {
+            setResendLoading(false);
         }
     };
 
@@ -237,10 +273,40 @@ export default function LoginPage() {
                                 Sign in to continue your journey on Jobsrow
                             </p>
 
+                            {successMessage && (
+                                <div className="mb-6 px-4 py-3 rounded-xl text-sm border bg-emerald-50 border-emerald-200 text-emerald-800">
+                                    {successMessage}
+                                </div>
+                            )}
+
                             {/* Error banner */}
                             {error && (
-                                <div className="mb-6 px-4 py-3 rounded-xl text-sm border bg-red-50 border-red-200 text-red-700">
-                                    {error}
+                                <div className={`mb-6 px-4 py-3 rounded-xl text-sm border ${
+                                    isUnverifiedError
+                                        ? 'bg-amber-50 border-amber-200 text-amber-900'
+                                        : 'bg-red-50 border-red-200 text-red-700'
+                                }`}>
+                                    <p>{error}</p>
+                                    {isUnverifiedError && (
+                                        <div className="mt-3 space-y-2">
+                                            <p className="text-xs text-amber-800">
+                                                Check your spam folder. If you never received the email, request a new link below.
+                                            </p>
+                                            <button
+                                                type="button"
+                                                onClick={handleResendVerification}
+                                                disabled={resendLoading || !email.trim()}
+                                                className="inline-flex items-center gap-2 text-xs font-semibold text-indigo-700 hover:text-indigo-900 disabled:opacity-50"
+                                            >
+                                                {resendLoading
+                                                    ? <><Loader2 size={14} className="animate-spin" /> Sending…</>
+                                                    : <><Mail size={14} /> Resend verification email</>}
+                                            </button>
+                                            {resendMessage && (
+                                                <p className="text-xs text-amber-800">{resendMessage}</p>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 

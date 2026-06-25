@@ -27,6 +27,8 @@ interface AuthState {
     registrationEmail: string | null;
     /** True when the backend requires email verification after registration */
     registrationRequiresVerification: boolean;
+    /** Server message after registration (includes email-send failure hints) */
+    registrationMessage: string | null;
 
     // Actions
     login: (email: string, password: string) => Promise<void>;
@@ -56,6 +58,7 @@ export const useAuthStore = create<AuthState>()(
             partialToken: null,
             registrationEmail: null,
             registrationRequiresVerification: false,
+            registrationMessage: null,
 
             setTokens: (accessToken: string, refreshToken?: string) => {
                 const updates: Partial<AuthState> = { accessToken };
@@ -132,19 +135,25 @@ export const useAuthStore = create<AuthState>()(
             },
 
             register: async (email: string, password: string, fullName: string, role: 'candidate' | 'employer') => {
-                set({ isLoading: true, error: null, registrationEmail: null, registrationRequiresVerification: false });
+                set({ isLoading: true, error: null, registrationEmail: null, registrationRequiresVerification: false, registrationMessage: null });
                 try {
                     const response = await authApi.register({
                         email,
                         password,
                         full_name: fullName,
                         role,
-                    }) as { message: string; email: string; requires_verification: boolean };
+                    }) as {
+                        message: string;
+                        email: string;
+                        requires_verification: boolean;
+                        verification_email_sent?: boolean;
+                    };
 
                     set({
                         isLoading: false,
                         registrationEmail: response.email ?? email,
                         registrationRequiresVerification: response.requires_verification ?? true,
+                        registrationMessage: response.message,
                     });
                 } catch (error: any) {
                     const message = error.response?.data?.detail || 'Registration failed';

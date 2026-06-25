@@ -14,6 +14,7 @@ from app.schemas.users import (
     LoginResponse,
     RefreshTokenRequest,
     EmailVerificationRequest,
+    ResendVerificationRequest,
     PasswordResetRequest,
     PasswordResetConfirm,
     UserRegister,
@@ -41,7 +42,7 @@ async def register(request: Request, user_data: UserRegister, db: AsyncSession =
     leaking sensitive fields. In production, email verification is required
     before the user can log in.
     """
-    user = await auth_service.register_user(
+    user, email_sent = await auth_service.register_user(
         db=db,
         email=user_data.email,
         password=user_data.password,
@@ -51,16 +52,23 @@ async def register(request: Request, user_data: UserRegister, db: AsyncSession =
 
     requires_verification = not user.is_verified  # True in production, False in dev
 
+    if requires_verification and not email_sent:
+        message = (
+            "Registration successful, but we could not send the verification email. "
+            "Use 'Resend verification email' on the login page or contact support."
+        )
+    elif requires_verification:
+        message = "Registration successful. Please check your email to verify your account."
+    else:
+        message = "Registration successful. You can now log in."
+
     return {
-        "message": (
-            "Registration successful. Please check your email to verify your account."
-            if requires_verification
-            else "Registration successful. You can now log in."
-        ),
+        "message": message,
         "id": str(user.id),
         "email": user.email,
         "role": user.role.value if hasattr(user.role, "value") else user.role,
         "requires_verification": requires_verification,
+        "verification_email_sent": email_sent if requires_verification else True,
     }
 
 
@@ -71,6 +79,22 @@ async def verify_email(verification_data: EmailVerificationRequest, db: AsyncSes
     """
     await auth_service.verify_email(db, verification_data.token)
     return {"message": "Email verified successfully"}
+
+
+@router.post("/resend-verification", response_model=dict)
+@limiter.limit("3/hour")
+async def resend_verification(
+    request: Request,
+    body: ResendVerificationRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Resend email verification link. Always returns the same message to prevent email enumeration.
+    """
+    await auth_service.resend_verification_email(db, body.email)
+    return {
+        "message": "If an unverified account exists for this email, a verification link has been sent.",
+    }
 
 
 @router.post("/login", response_model=LoginResponse)
