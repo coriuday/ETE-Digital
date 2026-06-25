@@ -39,7 +39,7 @@ minio==7.2.11
 apscheduler==3.10.4
 
 # Rate Limiting
-slowapi==0.1.9
+slowapi==0.1.10
 limits==3.14.0
 
 # Testing
