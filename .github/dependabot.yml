@@ -1,0 +1,13 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /ete-digital/backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /ete-digital/frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
