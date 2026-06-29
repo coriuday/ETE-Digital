@@ -202,7 +202,8 @@ jobs:
           scan-ref: 'ete-digital'
           format: 'sarif'
           output: 'trivy-results.sarif'
-          severity: 'HIGH,CRITICAL'
+          severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'
+          limit-severities-for-sarif: true
           exit-code: '0'
           version: 'v0.69.3'
           scanners: 'vuln'
@@ -213,7 +214,6 @@ jobs:
         if: always() && hashFiles('trivy-results.sarif') != ''
         with:
           sarif_file: 'trivy-results.sarif'
-          category: 'trivy-dependencies'
 
       - name: Run Snyk (Backend)
         uses: snyk/actions/python@master
