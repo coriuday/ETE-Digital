@@ -179,6 +179,9 @@ class ApplicationResponse(BaseModel):
     match_score: Optional[int]
     match_explanation: Optional[Dict]
 
+    fraud_score: Optional[int] = None
+    fraud_flags: Optional[List[str]] = None
+
     employer_notes: Optional[str]
 
     # Enriched fields (joined from Job table for candidate dashboard)
@@ -221,6 +224,9 @@ class ApplicationDetailResponse(BaseModel):
     match_score: Optional[int]
     match_explanation: Optional[Dict]
     employer_notes: Optional[str]
+
+    fraud_score: Optional[int] = None
+    fraud_flags: Optional[List[str]] = None
 
     # Enriched fields
     candidate_name: Optional[str] = None

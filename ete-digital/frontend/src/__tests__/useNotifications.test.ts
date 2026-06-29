@@ -26,13 +26,35 @@ const mockNotification = {
     created_at: new Date().toISOString(),
 };
 
+/** Stub WebSocket so Node/undici never opens a real connection in tests. */
+class MockWebSocket {
+    static readonly CONNECTING = 0;
+    static readonly OPEN = 1;
+    static readonly CLOSING = 2;
+    static readonly CLOSED = 3;
+
+    readonly url: string;
+    readyState = MockWebSocket.CLOSED;
+
+    constructor(url: string) {
+        this.url = url;
+    }
+
+    close() {}
+    send() {}
+    addEventListener() {}
+    removeEventListener() {}
+}
+
 // ---- Provide token via localStorage ----
 beforeEach(() => {
     localStorage.setItem('access_token', 'mock-jwt-token');
+    vi.stubGlobal('WebSocket', MockWebSocket as unknown as typeof WebSocket);
 });
 
 afterEach(() => {
     localStorage.removeItem('access_token');
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
 });
 

@@ -129,6 +129,24 @@ from app.core.database import Base, get_db  # noqa: E402
 # ---------------------------------------------------------------------------
 
 
+async def _reset_test_schema(conn) -> None:
+    """Reset schema between test runs without breaking users↔organizations FK cycle."""
+    dialect = conn.dialect.name
+    if dialect == "postgresql":
+        result = await conn.execute(
+            sa.text("SELECT tablename FROM pg_tables " "WHERE schemaname = 'public' AND tablename != 'alembic_version'")
+        )
+        tables = [row[0] for row in result.fetchall()]
+        if tables:
+            quoted = ", ".join(f'"{t}"' for t in tables)
+            await conn.execute(sa.text(f"TRUNCATE {quoted} RESTART IDENTITY CASCADE"))
+        else:
+            await conn.run_sync(Base.metadata.create_all)
+    else:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.run_sync(Base.metadata.create_all)
+
+
 @pytest_asyncio.fixture(scope="session")
 async def _engine():
     """Session-scoped async engine. Created inside the running loop.
@@ -149,10 +167,8 @@ async def _engine():
             )
 
             if not _SUPABASE_INTEGRATION_MODE:
-                # Local CI / SQLite: create a fresh schema for each test run
                 async with eng.begin() as conn:
-                    await conn.run_sync(Base.metadata.drop_all)
-                    await conn.run_sync(Base.metadata.create_all)
+                    await _reset_test_schema(conn)
             else:
                 # Supabase integration mode: just verify connectivity
                 async with eng.connect() as conn:
@@ -172,9 +188,8 @@ async def _engine():
     yield eng
 
     if not _SUPABASE_INTEGRATION_MODE:
-        # Only wipe the local test schema — NEVER wipe Supabase
         async with eng.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+            await _reset_test_schema(conn)
 
     await eng.dispose()
 

@@ -3,6 +3,7 @@ E2E Seed Script — Registers users and seeds 8 jobs for full E2E platform test.
 Run from backend/ directory:
   .venv\Scripts\python e2e_seed.py
 """
+
 import asyncio
 import httpx
 import json
@@ -46,7 +47,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Bangalore, Karnataka",
         "remote_ok": False,
-        "salary_min": 400000, "salary_max": 600000, "salary_currency": "INR",
+        "salary_min": 400000,
+        "salary_max": 600000,
+        "salary_currency": "INR",
         "experience_required": "Fresher",
         "skills_required": ["HTML", "CSS", "JavaScript", "React", "Git"],
         "has_tryout": True,
@@ -59,7 +62,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Remote",
         "remote_ok": True,
-        "salary_min": 300000, "salary_max": 500000, "salary_currency": "INR",
+        "salary_min": 300000,
+        "salary_max": 500000,
+        "salary_currency": "INR",
         "experience_required": "Fresher",
         "skills_required": ["SQL", "Excel", "Python", "Tableau"],
         "has_tryout": False,
@@ -72,7 +77,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Hyderabad, Telangana",
         "remote_ok": False,
-        "salary_min": 350000, "salary_max": 500000, "salary_currency": "INR",
+        "salary_min": 350000,
+        "salary_max": 500000,
+        "salary_currency": "INR",
         "experience_required": "Fresher",
         "skills_required": ["Manual Testing", "Selenium", "JIRA", "Python"],
         "has_tryout": True,
@@ -85,7 +92,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Mumbai, Maharashtra",
         "remote_ok": False,
-        "salary_min": 400000, "salary_max": 600000, "salary_currency": "INR",
+        "salary_min": 400000,
+        "salary_max": 600000,
+        "salary_currency": "INR",
         "experience_required": "Fresher",
         "skills_required": ["Business Analysis", "Excel", "SQL", "Communication"],
         "has_tryout": False,
@@ -99,7 +108,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Bangalore, Karnataka",
         "remote_ok": True,
-        "salary_min": 1800000, "salary_max": 2800000, "salary_currency": "INR",
+        "salary_min": 1800000,
+        "salary_max": 2800000,
+        "salary_currency": "INR",
         "experience_required": "5+ years",
         "skills_required": ["Python", "FastAPI", "PostgreSQL", "Redis", "Docker", "Microservices"],
         "has_tryout": True,
@@ -112,7 +123,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Remote",
         "remote_ok": True,
-        "salary_min": 2200000, "salary_max": 3500000, "salary_currency": "INR",
+        "salary_min": 2200000,
+        "salary_max": 3500000,
+        "salary_currency": "INR",
         "experience_required": "4+ years",
         "skills_required": ["Product Management", "Roadmapping", "Data Analysis", "Agile", "Figma"],
         "has_tryout": False,
@@ -125,7 +138,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Pune, Maharashtra",
         "remote_ok": False,
-        "salary_min": 2000000, "salary_max": 3000000, "salary_currency": "INR",
+        "salary_min": 2000000,
+        "salary_max": 3000000,
+        "salary_currency": "INR",
         "experience_required": "6+ years",
         "skills_required": ["Kubernetes", "Terraform", "AWS", "CI/CD", "Docker", "Prometheus"],
         "has_tryout": False,
@@ -138,7 +153,9 @@ JOBS = [
         "job_type": "full_time",
         "location": "Hyderabad, Telangana",
         "remote_ok": True,
-        "salary_min": 2500000, "salary_max": 4000000, "salary_currency": "INR",
+        "salary_min": 2500000,
+        "salary_max": 4000000,
+        "salary_currency": "INR",
         "experience_required": "7+ years",
         "skills_required": ["Machine Learning", "NLP", "Python", "MLFlow", "Leadership", "AWS SageMaker"],
         "has_tryout": True,
@@ -156,13 +173,13 @@ async def register_user(client: httpx.AsyncClient, user: dict) -> bool:
     }
     r = await client.post(f"{BASE}/api/auth/register", json=payload)
     if r.status_code == 201:
-        print(f"  ✅ Registered: {user['email']} [{user['role']}]")
+        print(f"  [OK] Registered: {user['email']} [{user['role']}]")
         return True
     elif r.status_code == 400 and "already registered" in r.text:
-        print(f"  ⚠️  Already exists: {user['email']} (skipped)")
+        print(f"  [SKIP] Already exists: {user['email']}")
         return True
     else:
-        print(f"  ❌ Register failed {user['email']}: {r.status_code} {r.text[:120]}")
+        print(f"  [FAIL] Register failed {user['email']}: {r.status_code} {r.text[:120]}")
         return False
 
 
@@ -170,23 +187,26 @@ async def login(client: httpx.AsyncClient, email: str, password: str) -> str | N
     r = await client.post(f"{BASE}/api/auth/login", json={"email": email, "password": password})
     if r.status_code == 200:
         token = r.json()["access_token"]
-        print(f"  ✅ Logged in: {email}")
+        print(f"  [OK] Logged in: {email}")
         return token
-    print(f"  ❌ Login failed {email}: {r.status_code} {r.text[:120]}")
+    print(f"  [FAIL] Login failed {email}: {r.status_code} {r.text[:120]}")
     return None
 
 
 async def post_and_publish_job(client: httpx.AsyncClient, token: str, job: dict) -> bool:
     headers = {"Authorization": f"Bearer {token}"}
     r = await client.post(f"{BASE}/api/jobs/", json=job, headers=headers)
-    if r.status_code == 201:
-        job_id = r.json()["id"]
+    if r.status_code != 201:
+        print(f"  [FAIL] {job['title']}: {r.status_code} {r.text[:120]}")
+        return False
+
+    job_id = r.json()["id"]
+    status = r.json().get("status", "unknown")
+    if status == "draft":
         pub = await client.post(f"{BASE}/api/jobs/{job_id}/publish", headers=headers)
         status = pub.json().get("status", "unknown") if pub.status_code == 200 else f"err:{pub.status_code}"
-        print(f"  ✅ [{status}] {job['title']}")
-        return True
-    print(f"  ❌ {job['title']}: {r.status_code} {r.text[:120]}")
-    return False
+    print(f"  [OK] [{status}] {job['title']}")
+    return True
 
 
 async def main():
@@ -196,39 +216,39 @@ async def main():
 
     async with httpx.AsyncClient(timeout=20) as client:
         # Step 1: Register all users
-        print("\n👤 Registering users (non-admin only via API)...")
+        print("\n[Users] Registering users (non-admin only via API)...")
         for user in USERS:
             if user["role"] == "admin":
-                print(f"  ⏭️  Skipping admin (must be created directly or already exists): {user['email']}")
+                print(f"  [SKIP] Admin (create directly or already exists): {user['email']}")
                 continue
             await register_user(client, user)
 
         # Step 2: Login as HR
-        print("\n🔑 Logging in as HR...")
+        print("\n[Auth] Logging in as HR...")
         hr_token = await login(client, "sakshi.hr@technova.in", "TechNova@2024")
 
         if hr_token:
-            print(f"\n📋 Posting {len(JOBS)} jobs...")
+            print(f"\n[Jobs] Posting {len(JOBS)} jobs...")
             for job in JOBS:
                 await post_and_publish_job(client, hr_token, job)
 
         # Step 3: Quick platform summary
-        print("\n📊 Platform summary check...")
-        r = await client.get(f"{BASE}/api/jobs/", params={"status": "active", "page_size": 1})
+        print("\n[Summary] Platform check...")
+        r = await client.get(f"{BASE}/api/jobs/feed", params={"page_size": 1})
         if r.status_code == 200:
             total = r.json().get("total", "?")
-            print(f"  📦 Active jobs visible: {total}")
+            print(f"  [OK] Active jobs visible: {total}")
         else:
-            print(f"  ❌ Jobs list error: {r.status_code} {r.text[:80]}")
+            print(f"  [FAIL] Jobs feed error: {r.status_code} {r.text[:80]}")
 
     print("\n" + "=" * 56)
-    print("  ✅ Seed complete!")
+    print("  Seed complete!")
     print("=" * 56)
-    print("\n🔐 Login Credentials:")
-    print(f"  HR        → sakshi.hr@technova.in         / TechNova@2024")
-    print(f"  Fresher   → arjun.mehta.dev@gmail.com     / Arjun@2024")
-    print(f"  Exp       → priya.sharma.tech@gmail.com   / Priya@2024")
-    print(f"  Admin     → admin@etedigital.com           / Admin@1234 (if exists)")
+    print("\nLogin credentials:")
+    print(f"  HR        -> sakshi.hr@technova.in         / TechNova@2024")
+    print(f"  Fresher   -> arjun.mehta.dev@gmail.com     / Arjun@2024")
+    print(f"  Exp       -> priya.sharma.tech@gmail.com   / Priya@2024")
+    print(f"  Admin     -> admin@etedigital.com           / Admin@1234 (if exists)")
     print()
 
 

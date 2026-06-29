@@ -7,7 +7,7 @@ Security utilities for ETE Digital
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, TYPE_CHECKING
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 import jwt
@@ -28,6 +28,9 @@ except ImportError:
     PYOTP_AVAILABLE = False
 
 from app.core.config import settings
+
+if TYPE_CHECKING:
+    from sqlalchemy.ext.asyncio import AsyncSession
 
 # Password hashing with Argon2 (argon2-cffi — actively maintained)
 _ph = PasswordHasher()

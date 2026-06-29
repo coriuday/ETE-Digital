@@ -2,10 +2,15 @@
 Jobs and Applications endpoint tests
 """
 
+import os
+
 import pytest
 from httpx import AsyncClient
 
 pytestmark = pytest.mark.asyncio
+
+_raw_db = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "")
+_uses_sqlite = "sqlite" in _raw_db or not _raw_db
 
 JOB_PAYLOAD = {
     "title": "Senior Developer",
@@ -34,9 +39,7 @@ async def test_create_job_as_employer(client: AsyncClient, employer_token: str):
     assert data["status"] is not None
 
 
-async def test_create_job_as_candidate_forbidden(
-    client: AsyncClient, candidate_token: str
-):
+async def test_create_job_as_candidate_forbidden(client: AsyncClient, candidate_token: str):
     """Candidate cannot create a job — returns 403."""
     response = await client.post(
         "/api/jobs/",
@@ -66,6 +69,7 @@ async def test_search_jobs_no_auth(client: AsyncClient, employer_token: str):
     assert isinstance(data["jobs"], list)
 
 
+@pytest.mark.skipif(_uses_sqlite, reason="PostgreSQL full-text search (plainto_tsquery) required")
 async def test_search_jobs_with_query(client: AsyncClient, employer_token: str):
     """Search with a keyword returns matching jobs."""
     await client.post(
