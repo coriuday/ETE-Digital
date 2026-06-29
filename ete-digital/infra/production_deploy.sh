@@ -17,11 +17,11 @@ echo "Updated: ${PREV:0:8} -> ${NEW:0:8}"
 echo "=== [2/6] Backend dependencies ==="
 cd "$BACKEND"
 source .venv/bin/activate
-if .venv/bin/python -c "import pydantic, fastapi" 2>/dev/null; then
-  echo "Existing venv OK — skipping pip install"
-else
-  pip install -q -r requirements.txt
-fi
+# Always refresh security pins inside venv (never system pip).
+# Full `pip install -r requirements.txt` is skipped on Py3.14 venvs because
+# pydantic-core may fail to build; targeted pins use pre-built wheels.
+.venv/bin/pip install -q --upgrade --force-reinstall --no-cache-dir \
+  "PyJWT==2.13.0" "cryptography==49.0.0"
 
 echo "=== [3/6] Alembic migrations ==="
 alembic upgrade head
